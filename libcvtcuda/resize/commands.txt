@@ -1,0 +1,33 @@
+scp -r build@192.168.6.161:/media/EHDD1/Projects/Tasks/Intuitive_Surgical/Development/Application/gstreamer/1.0/Tegratk1/resize/* ./;make;./resize.elf snapshot.yuv 1280 720 resize_01.yuv 960 1080;scp resize_01.yuv build@192.168.6.161:~/Desktop
+
+gst-launch-0.10 videotestsrc pattern=15 num-buffers=1 ! "video/x-raw-yuv, format=(fourcc)YUY2, width=(int)640, height=(int)480, interlaced=(boolean)false, pixel-aspect-ratio=(fraction)1/1" ! filesink location=Horizontal_bar.yuv
+
+gst-launch-0.10 videotestsrc pattern=15 ! "video/x-raw-yuv, format=(fourcc)YUY2, width=(int)640, height=(int)480, interlaced=(boolean)false, pixel-aspect-ratio=(fraction)1/1" ! xvimagesink
+./resize.elf snapshot.yuv 1280 720 resize_01.yuv 640 480;scp resize_01.yuv build@192.168.6.161:~/Desktop
+
+
+cd /home/ubuntu/Projects/gstreamer;rm -rf libcvtcuda;scp -r build@192.168.6.161:/media/EHDD1/Projects/Tasks/lib/libcvtcuda ./;cd libcvtcuda;make;cd resize;make
+
+
+gst-launch-0.10 videotestsrc num-buffers=1 pattern=0 ! "video/x-raw-yuv, format=(fourcc)YUY2, width=(int)1280, height=(int)720, interlaced=(boolean)false, pixel-aspect-ratio=(fraction)1/1" ! filesink location=sample.yuv;gst-launch-0.10 videotestsrc num-buffers=1 pattern=16 ! "video/x-raw-yuv, format=(fourcc)YUY2, width=(int)1280, height=(int)720, interlaced=(boolean)false, pixel-aspect-ratio=(fraction)1/1" ! filesink location=sample1.yuv;./resize_yuyv_yuv420_stitch.elf ./sample.yuv ./sample1.yuv 1280 720 sample_out.yuv 1920 1080
+
+
+gst-launch-0.10 v4l2src device=/dev/video0 queue-size=5 always-copy=false ! "video/x-raw-yuv, format=(fourcc)YUY2, width=(int)1280, height=(int)720" ! fakesink  v4l2src device=/dev/video1 queue-size=5 always-copy=false ! "video/x-raw-yuv, format=(fourcc)YUY2, width=(int)1280, height=(int)720" ! fakesink 
+
+
+gst-launch-0.10 videotestsrc ! "video/x-raw-yuv, format=(fourcc)I420, width=(int)1920, height=(int)1080" ! nv_omx_hdmi_videosink overlay-x=960 overlay-w=960 overlay-h=1080 overlay=2  videotestsrc ! "video/x-raw-yuv, format=(fourcc)I420, width=(int)1920, height=(int)1080" ! nv_omx_hdmi_videosink overlay-w=960 overlay-h=1080
+
+sudo mount -t tmpfs -o size=800m tmpfs /mnt;cd /mnt
+dd if=/dev/zero of=file_sample.raw bs=1KB count=331776;dd if=/dev/zero of=file_sample1.raw bs=1KB count=331776
+
+
+gst-launch-0.10 filesrc location=file_sample.raw blocksize=3110400  ! "video/x-raw-yuv, format=(fourcc)I420, width=(int)1920, height=(int)1080, framerate=(fraction)60/1" ! nv_omx_hdmi_videosink overlay-x=960 overlay-w=960 overlay-h=1080 overlay=2  filesrc location=file_sample1.raw blocksize=3110400 ! "video/x-raw-yuv, format=(fourcc)I420, width=(int)1920, height=(int)1080, framerate=(fraction)60/1" ! nv_omx_hdmi_videosink overlay-w=960 overlay-h=1080
+
+
+gst-launch-0.10 filesrc location=file_sample.raw blocksize=3110400 ! "video/x-raw-yuv, format=(fourcc)I420, width=(int)1920, height=(int)1080, framerate=(fraction)60/1" ! nv_omx_hdmi_videosink overlay-x=960 overlay-w=960 overlay-h=1080 overlay=2
+
+gst-launch-0.10 filesrc location=file_sample.raw blocksize=16588800 ! "video/x-raw-yuv, format=(fourcc)YUY2, width=(int)3840, height=(int)2160" ! nvvidconv ! "video/x-nv-yuv, format=(fourcc)I420, width=(int)3840, height=(int)2160" ! nv_omx_hdmi_videosink overlay-w=960 overlay-h=1080
+
+
+
+

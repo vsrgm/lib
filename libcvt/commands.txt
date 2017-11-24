@@ -1,0 +1,1 @@
+ ./resize_stitch.elf ../libcvtcuda/yuv_images/resize.yuv  1920 1080 sample.yuv 960 1080

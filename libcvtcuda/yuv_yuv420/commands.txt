@@ -1,0 +1,6 @@
+scp -r build@192.168.6.161:/media/EHDD1/Projects/Tasks/Intuitive_Surgical/Development/Application/gstreamer/1.0/Tegratk1/resize/* ./;make;./resize.elf snapshot.yuv 1280 720 resize_01.yuv 960 1080;scp resize_01.yuv build@192.168.6.161:~/Desktop
+
+
+
+./resize.elf snapshot.yuv 1280 720 resize_01.yuv 640 480;scp resize_01.yuv build@192.168.6.161:~/Desktop
+

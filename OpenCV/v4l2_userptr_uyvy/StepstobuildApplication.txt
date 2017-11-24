@@ -1,0 +1,5 @@
+1) Edit the file CMakeLists.txt for your requirement
+   Change the path the value:
+   set(OPENCV_ROOT "<path of this application>")
+2) give the following command on terminal: "cmake -DCUDA_USE_STATIC_CUDA_RUNTIME=OFF" it creates the Makefile
+3) give the command: "make"

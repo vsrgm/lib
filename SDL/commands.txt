@@ -1,0 +1,5 @@
+scp -r build@192.168.6.161:/media/EHDD1/Projects/Tasks/lib/SDL/sdl.c  .
+scp -r build@192.168.6.161:/media/EHDD1/Projects/Tasks/lib/SDL/Makefile  .
+
+gst-launch-0.10 videotestsrc pattern=18 ! "video/x-raw-yuv, format=(fourcc)YUY2, width=(int)320, height=(int)240" ! xvimagesink
+gst-launch-0.10 videotestsrc pattern=18 ! "video/x-raw-yuv, format=(fourcc)YUY2, width=(int)1920, height=(int)1080" ! filesink location=sample.yuv

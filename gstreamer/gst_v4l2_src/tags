@@ -1,0 +1,88 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+BAYER	appsrc.c	/^	BAYER,$/;"	e	enum:_fmt_mode	file:
+CAPTURE_MAX_BUFFER_MIPI1	cam1_mipi.h	35;"	d
+CC	Makefile	/^CC:=${CROSS_COMPILE}gcc$/;"	m
+CFLAGS	Makefile	/^CFLAGS:=$/;"	m
+DEBUG	cam1_mipi.c	8;"	d	file:
+DELTA	cam1_mipi.c	335;"	d	file:
+FLAGS_0_1_0	Makefile	/^FLAGS_0_1_0:=`pkg-config --cflags --libs gstreamer-0.10 gstreamer-app-0.10 gstreamer-video-0.10` $/;"	m
+FLAGS_1_0	Makefile	/^FLAGS_1_0:=`pkg-config --cflags --libs gstreamer-1.0 gstreamer-app-1.0 gstreamer-video-1.0` $/;"	m
+H264	appsrc.c	/^	H264,$/;"	e	enum:_fmt_mode	file:
+IN_RANGE	cam1_mipi.c	336;"	d	file:
+JPEG	appsrc.c	/^	JPEG,$/;"	e	enum:_fmt_mode	file:
+NEED_SKIP	cam1_mipi.c	342;"	d	file:
+OBJS	Makefile	/^OBJS=$(join $(addsuffix , $(dir $(SRC))), $(notdir $(SRC:.cu=.o)))$/;"	m
+PKG_CONFIG_PATH	Makefile	/^PKG_CONFIG_PATH=${SYSROOT}\/usr\/lib\/pkgconfig\/$/;"	m
+RGB565	appsrc.c	/^	RGB565,$/;"	e	enum:_fmt_mode	file:
+SRC	Makefile	/^SRC=$(wildcard *.cu)$/;"	m
+SYSROOT	Makefile	/^SYSROOT:=\/$/;"	m
+TEGRA	appsrc.c	/^	TEGRA,$/;"	e	enum:_mach_type	file:
+UYVY	appsrc.c	/^	UYVY = 0,$/;"	e	enum:_fmt_mode	file:
+X86	appsrc.c	/^	X86,$/;"	e	enum:_mach_type	file:
+YUY2	appsrc.c	/^	YUY2,$/;"	e	enum:_fmt_mode	file:
+__CAM1_MIPI_H__	cam1_mipi.h	9;"	d
+__RESIZE_H	resize.h	2;"	d
+_fmt_mode	appsrc.c	/^enum _fmt_mode {$/;"	g	file:
+_mach_type	appsrc.c	/^enum _mach_type {$/;"	g	file:
+alloc_buffs	cam1_mipi.c	/^static int alloc_buffs(int fd, int count, int type, int memory_type, int width, int height)$/;"	f	file:
+appsrc_mipi1	app_mipi1_sink.c	/^GstElement *pipeline_mipi1, *sink_mipi1, *appsrc_mipi1;$/;"	v
+buf	cam1_mipi.h	/^	struct v4l2_buffer buf;$/;"	m	struct:buf_info	typeref:struct:buf_info::v4l2_buffer
+buf_info	cam1_mipi.h	/^struct buf_info {$/;"	s
+buffer_mipi1	app_mipi1_sink.c	/^GstBuffer *buffer_mipi1;$/;"	v
+buffer_mipi1	app_usb_sink.c	/^GstBuffer *buffer_mipi1;$/;"	v
+cam1_buf_tv_usec	cam1_mipi.c	/^int cam1_buf_tv_usec = -1, cam2_buf_tv_usec = -1; $/;"	v
+cam1_height	app_mipi1_sink.c	/^int cam1_width = 1280, cam1_height = 720;$/;"	v
+cam1_width	app_mipi1_sink.c	/^int cam1_width = 1280, cam1_height = 720;$/;"	v
+cam2_buf_tv_usec	cam1_mipi.c	/^int cam1_buf_tv_usec = -1, cam2_buf_tv_usec = -1; $/;"	v
+camera_fd_mipi1	app_mipi1_sink.c	/^int camera_fd_mipi1;$/;"	v
+capture_buff_info_mipi1	cam1_mipi.c	/^struct buf_info capture_buff_info_mipi1[CAPTURE_MAX_BUFFER_MIPI1];$/;"	v	typeref:struct:buf_info
+capture_buff_last_mipi1	app_mipi1_sink.c	/^struct v4l2_buffer capture_buff_last_mipi1 = {0};$/;"	v	typeref:struct:v4l2_buffer
+capture_buff_mipi1	app_mipi1_sink.c	/^struct v4l2_buffer capture_buff_mipi1 = {0};$/;"	v	typeref:struct:v4l2_buffer
+cb_need_data	appsrc.c	/^cb_need_data (GstElement *appsrc, $/;"	f	file:
+cb_need_data_mipi1	app_mipi1_sink.c	/^cb_need_data_mipi1 (GstElement *appsrc,$/;"	f	file:
+check_capability	cam1_mipi.c	/^static int check_capability(int fd, int specific_capability)$/;"	f	file:
+dequeue_buffer_mipi1	cam1_mipi.c	/^int dequeue_buffer_mipi1(int fd, struct v4l2_buffer *buffer)$/;"	f
+enqueue_buffer_mipi1	cam1_mipi.c	/^int enqueue_buffer_mipi1(int fd, struct v4l2_buffer *buffer)$/;"	f
+fmt	appsrc.c	/^int fmt = UYVY;$/;"	v
+get_frame_phy_mipi1	cam1_mipi.c	/^void *get_frame_phy_mipi1(struct v4l2_buffer *capture_buff)$/;"	f
+get_frame_virt_mipi1	cam1_mipi.c	/^void *get_frame_virt_mipi1(struct v4l2_buffer *capture_buff)$/;"	f
+height	appsrc.c	/^int width = 1920, height = 1080;$/;"	v
+index	cam1_mipi.h	/^	int index;$/;"	m	struct:buf_info
+init_camera_mipi1	cam1_mipi.c	/^int init_camera_mipi1(char *device_node, int width, int height)$/;"	f
+length	cam1_mipi.h	/^	unsigned int length;$/;"	m	struct:buf_info
+loop	appsrc.c	/^static GMainLoop *loop;$/;"	v	file:
+mach	appsrc.c	/^int mach = X86;$/;"	v
+main	appsrc.c	/^main (gint argc, gchar *argv[])$/;"	f
+map_mipi1	app_mipi1_sink.c	/^GstMapInfo map_mipi1;$/;"	v
+map_mipi1	app_usb_sink.c	/^GstMapInfo map_mipi1;$/;"	v
+map_return_mipi1	app_mipi1_sink.c	/^int map_return_mipi1 = 0;$/;"	v
+map_return_mipi1	app_usb_sink.c	/^int map_return_mipi1 = 0;$/;"	v
+open_camera_node	cam1_mipi.c	/^static int open_camera_node(char *camera_node)$/;"	f	file:
+parse_args	appsrc.c	/^int parse_args (int argc, char** argv)$/;"	f
+phy	cam1_mipi.h	/^	char *phy;$/;"	m	struct:buf_info
+ping_ping_mipi1	app_mipi1_sink.c	/^int ping_ping_mipi1 = 0;$/;"	v
+pipeline_mipi1	app_mipi1_sink.c	/^GstElement *pipeline_mipi1, *sink_mipi1, *appsrc_mipi1;$/;"	v
+pipeline_mipi1	app_usb_sink.c	/^GstElement *pipeline_mipi1, *sink_mipi1;$/;"	v
+print_usage	appsrc.c	/^int print_usage(int argc, char **argv)$/;"	f
+sample_mipi1	app_mipi1_sink.c	/^GstSample *sample_mipi1;$/;"	v
+sample_mipi1	app_usb_sink.c	/^GstSample *sample_mipi1;$/;"	v
+set_cam1_width_height	app_mipi1_sink.c	/^set_cam1_width_height(int width, int height)$/;"	f
+set_format_info	cam1_mipi.c	/^static int set_format_info(int fd, int type, int format, int height, int width)$/;"	f	file:
+sink_mipi1	app_mipi1_sink.c	/^GstElement *pipeline_mipi1, *sink_mipi1, *appsrc_mipi1;$/;"	v
+sink_mipi1	app_usb_sink.c	/^GstElement *pipeline_mipi1, *sink_mipi1;$/;"	v
+start	cam1_mipi.h	/^	char *start;$/;"	m	struct:buf_info
+start_streaming	cam1_mipi.c	/^static int start_streaming(int fd, int buf_type) $/;"	f	file:
+v4l2_mipi1_get_buffer	app_mipi1_sink.c	/^v4l2_mipi1_get_buffer(unsigned char **buf) {$/;"	f
+v4l2_mipi1_put_buffer	app_mipi1_sink.c	/^v4l2_mipi1_put_buffer(void) {$/;"	f
+v4l2_mipi1_src_exit	app_mipi1_sink.c	/^v4l2_mipi1_src_exit(void) $/;"	f
+v4l2_mipi1_src_init	app_mipi1_sink.c	/^v4l2_mipi1_src_init (void)$/;"	f
+v4l2_mipi_get1_buffer	app_usb_sink.c	/^v4l2_mipi_get1_buffer(unsigned char **buf) {$/;"	f
+v4l2_mipi_put1_buffer	app_usb_sink.c	/^v4l2_mipi_put1_buffer(void) {$/;"	f
+v4l2_mipi_src1_exit	app_usb_sink.c	/^v4l2_mipi_src1_exit(void) $/;"	f
+v4l2_mipi_src1_init	app_usb_sink.c	/^v4l2_mipi_src1_init ()$/;"	f
+width	appsrc.c	/^int width = 1920, height = 1080;$/;"	v
