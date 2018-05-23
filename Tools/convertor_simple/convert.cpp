@@ -23,7 +23,8 @@ struct
 
 	{BAYER10_BGGR, "BAYER10_BGGR", 10}, {BAYER10_GBRG, "BAYER10_GBRG", 10},
 	{BAYER10_GRBG, "BAYER10_GRBG", 10}, {BAYER10_RGGB, "BAYER10_RGGB", 10},
-	{BMP24_BGR, "BMP24_BGR", 24}, {BMP24_RGB, "BMP24_RGB", 24}
+	{BMP24_BGR, "BMP24_BGR", 24}, {BMP24_RGB, "BMP24_RGB", 24},
+	{ABMP32_RGB, "BMP32_RGB", 32}
 };
 
 convert::convert(QWidget *parent) :
@@ -233,6 +234,10 @@ void convert::paintimage()
 		}break;
 
 		case BMP24_RGB: {
+		}break;
+
+		case ABMP32_RGB: {
+			convert_argb32_rgb(src_buffer, des_buffer, width, height);
 		}break;
 	}
 

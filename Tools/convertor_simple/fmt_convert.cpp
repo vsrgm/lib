@@ -635,6 +635,22 @@ int convert_bmp_565_bmp_888(char *src_buffer, char *des_buffer, int width, int h
 	return 0;
 }
 
+int convert_argb32_rgb(unsigned char *src_buffer, unsigned char *des_buffer, int width, int height)
+{
+	int width_idx;
+	int height_idx;
+	int count = 0;
+
+	for (height_idx = 0; height_idx < height; height_idx++)
+		for (width_idx = 0;width_idx < width; width_idx++)
+		{
+			des_buffer[count++] = src_buffer[height_idx*(width*4) + (width_idx*4) + 1];
+			des_buffer[count++] = src_buffer[height_idx*(width*4) + (width_idx*4) + 2];
+			des_buffer[count++] = src_buffer[height_idx*(width*4) + (width_idx*4) + 3];
+		}
+
+	return 0;
+}
 int convert_bayer_gen_rgb24(unsigned short *src_buffer, unsigned char *dest_buffer, int sx, int sy, int start_with, int shift)
 {
 	unsigned short *bayer,*fbayer;

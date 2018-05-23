@@ -74,6 +74,8 @@ enum pix_fmt
 
 	BMP24_BGR,
 	BMP24_RGB,
+
+	ABMP32_RGB,
 };
 
 #endif // CONVERT_H

@@ -9,3 +9,5 @@ SOURCES += main.cpp \
 HEADERS += convert.h \
     fmt_convert.h
 FORMS += convert.ui
+TEMPLATE += app
+QT += gui widgets

@@ -12,4 +12,6 @@ int convert_rgb555_888(unsigned char* rgb565,unsigned char* rgb888, unsigned int
 int convert_rgb565_888(unsigned char* rgb565,unsigned char* rgb888, unsigned int width, unsigned int height, int start_with);
 int convert_yuy420p_rgb888(unsigned char* yuyv_buffer,unsigned char* rgb888, unsigned int width, unsigned int height);
 int convert_nv12_rgb888(unsigned char* yuyv_buffer,unsigned char* rgb888, unsigned int width, unsigned int height);
+int convert_argb32_rgb(unsigned char *src_buffer, unsigned char *des_buffer, int width, int height);
+
 #endif // FMT_CONVERT_H
