@@ -40,7 +40,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>/tftpboot/snap.yuv</string>
+     <string>C:\Users\agururaj\Downloads\ispinput</string>
     </property>
    </widget>
    <widget class="QComboBox" name="pixel_fmt">
@@ -160,10 +160,10 @@
    <widget class="QSpinBox" name="src_img_count">
     <property name="geometry">
      <rect>
-      <x>520</x>
+      <x>470</x>
       <y>20</y>
       <width>61</width>
-      <height>26</height>
+      <height>21</height>
      </rect>
     </property>
    </widget>
@@ -277,6 +277,32 @@
      <string>Frame stride</string>
     </property>
    </widget>
+   <widget class="QLineEdit" name="bpp_pad">
+    <property name="geometry">
+     <rect>
+      <x>550</x>
+      <y>20</y>
+      <width>41</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>0</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_9">
+    <property name="geometry">
+     <rect>
+      <x>550</x>
+      <y>0</y>
+      <width>61</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Bpp padded</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
@@ -284,7 +310,7 @@
      <x>0</x>
      <y>0</y>
      <width>770</width>
-     <height>25</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>
