@@ -1,0 +1,48 @@
+/media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/arduino-builder -dump-prefs -logger=machine -hardware /media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware -tools /media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/tools-builder -tools /media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware/tools/avr -built-in-libraries /media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/libraries -libraries /home/build/Arduino/libraries -fqbn=arduino:avr:uno -ide-version=10809 -build-path /tmp/arduino_build_389734 -warnings=all -build-cache /tmp/arduino_cache_498330 -prefs=build.warn_data_percentage=75 -prefs=runtime.tools.avr-gcc.path=/media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware/tools/avr -prefs=runtime.tools.avr-gcc-5.4.0-atmel3.6.1-arduino2.path=/media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware/tools/avr -prefs=runtime.tools.avrdude.path=/media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware/tools/avr -prefs=runtime.tools.avrdude-6.3.0-arduino14.path=/media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware/tools/avr -prefs=runtime.tools.arduinoOTA.path=/media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware/tools/avr -prefs=runtime.tools.arduinoOTA-1.2.1.path=/media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware/tools/avr -verbose /media/EHDD1/Projects/Tasks/Arduino/sketch_jun29a/sketch_jun29a.ino
+/media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/arduino-builder -compile -logger=machine -hardware /media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware -tools /media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/tools-builder -tools /media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware/tools/avr -built-in-libraries /media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/libraries -libraries /home/build/Arduino/libraries -fqbn=arduino:avr:uno -ide-version=10809 -build-path /tmp/arduino_build_389734 -warnings=all -build-cache /tmp/arduino_cache_498330 -prefs=build.warn_data_percentage=75 -prefs=runtime.tools.avr-gcc.path=/media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware/tools/avr -prefs=runtime.tools.avr-gcc-5.4.0-atmel3.6.1-arduino2.path=/media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware/tools/avr -prefs=runtime.tools.avrdude.path=/media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware/tools/avr -prefs=runtime.tools.avrdude-6.3.0-arduino14.path=/media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware/tools/avr -prefs=runtime.tools.arduinoOTA.path=/media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware/tools/avr -prefs=runtime.tools.arduinoOTA-1.2.1.path=/media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware/tools/avr -verbose /media/EHDD1/Projects/Tasks/Arduino/sketch_jun29a/sketch_jun29a.ino
+Using board 'uno' from platform in folder: /media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware/arduino/avr
+Using core 'arduino' from platform in folder: /media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware/arduino/avr
+Detecting libraries used...
+/media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware/tools/avr/bin/avr-g++ -c -g -Os -w -std=gnu++11 -fpermissive -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -Wno-error=narrowing -flto -w -x c++ -E -CC -mmcu=atmega328p -DF_CPU=16000000L -DARDUINO=10809 -DARDUINO_AVR_UNO -DARDUINO_ARCH_AVR -I/media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware/arduino/avr/cores/arduino -I/media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware/arduino/avr/variants/standard /tmp/arduino_build_389734/sketch/sketch_jun29a.ino.cpp -o /dev/null
+Generating function prototypes...
+/media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware/tools/avr/bin/avr-g++ -c -g -Os -w -std=gnu++11 -fpermissive -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -Wno-error=narrowing -flto -w -x c++ -E -CC -mmcu=atmega328p -DF_CPU=16000000L -DARDUINO=10809 -DARDUINO_AVR_UNO -DARDUINO_ARCH_AVR -I/media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware/arduino/avr/cores/arduino -I/media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware/arduino/avr/variants/standard /tmp/arduino_build_389734/sketch/sketch_jun29a.ino.cpp -o /tmp/arduino_build_389734/preproc/ctags_target_for_gcc_minus_e.cpp
+/media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/tools-builder/ctags/5.8-arduino11/ctags -u --language-force=c++ -f - --c++-kinds=svpf --fields=KSTtzns --line-directives /tmp/arduino_build_389734/preproc/ctags_target_for_gcc_minus_e.cpp
+Compiling sketch...
+/media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware/tools/avr/bin/avr-g++ -c -g -Os -Wall -Wextra -std=gnu++11 -fpermissive -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -Wno-error=narrowing -MMD -flto -mmcu=atmega328p -DF_CPU=16000000L -DARDUINO=10809 -DARDUINO_AVR_UNO -DARDUINO_ARCH_AVR -I/media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware/arduino/avr/cores/arduino -I/media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware/arduino/avr/variants/standard /tmp/arduino_build_389734/sketch/sketch_jun29a.ino.cpp -o /tmp/arduino_build_389734/sketch/sketch_jun29a.ino.cpp.o
+Compiling libraries...
+Compiling core...
+Using previously compiled file: /tmp/arduino_build_389734/core/wiring_pulse.S.o
+Using previously compiled file: /tmp/arduino_build_389734/core/wiring.c.o
+Using previously compiled file: /tmp/arduino_build_389734/core/wiring_analog.c.o
+Using previously compiled file: /tmp/arduino_build_389734/core/wiring_shift.c.o
+Using previously compiled file: /tmp/arduino_build_389734/core/hooks.c.o
+Using previously compiled file: /tmp/arduino_build_389734/core/WInterrupts.c.o
+Using previously compiled file: /tmp/arduino_build_389734/core/wiring_digital.c.o
+Using previously compiled file: /tmp/arduino_build_389734/core/wiring_pulse.c.o
+Using previously compiled file: /tmp/arduino_build_389734/core/CDC.cpp.o
+Using previously compiled file: /tmp/arduino_build_389734/core/HardwareSerial.cpp.o
+Using previously compiled file: /tmp/arduino_build_389734/core/HardwareSerial0.cpp.o
+Using previously compiled file: /tmp/arduino_build_389734/core/HardwareSerial1.cpp.o
+Using previously compiled file: /tmp/arduino_build_389734/core/HardwareSerial2.cpp.o
+Using previously compiled file: /tmp/arduino_build_389734/core/HardwareSerial3.cpp.o
+Using previously compiled file: /tmp/arduino_build_389734/core/IPAddress.cpp.o
+Using previously compiled file: /tmp/arduino_build_389734/core/PluggableUSB.cpp.o
+Using previously compiled file: /tmp/arduino_build_389734/core/Print.cpp.o
+Using previously compiled file: /tmp/arduino_build_389734/core/Stream.cpp.o
+Using previously compiled file: /tmp/arduino_build_389734/core/Tone.cpp.o
+Using previously compiled file: /tmp/arduino_build_389734/core/USBCore.cpp.o
+Using previously compiled file: /tmp/arduino_build_389734/core/WMath.cpp.o
+Using previously compiled file: /tmp/arduino_build_389734/core/WString.cpp.o
+Using previously compiled file: /tmp/arduino_build_389734/core/abi.cpp.o
+Using previously compiled file: /tmp/arduino_build_389734/core/main.cpp.o
+Using previously compiled file: /tmp/arduino_build_389734/core/new.cpp.o
+Using previously compiled file: /tmp/arduino_build_389734/core/core.a
+Archiving built core (caching) in: /tmp/arduino_cache_498330/core/core_arduino_avr_uno_7acd203d33914674fc961bfc670e4c0d.a
+Linking everything together...
+/media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware/tools/avr/bin/avr-gcc -Wall -Wextra -Os -g -flto -fuse-linker-plugin -Wl,--gc-sections -mmcu=atmega328p -o /tmp/arduino_build_389734/sketch_jun29a.ino.elf /tmp/arduino_build_389734/sketch/sketch_jun29a.ino.cpp.o /tmp/arduino_build_389734/core/core.a -L/tmp/arduino_build_389734 -lm
+/media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware/tools/avr/bin/avr-objcopy -O ihex -j .eeprom --set-section-flags=.eeprom=alloc,load --no-change-warnings --change-section-lma .eeprom=0 /tmp/arduino_build_389734/sketch_jun29a.ino.elf /tmp/arduino_build_389734/sketch_jun29a.ino.eep
+/media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware/tools/avr/bin/avr-objcopy -O ihex -R .eeprom /tmp/arduino_build_389734/sketch_jun29a.ino.elf /tmp/arduino_build_389734/sketch_jun29a.ino.hex
+/media/EHDD1/Projects/Tasks/Arduino/Downloads/arduino-1.8.9/hardware/tools/avr/bin/avr-size -A /tmp/arduino_build_389734/sketch_jun29a.ino.elf
+Sketch uses 928 bytes (2%) of program storage space. Maximum is 32256 bytes.
+Global variables use 9 bytes (0%) of dynamic memory, leaving 2039 bytes for local variables. Maximum is 2048 bytes.
+
