@@ -1,23 +1,19 @@
 //TODO : Implement WatchDog to safe reboot in case if any hang in the board
 
-
+#include <EEPROM.h>
 #include <ESP8266WiFi.h>
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_Client.h"
+#include "key.h"
 
-#define Relay1		      D1
-#define Relay2		      D2
-
-#define ENABLE_HIGH     1 		
-#define WLAN_SSID       "xxxxxxxxx"	// Your SSID
-#define WLAN_PASS       "xxxxxxxxx"	// Your password
-
-/************************* Adafruit.io Setup *********************************/
-
-#define AIO_SERVER      "io.adafruit.com"
-#define AIO_SERVERPORT  1883			// use 8883 for SSL
-#define AIO_USERNAME    "xxxxxxxxx"	// Replace it with your username
-#define AIO_KEY         "xxxxxxxxxxxxxxxxxx"	// Replace with your Project Auth Key
+#define RELAY1		      D1
+#define RELAY2		      D2
+#define RELAY3		      D3
+#define RELAY4		      D4
+#define WATERLEVELTERRACE     D5
+#define WATERLEVELBALCONY     D6
+// define the number of bytes you want to access
+#define EEPROM_SIZE 1
 
 /************ Global State (you don't need to change this!) ******************/
 
@@ -33,18 +29,56 @@ Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO
 
 
 // Setup a feed called 'onoff' for subscribing to changes.
-Adafruit_MQTT_Subscribe bplant = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME"/feeds/balconyplants"); // FeedName
-Adafruit_MQTT_Subscribe tplant = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME"/feeds/terraceplants"); // FeedName
-
+Adafruit_MQTT_Subscribe plant = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME"/feeds/cmnplant"); // FeedName
+Adafruit_MQTT_Publish status = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/cmnplant");
 void MQTT_connect();
+
+int bcnt = 0, tcnt = 0, btotal = 0, ttotal = 0;
+
+enum eeromoffset
+{
+	MAGIC,
+	BCNT,
+	TCNT,
+	BTOTAL,
+	TTOTAL,
+};
+
+enum feeds
+{
+	BPLANTS,
+	TPLANTS,
+	RESETREPORT,
+	REPORT,
+};
 
 void setup()
 {
-	pinMode(Relay1, OUTPUT);
-	digitalWrite(Relay1, ENABLE_HIGH);
-	pinMode(Relay2, OUTPUT);
-	digitalWrite(Relay2, ENABLE_HIGH);
+	int Magic;
+	pinMode(RELAY1, OUTPUT);
+	digitalWrite(RELAY1, ENABLE_HIGH);
+	pinMode(RELAY2, OUTPUT);
+	digitalWrite(RELAY2, ENABLE_HIGH);
+	pinMode(RELAY3, OUTPUT);
+	digitalWrite(RELAY3, ENABLE_HIGH);
+	pinMode(RELAY4, OUTPUT);
+	digitalWrite(RELAY4, ENABLE_HIGH);
+	pinMode(WATERLEVELTERRACE, INPUT);
+	pinMode(WATERLEVELBALCONY, INPUT);
 
+	// initialize EEPROM with predefined size
+	EEPROM.begin(EEPROM_SIZE);
+	Magic = EEPROM.read(MAGIC);
+	if (Magic == 0xAB)
+	{
+		bcnt = EEPROM.read(BCNT);
+ 		tcnt = EEPROM.read(TCNT);
+ 		btotal = EEPROM.read(BTOTAL);
+ 		ttotal = EEPROM.read(TTOTAL);
+	}else
+	{
+		resetEEROM(0,0,0,0);
+	}
 	Serial.begin(115200);
 
 	// Connect to WiFi access point.
@@ -66,45 +100,118 @@ void setup()
 
 
 	// Setup MQTT subscription for onoff feed.
-	mqtt.subscribe(&bplant);
-	mqtt.subscribe(&tplant);
+	mqtt.subscribe(&plant);
 }
 
-#define BTIMER_WATER_PLANTS 10000 //millisec
-#define TTIMER_WATER_PLANTS 20000 //millisec
+void resetEEROM(int bcnt, int tcnt, int btotal, int ttotal)
+{
+	EEPROM.write(MAGIC, 0xAB);
+	EEPROM.write(BCNT, bcnt);
+	EEPROM.write(TCNT, tcnt);
+	EEPROM.write(BTOTAL, btotal);
+	EEPROM.write(TTOTAL, ttotal);
+	EEPROM.commit();	
+}
 
 void loop()
 {
+	int count = 0;
 	MQTT_connect();
-
+	int balwaterlevellow = 0, terracewaterlevellow = 0;
+	char publish[100];
+	int type, value1, value2, value3, value4;
+ 
 	Adafruit_MQTT_Subscribe *subscription;
 	while ((subscription = mqtt.readSubscription(5000)))
 	{
-		if (subscription == &bplant)
+		if (subscription == &plant)
 		{
 			Serial.print(F("GotB: "));
-			Serial.println((char *)bplant.lastread);
-			int bplant_State = atoi((char *)bplant.lastread);
-			if (bplant_State)
+			Serial.println((char *)plant.lastread);
+			sscanf((char *)plant.lastread, "%d,%d,%d,%d,%d", &type, &value1, &value2, &value3, &value4);
+			balwaterlevellow = digitalRead(WATERLEVELBALCONY);
+			terracewaterlevellow = digitalRead(WATERLEVELTERRACE);
+
+			if (type == BPLANTS)
 			{
-				digitalWrite(Relay1, !bplant_State);
-				delay(BTIMER_WATER_PLANTS);
-				digitalWrite(Relay1, bplant_State);
-			}
-		}
-		if (subscription == &tplant)
-		{
-			Serial.print(F("GotT: "));
-			Serial.println((char *)tplant.lastread);
-			int tplant_State = atoi((char *)tplant.lastread);
-			if (tplant_State)
+				if (value1)// && !balwaterlevellow)
+				{
+					digitalWrite(RELAY1, !ENABLE_HIGH);
+					digitalWrite(RELAY2, !ENABLE_HIGH);
+
+					for(count = 0; count < value1; count++)
+						delay(1000);
+
+					digitalWrite(RELAY1, ENABLE_HIGH);
+					digitalWrite(RELAY2, ENABLE_HIGH);
+					bcnt++;
+
+					EEPROM.write(BCNT, bcnt);
+					if (bcnt > btotal)
+					{
+						btotal = bcnt;
+						EEPROM.write(BTOTAL, btotal);
+					}
+				}else
+				{
+					bcnt = 0;
+					EEPROM.write(BCNT, bcnt);
+				}
+				EEPROM.commit();	
+				memset(publish, 0, sizeof(publish));
+				sprintf(publish, "%d,%d,%d,%d,%d,%d,%d", REPORT, bcnt, btotal, tcnt,
+						ttotal, balwaterlevellow, terracewaterlevellow);
+				status.publish(publish);
+
+			}else if(type == TPLANTS)
 			{
-				digitalWrite(Relay2, !tplant_State);
-				delay(TTIMER_WATER_PLANTS);
-				digitalWrite(Relay2, tplant_State);
+				if (value1)// && !terracewaterlevellow)
+				{
+					digitalWrite(RELAY3, !ENABLE_HIGH);
+					digitalWrite(RELAY4, !ENABLE_HIGH);
+
+					for(count = 0; count < value1; count++)
+						delay(1000);
+
+					digitalWrite(RELAY3, ENABLE_HIGH);
+					digitalWrite(RELAY4, ENABLE_HIGH);
+
+					tcnt++;
+					EEPROM.write(TCNT, tcnt);
+					if (tcnt > ttotal)
+					{
+						ttotal = tcnt;
+						EEPROM.write(TTOTAL, ttotal);
+					}
+				}else
+				{
+					tcnt = 0;
+					EEPROM.write(TCNT, tcnt);
+				}
+				EEPROM.commit();	
+				memset(publish, 0, sizeof(publish));
+				sprintf(publish, "%d,%d,%d,%d,%d,%d,%d", REPORT, bcnt, btotal, tcnt,
+						ttotal, balwaterlevellow, terracewaterlevellow);
+				status.publish(publish);
+
+
+			}else if(type == RESETREPORT)
+			{
+				bcnt = value1;
+				btotal = value2;
+				tcnt = value3;
+				ttotal = value4;
+				resetEEROM(value1, value2, value3, value4);
+				EEPROM.commit();	
+				memset(publish, 0, sizeof(publish));
+				sprintf(publish, "%d,%d,%d,%d,%d,%d,%d", REPORT, bcnt, btotal, tcnt,
+						ttotal, balwaterlevellow, terracewaterlevellow);
+				status.publish(publish);
+
 			}
 		}
 	}
+
 }
 
 void MQTT_connect()
