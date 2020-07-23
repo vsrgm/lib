@@ -35,7 +35,7 @@ Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO
 // Setup a feed called 'onoff' for subscribing to changes.
 Adafruit_MQTT_Subscribe plant = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME"/feeds/cmnplant"); // FeedName
 Adafruit_MQTT_Publish status = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/cmnplant");
-void MQTT_connect();
+unsigned char MQTT_connect();
 
 int bcnt = 0, tcnt = 0, btotal = 0, ttotal = 0;
 
@@ -50,10 +50,12 @@ enum eeromoffset
 
 enum feeds
 {
-	BPLANTS,
+	BPLANTS = 0,
 	TPLANTS,
 	RESETREPORT,
 	REPORT,
+  GETREPORT,
+  AUTOPUBLISH,
 };
 const char* ssid = WLAN_SSID;
 const char* password = WLAN_PASS;
@@ -184,7 +186,8 @@ void loop()
 	int count = 0;
 	ArduinoOTA.handle();
 	MQTT_connect();
-	int balwaterlevellow = 0, terracewaterlevellow = 0;
+  int balwaterlevellow = 0, terracewaterlevellow = 0;
+  static int oldbalwaterlevellow = 0, oldterracewaterlevellow = 0;
 	char publish[100];
 	int type, value1, value2, value3, value4;
 
@@ -204,14 +207,14 @@ void loop()
 			{
 				if (value1)// && !balwaterlevellow)
 				{
-					digitalWrite(RELAY1, !ENABLE_HIGH);
-					digitalWrite(RELAY2, !ENABLE_HIGH);
+					digitalWrite(RELAY3, !ENABLE_HIGH);
+					digitalWrite(RELAY4, !ENABLE_HIGH);
 
 					for(count = 0; count < value1; count++)
 						delay(1000);
 
-					digitalWrite(RELAY1, ENABLE_HIGH);
-					digitalWrite(RELAY2, ENABLE_HIGH);
+					digitalWrite(RELAY3, ENABLE_HIGH);
+					digitalWrite(RELAY4, ENABLE_HIGH);
 					bcnt++;
 
 					EEPROM.write(BCNT, bcnt);
@@ -225,24 +228,18 @@ void loop()
 					bcnt = 0;
 					EEPROM.write(BCNT, bcnt);
 				}
-				EEPROM.commit();	
-				memset(publish, 0, sizeof(publish));
-				sprintf(publish, "%d,%d,%d,%d,%d,%d,%d", REPORT, bcnt, btotal, tcnt,
-						ttotal, balwaterlevellow, terracewaterlevellow);
-				status.publish(publish);
-
 			}else if(type == TPLANTS)
 			{
-				if (value1 && terracewaterlevellow)
+				if (value1)// && terracewaterlevellow)
 				{
-					digitalWrite(RELAY3, !ENABLE_HIGH);
-					digitalWrite(RELAY4, !ENABLE_HIGH);
+					digitalWrite(RELAY1, !ENABLE_HIGH);
+					digitalWrite(RELAY2, !ENABLE_HIGH);
 
 					for(count = 0; count < value1; count++)
 						delay(1000);
 
-					digitalWrite(RELAY3, ENABLE_HIGH);
-					digitalWrite(RELAY4, ENABLE_HIGH);
+					digitalWrite(RELAY1, ENABLE_HIGH);
+					digitalWrite(RELAY2, ENABLE_HIGH);
 
 					tcnt++;
 					EEPROM.write(TCNT, tcnt);
@@ -256,13 +253,6 @@ void loop()
 					tcnt = 0;
 					EEPROM.write(TCNT, tcnt);
 				}
-				EEPROM.commit();	
-				memset(publish, 0, sizeof(publish));
-				sprintf(publish, "%d,%d,%d,%d,%d,%d,%d", REPORT, bcnt, btotal, tcnt,
-						ttotal, balwaterlevellow, terracewaterlevellow);
-				status.publish(publish);
-
-
 			}else if(type == RESETREPORT)
 			{
 				bcnt = value1;
@@ -270,26 +260,43 @@ void loop()
 				tcnt = value3;
 				ttotal = value4;
 				resetEEROM(value1, value2, value3, value4);
-				EEPROM.commit();	
-				memset(publish, 0, sizeof(publish));
-				sprintf(publish, "%d,%d,%d,%d,%d,%d,%d", REPORT, bcnt, btotal, tcnt,
-						ttotal, balwaterlevellow, terracewaterlevellow);
-				status.publish(publish);
-
 			}
-		}
-	}
 
+      if ((oldbalwaterlevellow != balwaterlevellow) ||
+         (terracewaterlevellow != oldterracewaterlevellow))
+      {
+        type = AUTOPUBLISH;
+        oldterracewaterlevellow = terracewaterlevellow;
+        oldbalwaterlevellow = balwaterlevellow;
+      }
+      
+      switch(type)
+      {
+        case RESETREPORT:
+        case TPLANTS:
+        case BPLANTS:
+                EEPROM.commit();  
+                //break;
+        case GETREPORT:
+        case AUTOPUBLISH:
+          memset(publish, 0, sizeof(publish));
+          sprintf(publish, "%d,%d,%d,%d,%d,%d,%d,%s,%s", REPORT, bcnt, btotal, tcnt,
+              ttotal, balwaterlevellow, terracewaterlevellow,__DATE__,__TIME__);
+          status.publish(publish);
+          break;
+      }
+		}                
+	}
 }
 
-void MQTT_connect()
+unsigned char MQTT_connect()
 {
 	int8_t ret;
 
 	// Stop if already connected.
 	if (mqtt.connected())
 	{
-		return;
+		return 1;
 	}
 
 	Serial.print("Connecting to MQTT... ");
@@ -305,9 +312,10 @@ void MQTT_connect()
 		retries--;
 		if (retries == 0)
 		{
-			// basically die and wait for WDT to reset me
-			while (1);
+			return 0;
 		}
 	}
 	Serial.println("MQTT Connected!");
+	return 1;
+
 }
