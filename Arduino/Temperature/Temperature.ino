@@ -1,43 +1,45 @@
 
-const int lm35_pin = A1;  /* LM35 O/P pin */
-#define ENABLE1 2
-#define ENABLE2 3
-#define ENABLE3 4
-#define SEG1 5
-#define SEG2 6
-#define SEG3 7
-#define SEG4 8
-#define SEG5 9
-#define SEG6 10
-#define SEG7 11
-#define SEG8 12
+const int lm35_pin = A0;  /* LM35 O/P pin */
+#define ENABLE1 10
+#define ENABLE2 11
+#define ENABLE3 12
+#define SEG1 2
+#define SEG2 3
+#define SEG3 4
+#define SEG4 5
+#define SEG5 6
+#define SEG6 7
+#define SEG7 8
+#define SEG8 9
 #define AVERAGEDELAYCOUNT 600
 struct 
 {
   bool seg[8];
 }val[] = 
 {
-  {LOW, LOW, LOW, LOW, LOW, HIGH, LOW, HIGH},     // 0
-  {HIGH, HIGH, LOW, HIGH, HIGH, HIGH, LOW, HIGH}, // 1
-  {HIGH, LOW, LOW, LOW, LOW, HIGH, HIGH, LOW},    // 2
-  {HIGH, LOW, LOW, HIGH, LOW, HIGH, LOW, LOW},    // 3
-  {LOW, HIGH, LOW, HIGH, HIGH, HIGH, LOW, LOW},   // 4
-  {LOW, LOW, HIGH, HIGH, LOW, HIGH, LOW, LOW},    // 5
-  {LOW, LOW, HIGH, LOW, LOW, HIGH, LOW, LOW},     // 6
-  {HIGH, LOW, LOW, HIGH, HIGH, HIGH, LOW, HIGH},  // 7
-  {LOW, LOW, LOW, LOW, LOW, HIGH, LOW, LOW},      // 8
-  {LOW, LOW, LOW, HIGH, LOW, HIGH, LOW, LOW},     // 9
-  {HIGH, HIGH, HIGH, HIGH, HIGH, LOW, HIGH, HIGH},// .
-  {LOW, LOW, LOW, LOW, LOW, LOW, LOW, HIGH},     // 0
-  {HIGH, HIGH, LOW, HIGH, HIGH, LOW, LOW, HIGH}, // 1
-  {HIGH, LOW, LOW, LOW, LOW, LOW, HIGH, LOW},    // 2
-  {HIGH, LOW, LOW, HIGH, LOW, LOW, LOW, LOW},    // 3
-  {LOW, HIGH, LOW, HIGH, HIGH, LOW, LOW, LOW},   // 4
-  {LOW, LOW, HIGH, HIGH, LOW, LOW, LOW, LOW},    // 5
-  {LOW, LOW, HIGH, LOW, LOW, LOW, LOW, LOW},     // 6
-  {HIGH, LOW, LOW, HIGH, HIGH, LOW, LOW, HIGH},  // 7
+  {LOW, LOW, LOW, LOW, LOW, LOW, HIGH, HIGH},     // 0
+  {HIGH, LOW, LOW, HIGH, HIGH, HIGH, HIGH, HIGH}, // 1
+  {LOW, LOW, HIGH, LOW, LOW, HIGH, LOW, HIGH},    // 2
+  {LOW, LOW, LOW, LOW, HIGH, HIGH, LOW, HIGH},    // 3
+  {HIGH, LOW, LOW, HIGH, HIGH, LOW, LOW, HIGH},   // 4
+  {LOW, HIGH, LOW, LOW, HIGH, LOW, LOW, HIGH},    // 5
+  {LOW, HIGH, LOW, LOW, LOW, LOW, LOW, HIGH},     // 6
+  {LOW, LOW, LOW, HIGH, HIGH, HIGH, HIGH, HIGH},  // 7
+  {LOW, LOW, LOW, LOW, LOW, LOW, LOW, HIGH},      // 8
+  {LOW, LOW, LOW, LOW, HIGH, LOW, LOW, HIGH},     // 9
+  {HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, HIGH, LOW},// .
+  {LOW, LOW, LOW, LOW, LOW, LOW, HIGH, LOW},     // 0
+  {HIGH, LOW, LOW, HIGH, HIGH, HIGH, HIGH, LOW}, // 1
+  {LOW, LOW, HIGH, LOW, LOW, HIGH, LOW, LOW},    // 2
+  {LOW, LOW, LOW, LOW, HIGH, HIGH, LOW, LOW},    // 3
+  {HIGH, LOW, LOW, HIGH, HIGH, LOW, LOW, LOW},   // 4
+  {LOW, HIGH, LOW, LOW, HIGH, LOW, LOW, LOW},    // 5
+  {LOW, HIGH, LOW, LOW, LOW, LOW, LOW, LOW},     // 6
+  {LOW, LOW, LOW, HIGH, HIGH, HIGH, HIGH, LOW},  // 7
   {LOW, LOW, LOW, LOW, LOW, LOW, LOW, LOW},      // 8
-  {LOW, LOW, LOW, HIGH, LOW, LOW, LOW, LOW},     // 9
+  {LOW, LOW, LOW, LOW, HIGH, LOW, LOW, LOW},     // 9
+  {LOW, LOW, LOW, HIGH, HIGH, HIGH, HIGH, LOW},     // Test
+// Top2, Rup3, Rdown4, down5, Ldown6, Lup7, Middle8, DOT9
 };
 
 void setup()
@@ -46,7 +48,7 @@ void setup()
   pinMode(ENABLE1, OUTPUT);
   pinMode(ENABLE2, OUTPUT);
   pinMode(ENABLE3, OUTPUT);
-  
+
   pinMode(SEG1, OUTPUT);
   pinMode(SEG2, OUTPUT);
   pinMode(SEG3, OUTPUT);
@@ -81,7 +83,7 @@ long readVcc()
   result = 1125300L / result; // Calculate Vcc (in mV); 1125300 = 1.1*1023*1000
   return result; // Vcc in millivolts
 }
-
+#define TEST 3
 void loop()
 {
   unsigned char ch;
@@ -128,25 +130,27 @@ void loop()
   for (int i=0; i < 8; i++)
   {
     digitalWrite(SEG1+i, val[a].seg[i]);
+    //digitalWrite(SEG1+i, val[TEST].seg[i]);
   }
-
   delay(5);
   b = (led_write - (a*100))/10;
   
+  digitalWrite(ENABLE1, LOW);
+  digitalWrite(ENABLE2, HIGH);
+  digitalWrite(ENABLE3, LOW);
+  for (int i=0; i < 8; i++)
+  {
+    digitalWrite(SEG1+i, val[11+b].seg[i]);
+    //digitalWrite(SEG1+i, val[TEST].seg[i]);
+  }
+  delay(5);
+  c = (led_write - (a*100) - (b*10));
   digitalWrite(ENABLE1, LOW);
   digitalWrite(ENABLE2, LOW);
   digitalWrite(ENABLE3, HIGH);
   for (int i=0; i < 8; i++)
   {
-    digitalWrite(SEG1+i, val[11+b].seg[i]);
-  }
-  delay(5);
-  c = (led_write - (a*100) - (b*10));
-  digitalWrite(ENABLE1, LOW);
-  digitalWrite(ENABLE3, LOW);
-  digitalWrite(ENABLE2, HIGH);
-  for (int i=0; i < 8; i++)
-  {
     digitalWrite(SEG1+i, val[c].seg[i]);
+    //digitalWrite(SEG1+i, val[TEST].seg[i]);
   }
 }
