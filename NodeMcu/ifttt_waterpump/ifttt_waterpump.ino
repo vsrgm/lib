@@ -14,8 +14,8 @@
 #define RELAY2		      D2
 #define RELAY3		      D3
 #define RELAY4		      D4
-#define WATERLEVELTERRACE     D5
-#define WATERLEVELBALCONY     D6
+#define WATERLEVELTERRACE     D6
+#define WATERLEVELBALCONY     D7
 // define the number of bytes you want to access
 #define EEPROM_SIZE 256
 
@@ -61,7 +61,7 @@ const char* password = WLAN_PASS;
 
 void setup()
 {
-  int Magic;
+  int Magic, retry_count = 5;
   pinMode(RELAY1, OUTPUT);
   digitalWrite(RELAY1, ENABLE_HIGH);
   pinMode(RELAY2, OUTPUT);
@@ -136,7 +136,15 @@ void setup()
 
   // initialize EEPROM with predefined size
   EEPROM.begin(EEPROM_SIZE);
-  Magic = EEPROM.read(MAGIC);
+  while (retry_count)
+  {
+    Magic = EEPROM.read(MAGIC);
+    if (Magic == 0xAB)
+      break;
+    retry_count--;
+    delay(1000);
+  }
+
   if (Magic == 0xAB)
   {
     bcnt = EEPROM.read(BCNT);
@@ -194,15 +202,20 @@ unsigned int getwaterlevel(unsigned int pin)
 
 void loop()
 {
-  int count = 0;
-  ArduinoOTA.handle();
-  MQTT_connect();
+  int count = 0, ret;
   int balwaterlevellow = 0, terracewaterlevellow = 0;
-
+  char instring[100];
   char publish[100];
   int type, value1, value2, value3, value4;
 
   Adafruit_MQTT_Subscribe *subscription;
+
+  ArduinoOTA.handle();
+  ret = MQTT_connect();
+  if (ret == 0)
+  {
+    ESP.restart();
+  }
 
   while ((subscription = mqtt.readSubscription(5000)))
   {
@@ -216,7 +229,7 @@ void loop()
 
       if (type == BPLANTS)
       {
-        if (value1 && (balwaterlevellow > 50))
+        if (value1)// && (balwaterlevellow < 50))
         {
           digitalWrite(RELAY3, !ENABLE_HIGH);
           digitalWrite(RELAY4, !ENABLE_HIGH);
@@ -241,7 +254,7 @@ void loop()
         }
       } else if (type == TPLANTS)
       {
-        if (value1 && (terracewaterlevellow > 50))
+        if (value1 && (terracewaterlevellow < 50))
         {
           digitalWrite(RELAY1, !ENABLE_HIGH);
           digitalWrite(RELAY2, !ENABLE_HIGH);
@@ -289,7 +302,7 @@ void loop()
           ttotal = EEPROM.read(TTOTAL);
           memset(publish, 0, sizeof(publish));
           sprintf(publish, "%d,%d,%d,%d,%d,%d,%d,V=%s-%s,%d,%d", type, bcnt, btotal, tcnt,
-                  ttotal, (balwaterlevellow > 50), (terracewaterlevellow > 50),
+                  ttotal, (balwaterlevellow < 50), (terracewaterlevellow < 50),
                   __DATE__, __TIME__, balwaterlevellow, terracewaterlevellow);
           status.publish(publish);
           break;
