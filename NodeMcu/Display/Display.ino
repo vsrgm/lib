@@ -5,10 +5,14 @@
 #include <ArduinoOTA.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
+#include <ESP8266Ping.h>
+
 #include "DHT.h"
-#include "key.h"
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_Client.h"
+
+#include "inc/key.h"
+#include "inc/plants.h"
 /************ Global State (you don't need to change this!) ******************/
 
 // Create an ESP8266 WiFiClient class to connect to the MQTT server.
@@ -30,8 +34,8 @@ Adafruit_MQTT_Publish status = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 DHT dht;
 
-const char* ssid = STASSID;
-const char* password = STAPSK;
+const char* ssid = WLAN_SSID;
+const char* password = WLAN_PASS;
 
 void setup()
 {
@@ -108,91 +112,72 @@ void setup()
 }
 
 
-void loop() {
-  int oldhumidity, oldtemperature;
+void loop()
+{
+  int ret, type, value1, value2, value3, value4, levelb, levelt;
+  char publish[100];
+  char instring[100];
 
-  while (1)
+  Adafruit_MQTT_Subscribe *subscription;
+
+  ArduinoOTA.handle();
+  ret = MQTT_connect();
+  if ((ret == 0) || !(Ping.ping("www.google.com")))
   {
-    enum feeds
+    ESP.restart();
+  }
+
+  delay(dht.getMinimumSamplingPeriod()); /* Delay of amount equal to sampling period */
+  int humidity = dht.getHumidity();/* Get humidity value */
+  int temperature = dht.getTemperature();/* Get temperature value */
+
+  if (!strncmp(dht.getStatusString(), "OK", 2))
+  {
+    lcd.setCursor(0, 0); // Cursor0 , Linea0
+    lcd.print("H:");
+    lcd.print(humidity);
+    lcd.print("% ");
+
+    //lcd.setCursor(0, 1); // Cursor0 , Linea0
+    lcd.print("T:");
+    lcd.print(temperature);
+    lcd.print("C");
+  }
+
+  while ((subscription = mqtt.readSubscription(5000)))
+  {
+    if (subscription == &plant)
     {
-      BPLANTS = 0,
-      TPLANTS,
-      RESETREPORT,
-      REPORT,
-      GETREPORT,
-      AUTOUPDATETEMPHUMID
-    };
-
-    int ret, type, value1, value2, value3, value4, levelb, levelt;
-    char publish[100];
-    char instring[100];
-
-    Adafruit_MQTT_Subscribe *subscription;
-
-    ArduinoOTA.handle();
-    ret = MQTT_connect();
-    if (ret == 0)
-    {
-      ESP.restart();
-    }
-
-    delay(dht.getMinimumSamplingPeriod()); /* Delay of amount equal to sampling period */
-    int humidity = dht.getHumidity();/* Get humidity value */
-    int temperature = dht.getTemperature();/* Get temperature value */
-
-    if (!strncmp(dht.getStatusString(), "OK", 2))
-    {
-      if ((oldhumidity != humidity) || (oldtemperature != temperature))
+      char printformat[17];
+      sscanf((char *)plant.lastread, "%d,%d,%d,%d,%d,%d,%d",
+             &type, &value1, &value2, &value3, &value4,
+             &levelb, &levelt);
+      if (type == REPORT)
       {
+        lcd.setCursor(12, 0);
+        lcd.print("B");
+        lcd.print(levelb);
+        lcd.print("T");
+        lcd.print(levelt);
+
+        lcd.setCursor(0, 1);
+        lcd.print("B");
+        sprintf(printformat, "%02d", value1);
+        lcd.print(printformat);
+        lcd.print("/");
+        sprintf(printformat, "%02d", value2);
+        lcd.print(printformat);
+        lcd.print(" ");
+        lcd.print("T");
+        sprintf(printformat, "%02d", value3);
+        lcd.print(printformat);
+        lcd.print("/");
+        sprintf(printformat, "%02d   ", value4);
+        lcd.print(printformat);
+
         memset(publish, 0, sizeof(publish));
         sprintf(publish, "%d,H=%d%,T=%dC", AUTOUPDATETEMPHUMID, humidity, temperature);
         status.publish(publish);
-        oldhumidity = humidity;
-        oldtemperature = temperature;
-      }
-
-      lcd.setCursor(0, 0); // Cursor0 , Linea0
-      lcd.print("H:");
-      lcd.print(humidity);
-      lcd.print("% ");
-
-      //lcd.setCursor(0, 1); // Cursor0 , Linea0
-      lcd.print("T:");
-      lcd.print(temperature);
-      lcd.print("C");
-    }
-
-    while ((subscription = mqtt.readSubscription(5000)))
-    {
-      if (subscription == &plant)
-      {
-        char printformat[17];
-        sscanf((char *)plant.lastread, "%d,%d,%d,%d,%d,%d,%d",
-               &type, &value1, &value2, &value3, &value4,
-               &levelb, &levelt);
-        if (type == REPORT)
-        {
-          lcd.setCursor(12, 0);
-          lcd.print("B");
-          lcd.print(levelb);
-          lcd.print("T");
-          lcd.print(levelt);
-
-          lcd.setCursor(0, 1);
-          lcd.print("B");
-          sprintf(printformat, "%02d", value1);
-          lcd.print(printformat);
-          lcd.print("/");
-          sprintf(printformat, "%02d", value2);
-          lcd.print(printformat);
-          lcd.print(" ");
-          lcd.print("T");
-          sprintf(printformat, "%02d", value3);
-          lcd.print(printformat);
-          lcd.print("/");
-          sprintf(printformat, "%02d   ", value4);
-          lcd.print(printformat);
-        }
       }
     }
   }

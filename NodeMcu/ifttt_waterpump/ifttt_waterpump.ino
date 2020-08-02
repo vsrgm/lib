@@ -6,9 +6,12 @@
 #include <Wire.h>
 #include <EEPROM.h>
 #include <ESP8266WiFi.h>
+#include <ESP8266Ping.h>
+
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_Client.h"
-#include "key.h"
+#include "inc/key.h"
+#include "inc/plants.h"
 
 #define RELAY1		      D1
 #define RELAY2		      D2
@@ -17,7 +20,7 @@
 #define WATERLEVELTERRACE     D6
 #define WATERLEVELBALCONY     D7
 // define the number of bytes you want to access
-#define EEPROM_SIZE 256
+#define EEPROM_SIZE 512
 
 /************ Global State (you don't need to change this!) ******************/
 
@@ -39,29 +42,12 @@ unsigned char MQTT_connect();
 
 int bcnt = 0, tcnt = 0, btotal = 0, ttotal = 0;
 
-enum eeromoffset
-{
-  MAGIC = 1,
-  BCNT,
-  BTOTAL,
-  TCNT,
-  TTOTAL,
-};
-
-enum feeds
-{
-  BPLANTS = 0,
-  TPLANTS,
-  RESETREPORT,
-  REPORT,
-  GETREPORT,
-};
 const char* ssid = WLAN_SSID;
 const char* password = WLAN_PASS;
 
 void setup()
 {
-  int Magic, retry_count = 5;
+  int Magic, retry_count = 10;
   pinMode(RELAY1, OUTPUT);
   digitalWrite(RELAY1, ENABLE_HIGH);
   pinMode(RELAY2, OUTPUT);
@@ -212,7 +198,7 @@ void loop()
 
   ArduinoOTA.handle();
   ret = MQTT_connect();
-  if (ret == 0)
+  if ((ret == 0) || !(Ping.ping("www.google.com")))
   {
     ESP.restart();
   }
@@ -283,7 +269,11 @@ void loop()
         btotal = value2;
         tcnt = value3;
         ttotal = value4;
-        resetEEROM(value1, value2, value3, value4);
+        resetEEROM(bcnt, btotal, tcnt, ttotal);
+      } else if (type == RESETDATA)
+      {
+        bcnt = tcnt = 0;
+        resetEEROM(bcnt, btotal, tcnt, ttotal);
       }
 
       switch (type)
@@ -291,6 +281,7 @@ void loop()
         case RESETREPORT:
         case TPLANTS:
         case BPLANTS:
+        case RESETDATA:
           EEPROM.commit();
         //break;
 
