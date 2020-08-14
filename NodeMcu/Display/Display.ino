@@ -102,9 +102,6 @@ void setup()
   // initialize the LCD
   lcd.begin();
 
-  // Turn on the blacklight and print a message.
-  lcd.backlight();
-
   dht.setup(D3);   /* D1 is used for data communication */
   lcd.clear();
   mqtt.subscribe(&plant);
@@ -125,6 +122,12 @@ void loop()
   if ((ret == 0) || !(Ping.ping("www.google.com")))
   {
     ESP.restart();
+    lcd.noBacklight();
+
+  } else
+  {
+    // Turn on the blacklight and print a message.
+    lcd.backlight();
   }
 
   delay(dht.getMinimumSamplingPeriod()); /* Delay of amount equal to sampling period */

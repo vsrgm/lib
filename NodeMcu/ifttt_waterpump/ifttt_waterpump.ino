@@ -217,6 +217,8 @@ void loop()
       {
         if (value1)// && (balwaterlevellow < 50))
         {
+          delay(1000);
+
           digitalWrite(RELAY3, !ENABLE_HIGH);
           digitalWrite(RELAY4, !ENABLE_HIGH);
 
@@ -233,6 +235,8 @@ void loop()
             btotal = bcnt;
             EEPROM.write(BTOTAL, btotal);
           }
+          delay(1000);
+
         } else
         {
           bcnt = 0;
@@ -242,6 +246,8 @@ void loop()
       {
         if (value1 && (terracewaterlevellow < 50))
         {
+          delay(1000);
+
           digitalWrite(RELAY1, !ENABLE_HIGH);
           digitalWrite(RELAY2, !ENABLE_HIGH);
 
@@ -258,6 +264,8 @@ void loop()
             ttotal = tcnt;
             EEPROM.write(TTOTAL, ttotal);
           }
+          delay(1000);
+
         } else
         {
           tcnt = 0;
