@@ -40,7 +40,7 @@ Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO
 // Setup a feed called 'onoff' for subscribing to changes.
 Adafruit_MQTT_Subscribe plant = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME"/feeds/cmnplant"); // FeedName
 Adafruit_MQTT_Subscribe mqttir = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME"/feeds/irdisp"); // FeedName
-Adafruit_MQTT_Publish status = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/irdisp");
+Adafruit_MQTT_Publish pstatus = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/cmnplant");
 
 // Set the LCD address to 0x27/0x3f for a 16 chars and 2 line display
 LiquidCrystal_I2C lcd(0x3f, 16, 2);
@@ -56,6 +56,10 @@ void setup()
   irrecv.enableIRIn();  // Start the receiver
   //pinMode(sensorPin, INPUT);
 
+  // initialize the LCD
+  lcd.begin();
+  lcd.clear();
+  lcd.noBacklight();
 
   Serial.begin(115200);
   Serial.println("Booting");
@@ -117,11 +121,6 @@ void setup()
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
 
-  // initialize the LCD
-  lcd.begin();
-  lcd.clear();
-  lcd.noBacklight();
-
   dht.setup(D3);   /* D1 is used for data communication */
   mqtt.subscribe(&mqttir);
   mqtt.subscribe(&plant);
@@ -132,8 +131,7 @@ void loop()
 #define MAX_COUNT 100
   float avgTemp = 0, count = 0, avgV = 0, LcdTemp = 0;
 
-  int ret, type, value1, value2, value3, value4, levelb, levelt, mqttcmd = 0;
-  char publish[100];
+  int ret, type, value1 = 0, value2 = 0, value3 = 0, value4 = 0, levelb = 0, levelt = 0, mqttcmd = 0;
   char instring[100];
   unsigned long irhash = 0, ircode, switchcmd, lcdon = 0, checknetconnectivity = MAX_COUNT, netconnectivity = 0;
 
@@ -168,9 +166,64 @@ void loop()
     }
 
     switchcmd = mqttcmd ? mqttcmd : irhash;
+    enum
+    {
+      ACOFF = 1,
+      ACON,
+      AC26C,
+      FANOFF,
+      FANON,
+      FANSPEED1,
+      FANSPEED2,
+      FANSPEED3,
+      FANSPEED4,
+      FANSPEED5,
+      TATASKYBTN0 = 0x160AB9DD,
+      TATASKYBTN1 = 0x1FB45C14,
+      TATASKYBTN2 = 0x7AD7A7D9,
+      TATASKYBTN3 = 0x77D7A320,
+      TATASKYBTN4 = 0x1FF256EE,
+      TATASKYBTN5 = 0xDFF8AB96,
+      TATASKYBTN6 = 0x5CD90715,
+      TATASKYBTN7 = 0x5FD90BCC,
+      TATASKYBTN8 = 0x54BEF27E,
+      TATASKYBTN9 = 0x5D69140F,
+    };
+
     switch (switchcmd)
     {
-      case 0x01: //AC OFF
+      case ACOFF:
+      case ACON:
+      case AC26C:
+      case FANOFF:
+      case FANON:
+      case FANSPEED1:
+      case FANSPEED2:
+      case FANSPEED3:
+      case FANSPEED4:
+      case FANSPEED5:
+      case TATASKYBTN0:
+      case TATASKYBTN1:
+      case TATASKYBTN2:
+      case TATASKYBTN3:
+      case TATASKYBTN4:
+      case TATASKYBTN5:
+      case TATASKYBTN6:
+      case TATASKYBTN7:
+      case TATASKYBTN8:
+      case TATASKYBTN9:
+        {
+          lcd.clear();
+          lcd.setCursor(0, 0); // Cursor0 , Linea0
+          lcdon = 100;
+        }
+
+        break;
+    }
+
+    switch (switchcmd)
+    {
+      case ACOFF:
         {
           // Hash:
           // 3790E56F
@@ -179,11 +232,11 @@ void loop()
           // For Arduino sketch:
           uint16_t raw[228] = {3274, 1406, 466, 1134, 468, 1132, 466, 434, 466, 438, 468, 434, 472, 1130, 472, 430, 474, 430, 472, 1132, 496, 1106, 498, 406, 472, 1132, 472, 432, 496, 434, 500, 1082, 472, 1132, 474, 432, 496, 1106, 466, 1136, 468, 432, 442, 456, 464, 1134, 444, 456, 464, 434, 464, 1132, 466, 434, 462, 434, 464, 434, 468, 434, 520, 382, 474, 432, 472, 430, 442, 456, 464, 436, 442, 456, 464, 434, 464, 434, 466, 434, 442, 454, 466, 432, 498, 1104, 466, 1132, 466, 434, 464, 434, 466, 434, 466, 1134, 464, 434, 464, 434, 470, 1130, 464, 1134, 464, 434, 464, 434, 442, 454, 464, 436, 466, 432, 464, 434, 442, 1154, 442, 1154, 442, 1156, 462, 1134, 442, 454, 442, 456, 442, 454, 444, 454, 442, 456, 442, 456, 464, 436, 442, 1154, 442, 1154, 442, 1156, 468, 430, 442, 452, 442, 458, 464, 432, 476, 430, 442, 454, 442, 456, 462, 434, 442, 454, 442, 454, 442, 454, 442, 456, 442, 454, 442, 456, 442, 454, 442, 456, 468, 432, 442, 454, 442, 454, 442, 454, 442, 456, 442, 454, 464, 434, 494, 408, 464, 434, 442, 454, 442, 454, 442, 454, 442, 456, 442, 454, 442, 1154, 442, 454, 442, 456, 468, 432, 442, 454, 442, 1154, 464, 434, 442, 456, 464, 1132, 494, 406, 442, 454, 444, 1154, 442,};
           irsend.sendRaw(raw, 228, 38);
-
+          lcd.print("AC OFF");
         }
         break;
 
-      case 0x02: //AC ON
+      case ACON:
         {
           // Hash:
           // 9ADEA691
@@ -192,18 +245,23 @@ void loop()
           // For Arduino sketch:
           uint16_t raw[228] = {3302, 1382, 472, 1130, 472, 1130, 472, 434, 494, 408, 470, 432, 472, 1130, 474, 428, 474, 430, 472, 1130, 474, 1130, 472, 430, 472, 1130, 472, 432, 474, 432, 470, 1132, 472, 1132, 474, 430, 472, 1132, 496, 1110, 474, 432, 472, 432, 472, 1130, 468, 432, 466, 432, 474, 1134, 464, 434, 444, 454, 466, 434, 442, 454, 464, 434, 466, 436, 468, 460, 446, 438, 464, 436, 462, 436, 470, 430, 442, 456, 442, 454, 444, 452, 466, 434, 444, 1154, 468, 1132, 444, 1154, 444, 454, 442, 456, 442, 1158, 442, 454, 466, 434, 442, 1154, 444, 1154, 444, 456, 442, 458, 472, 430, 442, 454, 444, 454, 444, 456, 444, 454, 464, 1134, 442, 1154, 444, 452, 444, 454, 444, 456, 442, 456, 442, 454, 444, 1152, 444, 454, 444, 1156, 442, 1156, 442, 1154, 444, 1158, 442, 456, 442, 454, 442, 456, 442, 454, 444, 452, 444, 456, 468, 432, 444, 454, 444, 454, 442, 456, 444, 454, 442, 454, 442, 456, 442, 456, 442, 454, 442, 456, 442, 454, 466, 432, 444, 454, 442, 454, 444, 454, 464, 434, 442, 456, 442, 454, 442, 454, 474, 430, 442, 456, 442, 456, 466, 432, 444, 456, 442, 1154, 442, 454, 442, 454, 444, 454, 442, 456, 442, 1154, 442, 456, 444, 454, 442, 1154, 442, 454, 442, 456, 466, 1134, 442,};
           irsend.sendRaw(raw, 228, 38);
-
+          lcd.print("AC ON");
         }
         break;
 
-      case 0x03: //AC Set Temperature to 26
+      case AC26C: //AC Set Temperature to 26
         {
-
+          // 40DE90EB
+          // For IR Scope/IrScrutinizer:
+          // +3358 -1328 +526 -1078 +524 -1078 +526 -380 +524 -378 +526 -378 +526 -1078 +522 -380 +496 -406 +524 -1080 +524 -1078 +524 -378 +526 -1078 +466 -430 +470 -430 +468 -1128 +468 -1130 +468 -430 +468 -1130 +468 -1130 +470 -428 +468 -430 +468 -1154 +502 -384 +468 -430 +468 -1130 +468 -430 +468 -430 +494 -430 +502 -380 +494 -404 +468 -428 +470 -428 +468 -430 +470 -430 +522 -376 +468 -428 +468 -430 +466 -430 +468 -430 +468 -430 +468 -1130 +468 -1128 +470 -1128 +468 -428 +470 -428 +470 -1130 +468 -430 +522 -378 +468 -1130 +468 -1128 +468 -428 +468 -428 +468 -426 +468 -430 +466 -428 +468 -432 +526 -1076 +468 -430 +468 -1128 +470 -428 +466 -428 +468 -428 +468 -428 +468 -428 +468 -1128 +470 -430 +524 -1076 +468 -1128 +468 -1128 +468 -1128 +468 -428 +468 -428 +468 -430 +494 -406 +522 -378 +494 -408 +468 -428 +468 -428 +468 -430 +468 -430 +468 -430 +468 -428 +468 -430 +468 -428 +468 -428 +468 -428 +468 -428 +468 -428 +468 -432 +526 -374 +468 -430 +468 -428 +468 -430 +468 -428 +468 -430 +468 -430 +468 -428 +468 -428 +468 -428 +466 -428 +468 -1132 +468 -428 +468 -428 +468 -428 +468 -1128 +468 -430 +468 -428 +468 -428 +468 -1128 +466 -430 +468 -428 +468 -1132 +524 -127976
+          // For Arduino sketch:
+          uint16_t raw[228] = {3358, 1328, 526, 1078, 524, 1078, 526, 380, 524, 378, 526, 378, 526, 1078, 522, 380, 496, 406, 524, 1080, 524, 1078, 524, 378, 526, 1078, 466, 430, 470, 430, 468, 1128, 468, 1130, 468, 430, 468, 1130, 468, 1130, 470, 428, 468, 430, 468, 1154, 502, 384, 468, 430, 468, 1130, 468, 430, 468, 430, 494, 430, 502, 380, 494, 404, 468, 428, 470, 428, 468, 430, 470, 430, 522, 376, 468, 428, 468, 430, 466, 430, 468, 430, 468, 430, 468, 1130, 468, 1128, 470, 1128, 468, 428, 470, 428, 470, 1130, 468, 430, 522, 378, 468, 1130, 468, 1128, 468, 428, 468, 428, 468, 426, 468, 430, 466, 428, 468, 432, 526, 1076, 468, 430, 468, 1128, 470, 428, 466, 428, 468, 428, 468, 428, 468, 428, 468, 1128, 470, 430, 524, 1076, 468, 1128, 468, 1128, 468, 1128, 468, 428, 468, 428, 468, 430, 494, 406, 522, 378, 494, 408, 468, 428, 468, 428, 468, 430, 468, 430, 468, 430, 468, 428, 468, 430, 468, 428, 468, 428, 468, 428, 468, 428, 468, 428, 468, 432, 526, 374, 468, 430, 468, 428, 468, 430, 468, 428, 468, 430, 468, 430, 468, 428, 468, 428, 468, 428, 466, 428, 468, 1132, 468, 428, 468, 428, 468, 428, 468, 1128, 468, 430, 468, 428, 468, 428, 468, 1128, 466, 430, 468, 428, 468, 1132, 524,};
+          irsend.sendRaw(raw, 228, 38);
+          lcd.print("AC26C");
         }
         break;
 
-      case 0x04: //FAN ON
-      case 0xD7CB28C0:
+      case FANON:
         {
           //D7CB28C0
           //For IR Scope/IrScrutinizer:
@@ -211,23 +269,141 @@ void loop()
           //For Arduino sketch:
           uint16_t raw[20] = {868, 824, 1740, 1638, 866, 822, 1738, 824, 866, 1642, 1738, 820, 868, 1640, 866, 824, 1738, 822, 868,};
           irsend.sendRaw(raw, 20, 38);
-
-          Serial.println("FAN ON");
-
+          lcd.print("FAN ON");
         }
         break;
 
-      case 0x05: // FAN OFF
-      case 0xD546E1D2:
+      case FANOFF:
         {
-          //D546E1D2
-          //For IR Scope/IrScrutinizer:
-          //+868 -824 +866 -824 +864 -824 +866 -824 +1736 -824 +866 -1644 +1734 -824 +866 -1642 +866 -824 +1736 -824 +864 -127976
-          //For Arduino sketch:
+          // D546E1D2
+          // For IR Scope/IrScrutinizer:
+          // +868 -824 +866 -824 +864 -824 +866 -824 +1736 -824 +866 -1644 +1734 -824 +866 -1642 +866 -824 +1736 -824 +864 -127976
+          // For Arduino sketch:
           uint16_t raw[22] = {868, 824, 866, 824, 864, 824, 866, 824, 1736, 824, 866, 1644, 1734, 824, 866, 1642, 866, 824, 1736, 824, 864,};
           irsend.sendRaw(raw, 22, 38);
+          lcd.print("FAN OFF");
+        }
+        break;
 
-          Serial.println("FAN OFF");
+      case FANSPEED1:
+        {
+          // 357004C2
+          // For IR Scope/IrScrutinizer:
+          // +862 -828 +1708 -1672 +836 -852 +1736 -826 +864 -1644 +836 -854 +1706 -852 +836 -854 +862 -1644 +1736 -127976
+          // For Arduino sketch:
+          uint16_t raw[20] = {862, 828, 1708, 1672, 836, 852, 1736, 826, 864, 1644, 836, 854, 1706, 852, 836, 854, 862, 1644, 1736,};
+          irsend.sendRaw(raw, 20, 38);
+          lcd.print("FANSPEED1");
+        }
+        break;
+
+      case FANSPEED2:
+        {
+          // C5D70323
+          // For IR Scope/IrScrutinizer:
+          // +868 -822 +868 -822 +866 -822 +868 -822 +1738 -822 +866 -1642 +868 -820 +1740 -820 +868 -1640 +868 -822 +1740 -127976
+          // For Arduino sketch:
+          uint16_t raw[22] = {868, 822, 868, 822, 866, 822, 868, 822, 1738, 822, 866, 1642, 868, 820, 1740, 820, 868, 1640, 868, 822, 1740,};
+          irsend.sendRaw(raw, 22, 38);
+          lcd.print("FANSPEED2");
+        }
+        break;
+
+      case FANSPEED3:
+        {
+          // 67C3BCA9
+          // For IR Scope/IrScrutinizer:
+          // +810 -880 +1680 -1698 +810 -880 +1682 -878 +808 -1698 +1680 -880 +810 -1698 +810 -880 +806 -882 +1680 -127976
+          // For Arduino sketch:
+          uint16_t raw[20] = {810, 880, 1680, 1698, 810, 880, 1682, 878, 808, 1698, 1680, 880, 810, 1698, 810, 880, 806, 882, 1680,};
+          irsend.sendRaw(raw, 20, 38);
+          lcd.print("FANSPEED3");
+        }
+        break;
+      case FANSPEED4:
+        {
+          // DA4BDFF2
+          // For IR Scope/IrScrutinizer:
+          // +868 -824 +864 -824 +866 -822 +866 -824 +1736 -822 +868 -1640 +1736 -824 +866 -1642 +866 -822 +866 -824 +866 -822 +866 -127976
+          // For Arduino sketch:
+          uint16_t raw[24] = {868, 824, 864, 824, 866, 822, 866, 824, 1736, 822, 868, 1640, 1736, 824, 866, 1642, 866, 822, 866, 824, 866, 822, 866,};
+          irsend.sendRaw(raw, 24, 38);
+          lcd.print("FANSPEED4");
+        }
+        break;
+      case FANSPEED5:
+        {
+          // B849D726
+          // For IR Scope/IrScrutinizer:
+          // +866 -824 +866 -824 +866 -822 +866 -822 +1738 -824 +864 -1642 +868 -822 +866 -820 +868 -822 +1738 -1640 +868 -822 +866 -127976
+          // For Arduino sketch:
+          uint16_t raw[24] = {866, 824, 866, 824, 866, 822, 866, 822, 1738, 824, 864, 1642, 868, 822, 866, 820, 868, 822, 1738, 1640, 868, 822, 866,};
+          irsend.sendRaw(raw, 24, 38);
+          lcd.print("FANSPEED5");
+        }
+        break;
+
+      case TATASKYBTN0:
+        {
+          memset(instring, 0x00, sizeof(instring));
+          sprintf(instring, "4");
+          pstatus.publish(instring);
+          tempwaterstatus(LcdTemp, levelb, levelt,
+                          value1, value2, value3, value4);
+        }
+        break;
+        
+      case TATASKYBTN1:
+        {
+          lcd.print("TATASKYBTN1");
+        }
+        break;
+        
+      case TATASKYBTN2:
+        {
+          lcd.print("TATASKYBTN2");
+        }
+        break;
+        
+      case TATASKYBTN3:
+        {
+          lcd.print("TATASKYBTN3");
+        }
+        break;
+        
+      case TATASKYBTN4:
+        {
+          lcd.print("TATASKYBTN4");
+        }
+        break;
+        
+      case TATASKYBTN5:
+        {
+          lcd.print("TATASKYBTN5");
+        }
+        break;
+        
+      case TATASKYBTN6:
+        {
+          lcd.print("TATASKYBTN6");
+        }
+        break;
+        
+      case TATASKYBTN7:
+        {
+          lcd.print("TATASKYBTN7");
+        }
+        break;
+        
+      case TATASKYBTN8:
+        {
+          lcd.print("TATASKYBTN8");
+        }
+        break;
+        
+      case TATASKYBTN9:
+        {
+          lcd.print("TATASKYBTN9");
         }
         break;
 
@@ -288,41 +464,17 @@ void loop()
       count = avgTemp = avgV = 0;
     }
 #endif
-    while ((subscription = mqtt.readSubscription(100)))
+    if ((subscription = mqtt.readSubscription(100)))
     {
       if (subscription == &plant)
       {
-        char printformat[17];
         sscanf((char *)plant.lastread, "%d,%d,%d,%d,%d,%d,%d",
                &type, &value1, &value2, &value3, &value4,
                &levelb, &levelt);
         if (type == REPORT)
         {
-          lcd.clear();
-          lcd.setCursor(0, 0);
-          lcd.print("T:");
-          lcd.print(LcdTemp);
-          lcd.print("C");
-          lcd.setCursor(12, 0);
-          lcd.print("B");
-          lcd.print(levelb);
-          lcd.print("T");
-          lcd.print(levelt);
-
-          lcd.setCursor(0, 1);
-          lcd.print("B");
-          sprintf(printformat, "%02d", value1);
-          lcd.print(printformat);
-          lcd.print("/");
-          sprintf(printformat, "%02d", value2);
-          lcd.print(printformat);
-          lcd.print(" ");
-          lcd.print("T");
-          sprintf(printformat, "%02d", value3);
-          lcd.print(printformat);
-          lcd.print("/");
-          sprintf(printformat, "%02d   ", value4);
-          lcd.print(printformat);
+          tempwaterstatus(LcdTemp, levelb, levelt,
+                          value1, value2, value3, value4);
           lcdon = 100;
         }
       } else if (subscription == &mqttir)
@@ -335,6 +487,7 @@ void loop()
         lcd.print(mqttcmd);
       }
     }
+
     if (lcdon)
     {
       lcdon--;
@@ -348,6 +501,38 @@ void loop()
   }
 }
 
+void tempwaterstatus(float LcdTemp, bool levelb, bool levelt,
+                     uint32_t value1, uint32_t value2, uint32_t value3, uint32_t value4)
+{
+  char printformat[17];
+
+  memset (printformat, 0x00, sizeof(printformat));
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("T:");
+  lcd.print(LcdTemp);
+  lcd.print("C");
+  lcd.setCursor(12, 0);
+  lcd.print("B");
+  lcd.print(levelb);
+  lcd.print("T");
+  lcd.print(levelt);
+
+  lcd.setCursor(0, 1);
+  lcd.print("B");
+  sprintf(printformat, "%02d", value1);
+  lcd.print(printformat);
+  lcd.print("/");
+  sprintf(printformat, "%02d", value2);
+  lcd.print(printformat);
+  lcd.print(" ");
+  lcd.print("T");
+  sprintf(printformat, "%02d", value3);
+  lcd.print(printformat);
+  lcd.print("/");
+  sprintf(printformat, "%02d   ", value4);
+  lcd.print(printformat);
+}
 
 unsigned char MQTT_connect()
 {
