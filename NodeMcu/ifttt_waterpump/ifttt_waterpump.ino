@@ -1,4 +1,3 @@
-//TODO : Implement WatchDog to safe reboot in case if any hang in the board
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
@@ -47,6 +46,8 @@ const char* password = WLAN_PASS;
 
 void setup()
 {
+  ESP.wdtDisable();
+
   int Magic, retry_count = 10;
   pinMode(RELAY1, OUTPUT);
   digitalWrite(RELAY1, ENABLE_HIGH);
@@ -58,6 +59,7 @@ void setup()
   digitalWrite(RELAY4, ENABLE_HIGH);
   pinMode(WATERLEVELTERRACE, INPUT_PULLUP);
   pinMode(WATERLEVELBALCONY, INPUT_PULLUP);
+  watchdogfeed();
 
 
   Serial.begin(115200);
@@ -69,6 +71,7 @@ void setup()
     delay(5000);
     ESP.restart();
   }
+  watchdogfeed();
 
   // Port defaults to 8266
   // ArduinoOTA.setPort(8266);
@@ -119,11 +122,14 @@ void setup()
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
 
+  watchdogfeed();
 
   // initialize EEPROM with predefined size
   EEPROM.begin(EEPROM_SIZE);
   while (retry_count)
   {
+    watchdogfeed();
+
     Magic = EEPROM.read(MAGIC);
     if (Magic == 0xAB)
       break;
@@ -141,6 +147,7 @@ void setup()
   {
     resetEEROM(0, 0, 0, 0);
   }
+  watchdogfeed();
 
   // Connect to WiFi access point.
   Serial.println(); Serial.println();
@@ -159,9 +166,18 @@ void setup()
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
 
+  watchdogfeed();
 
   // Setup MQTT subscription for onoff feed.
   mqtt.subscribe(&plant);
+  watchdogfeed();
+
+}
+
+void watchdogfeed()
+{
+  ESP.wdtFeed();
+  ESP.wdtDisable();
 }
 
 void resetEEROM(int bcnt, int btotal, int tcnt, int ttotal)
@@ -192,8 +208,17 @@ void loop()
   int balwaterlevellow = 0, terracewaterlevellow = 0;
   char instring[100];
   char publish[100];
-  int type, value1, value2, value3, value4;
+  struct
+  {
+    char month[12];
+    int date;
+    int year;
+    int timehour;
+    int timemin;
+  } date;
+  int type, value1, value2, value3, value4, menable = 1;
 
+  watchdogfeed();
   Adafruit_MQTT_Subscribe *subscription;
 
   ArduinoOTA.handle();
@@ -202,20 +227,37 @@ void loop()
   {
     ESP.restart();
   }
+  watchdogfeed();
 
   while ((subscription = mqtt.readSubscription(5000)))
   {
+    watchdogfeed();
+
     if (subscription == &plant)
     {
       Serial.print(F("GotB: "));
       Serial.println((char *)plant.lastread);
-      sscanf((char *)plant.lastread, "%d,%d,%d,%d,%d", &type, &value1, &value2, &value3, &value4);
+      sscanf((char *)plant.lastread, "%d,%d,%d,%d,%d,%s %d,%d at %d:%s",
+             &type, &value1, &value2, &value3, &value4,
+             date.month, &date.date, &date.year, &date.timehour, instring);
+      if (strstr(instring, "PM"))
+      {
+        if (date.timehour != 12)
+          date.timehour += 12;
+      } else
+      {
+        if (date.timehour == 12)
+          date.timehour = 0;
+      }
+      date.timemin = atoi(instring);
+
       balwaterlevellow = getwaterlevel(WATERLEVELBALCONY);
       terracewaterlevellow = getwaterlevel(WATERLEVELTERRACE);
+      menable = waterpattern(value2, date.timehour, (date.timehour < 12), value3, value4);
 
-      if (type == BPLANTS)
+      if ((type == BPLANTS) && menable)
       {
-        if (value1)// && (balwaterlevellow < 50))
+        if (value1 && (balwaterlevellow < 50))
         {
           delay(1000);
 
@@ -223,7 +265,10 @@ void loop()
           digitalWrite(RELAY4, !ENABLE_HIGH);
 
           for (count = 0; count < value1; count++)
+          {
+            watchdogfeed();
             delay(1000);
+          }
 
           digitalWrite(RELAY3, ENABLE_HIGH);
           digitalWrite(RELAY4, ENABLE_HIGH);
@@ -242,7 +287,7 @@ void loop()
           bcnt = 0;
           EEPROM.write(BCNT, bcnt);
         }
-      } else if (type == TPLANTS)
+      } else if ((type == TPLANTS) && menable)
       {
         if (value1 && (terracewaterlevellow < 50))
         {
@@ -252,7 +297,10 @@ void loop()
           digitalWrite(RELAY2, !ENABLE_HIGH);
 
           for (count = 0; count < value1; count++)
+          {
+            watchdogfeed();
             delay(1000);
+          }
 
           digitalWrite(RELAY1, ENABLE_HIGH);
           digitalWrite(RELAY2, ENABLE_HIGH);
@@ -283,6 +331,7 @@ void loop()
         bcnt = tcnt = 0;
         resetEEROM(bcnt, btotal, tcnt, ttotal);
       }
+      watchdogfeed();
 
       switch (type)
       {
@@ -300,9 +349,10 @@ void loop()
           tcnt = EEPROM.read(TCNT);
           ttotal = EEPROM.read(TTOTAL);
           memset(publish, 0, sizeof(publish));
-          sprintf(publish, "%d,%d,%d,%d,%d,%d,%d,V=%s-%s,%d,%d", type, bcnt, btotal, tcnt,
+          sprintf(publish, "%d,%d,%d,%d,%d,%d,%d,V=%s-%s,%d,%d,%s,%s-%d-%d-%d:%d", type, bcnt, btotal, tcnt,
                   ttotal, (balwaterlevellow < 50), (terracewaterlevellow < 50),
-                  __DATE__, __TIME__, balwaterlevellow, terracewaterlevellow);
+                  __DATE__, __TIME__, balwaterlevellow, terracewaterlevellow,
+                  ESP.getResetReason().c_str(), date.month, date.date, date.year, date.timehour, date.timemin);
           status.publish(publish);
           break;
 
@@ -313,7 +363,28 @@ void loop()
   }
 }
 
+bool waterpattern(int patterntype, int mhour, bool am, int hourp1, int hourp2)
+{
+  /* Pattern 1 : How many hours once in hourp1*/
+  /* Pattern 2 : AM in hourp1 /PM in hourp2 */
 
+  bool value = 1;
+  switch (patterntype)
+  {
+    case 1:
+      {
+        value = ((mhour % hourp1) == 0) ? 1 : 0;
+      }
+      break;
+
+    case 2:
+      {
+        value = ((mhour % (am ? hourp1 : hourp2)) == 0) ? 1 : 0;
+      }
+      break;
+  }
+  return value;
+}
 
 unsigned char MQTT_connect()
 {
@@ -335,6 +406,7 @@ unsigned char MQTT_connect()
     Serial.println("Retrying MQTT connection in 5 seconds...");
     mqtt.disconnect();
     delay(5000);  // wait 5 seconds
+
     retries--;
     if (retries == 0)
     {
