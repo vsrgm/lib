@@ -20,7 +20,14 @@
 #define WATERLEVELBALCONY     D7
 // define the number of bytes you want to access
 #define EEPROM_SIZE 512
-
+#define STRING_SIZE 1024
+#if 0
+#define DEBUG_PRINT(x) memset(x, 0, sizeof(x));\
+  sprintf(x, "%s : %d", __FUNCTION__, __LINE__);\
+  debug.publish(x);
+#else
+#define DEBUG_PRINT(x) ;
+#endif
 /************ Global State (you don't need to change this!) ******************/
 
 // Create an ESP8266 WiFiClient class to connect to the MQTT server.
@@ -37,6 +44,8 @@ Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO
 // Setup a feed called 'onoff' for subscribing to changes.
 Adafruit_MQTT_Subscribe plant = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME"/feeds/cmnplant"); // FeedName
 Adafruit_MQTT_Publish status = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/cmnplant");
+Adafruit_MQTT_Publish debug = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/debug");
+
 unsigned char MQTT_connect();
 
 int bcnt = 0, tcnt = 0, btotal = 0, ttotal = 0;
@@ -202,165 +211,266 @@ unsigned int getwaterlevel(unsigned int pin)
   return count;
 }
 
+int countcomma(char *feedstring)
+{
+  int count = 0, inc = 0;
+  for (inc = 0; feedstring[inc]; inc++)
+  {
+    if (feedstring[inc] == ',')
+      count++;
+  }
+
+  return count;
+}
+
+void get_input_feeddata(char *feedstring, struct feedinput *feed)
+{
+  int feedlength;
+  feedlength = strlen(feedstring);
+  sscanf(feedstring, "%d", &feed->type);
+  Serial.printf("%s %d \r\n", __FUNCTION__, __LINE__);
+
+  switch (feed->type)
+  {
+    case REPORT:
+    case GETREPORT:
+      {
+        break;
+      }
+
+    case BPLANTS:
+    case TPLANTS:
+    case RESETREPORT:
+    case RESETDATA:
+      {
+        switch (countcomma(feedstring))
+        {
+          case 0:
+            {
+              Serial.printf("%s %d \r\n", __FUNCTION__, __LINE__);
+              break;
+            }
+          case 4:
+            {
+              sscanf(feedstring, "%d,%d,%d,%d,%d", &feed->type, &feed->value1, &feed->value2, &feed->value3, &feed->value4);
+              Serial.printf("%s %d \r\n", __FUNCTION__, __LINE__);
+              break;
+            }
+          default :
+            {
+              Serial.printf("%s %d \r\n", __FUNCTION__, __LINE__);
+              sscanf(feedstring, "%d,%d,%d,%d,%d,%s %d,%d at %d:%2d%2s",
+                     &feed->type, &feed->value1, &feed->value2, &feed->value3, &feed->value4,
+                     feed->date.month, &feed->date.date, &feed->date.year, &feed->date.timehour, &feed->date.timemin, feed->date.meridies);
+              Serial.printf("%d %s \r\n", feed->date.timehour, feed->date.meridies);
+
+            }
+        }
+      }
+  }
+
+  Serial.printf("%s %d \r\n", __FUNCTION__, __LINE__);
+  return ;
+}
+
+int compute_water_pattern(struct feedinput *feed)
+{
+  if (strstr(feed->date.meridies, "PM"))
+  {
+    if (feed->date.timehour != 12)
+      feed->date.timehour += 12;
+  } else
+  {
+    if (feed->date.timehour == 12)
+      feed->date.timehour = 0;
+  }
+  Serial.printf("%s %d \r\n", __FUNCTION__, __LINE__);
+  return waterpattern(feed->value2, feed->date.timehour, (feed->date.timehour < 12), feed->value3, feed->value4);
+}
+
 void loop()
 {
+
   int count = 0, ret;
   int balwaterlevellow = 0, terracewaterlevellow = 0;
-  char instring[100];
-  char publish[100];
-  struct
-  {
-    char month[12];
-    int date;
-    int year;
-    int timehour;
-    int timemin;
-  } date;
-  int type, value1, value2, value3, value4, menable = 1;
+  char instring[STRING_SIZE];
+  char publish[STRING_SIZE];
+  DEBUG_PRINT(publish);
 
-  watchdogfeed();
+  struct feedinput feed;
+
+  int pingret = 1;
   Adafruit_MQTT_Subscribe *subscription;
 
-  ArduinoOTA.handle();
-  ret = MQTT_connect();
-  if ((ret == 0) || !(Ping.ping("www.google.com")))
-  {
-    ESP.restart();
-  }
-  watchdogfeed();
-
-  while ((subscription = mqtt.readSubscription(5000)))
+  memset(&feed, 0x00, sizeof(feed));
+  balwaterlevellow = getwaterlevel(WATERLEVELBALCONY);
+  terracewaterlevellow = getwaterlevel(WATERLEVELTERRACE);
+  
+  while (1)
   {
     watchdogfeed();
 
-    if (subscription == &plant)
+    ArduinoOTA.handle();
+
+    pingret = Ping.ping("www.google.com", 2);
+
+    ret = MQTT_connect();
+    if ((ret == 0) || !pingret)
     {
-      Serial.print(F("GotB: "));
-      Serial.println((char *)plant.lastread);
-      sscanf((char *)plant.lastread, "%d,%d,%d,%d,%d,%s %d,%d at %d:%s",
-             &type, &value1, &value2, &value3, &value4,
-             date.month, &date.date, &date.year, &date.timehour, instring);
-      if (strstr(instring, "PM"))
-      {
-        if (date.timehour != 12)
-          date.timehour += 12;
-      } else
-      {
-        if (date.timehour == 12)
-          date.timehour = 0;
-      }
-      date.timemin = atoi(instring);
+      ESP.restart();
+    }
 
-      balwaterlevellow = getwaterlevel(WATERLEVELBALCONY);
-      terracewaterlevellow = getwaterlevel(WATERLEVELTERRACE);
-      menable = waterpattern(value2, date.timehour, (date.timehour < 12), value3, value4);
+    watchdogfeed();
+    DEBUG_PRINT(publish);
 
-      if ((type == BPLANTS) && menable)
-      {
-        if (value1 && (balwaterlevellow < 50))
-        {
-          delay(1000);
-
-          digitalWrite(RELAY3, !ENABLE_HIGH);
-          digitalWrite(RELAY4, !ENABLE_HIGH);
-
-          for (count = 0; count < value1; count++)
-          {
-            watchdogfeed();
-            delay(1000);
-          }
-
-          digitalWrite(RELAY3, ENABLE_HIGH);
-          digitalWrite(RELAY4, ENABLE_HIGH);
-          bcnt++;
-
-          EEPROM.write(BCNT, bcnt);
-          if (bcnt > btotal)
-          {
-            btotal = bcnt;
-            EEPROM.write(BTOTAL, btotal);
-          }
-          delay(1000);
-
-        } else
-        {
-          bcnt = 0;
-          EEPROM.write(BCNT, bcnt);
-        }
-      } else if ((type == TPLANTS) && menable)
-      {
-        if (value1 && (terracewaterlevellow < 50))
-        {
-          delay(1000);
-
-          digitalWrite(RELAY1, !ENABLE_HIGH);
-          digitalWrite(RELAY2, !ENABLE_HIGH);
-
-          for (count = 0; count < value1; count++)
-          {
-            watchdogfeed();
-            delay(1000);
-          }
-
-          digitalWrite(RELAY1, ENABLE_HIGH);
-          digitalWrite(RELAY2, ENABLE_HIGH);
-
-          tcnt++;
-          EEPROM.write(TCNT, tcnt);
-          if (tcnt > ttotal)
-          {
-            ttotal = tcnt;
-            EEPROM.write(TTOTAL, ttotal);
-          }
-          delay(1000);
-
-        } else
-        {
-          tcnt = 0;
-          EEPROM.write(TCNT, tcnt);
-        }
-      } else if (type == RESETREPORT)
-      {
-        bcnt = value1;
-        btotal = value2;
-        tcnt = value3;
-        ttotal = value4;
-        resetEEROM(bcnt, btotal, tcnt, ttotal);
-      } else if (type == RESETDATA)
-      {
-        bcnt = tcnt = 0;
-        resetEEROM(bcnt, btotal, tcnt, ttotal);
-      }
+    while ((subscription = mqtt.readSubscription(5000)))
+    {
+      DEBUG_PRINT(publish);
       watchdogfeed();
 
-      switch (type)
+      if (subscription == &plant)
       {
-        case RESETREPORT:
-        case TPLANTS:
-        case BPLANTS:
-        case RESETDATA:
-          EEPROM.commit();
-        //break;
+        Serial.print(F("GotB: "));
+        Serial.println((char *)plant.lastread);
+        get_input_feeddata((char *)plant.lastread, &feed);
 
-        case GETREPORT:
-          type = REPORT;
-          bcnt = EEPROM.read(BCNT);
-          btotal = EEPROM.read(BTOTAL);
-          tcnt = EEPROM.read(TCNT);
-          ttotal = EEPROM.read(TTOTAL);
-          memset(publish, 0, sizeof(publish));
-          sprintf(publish, "%d,%d,%d,%d,%d,%d,%d,V=%s-%s,%d,%d,%s,%s-%d-%d-%d:%d", type, bcnt, btotal, tcnt,
-                  ttotal, (balwaterlevellow < 50), (terracewaterlevellow < 50),
-                  __DATE__, __TIME__, balwaterlevellow, terracewaterlevellow,
-                  ESP.getResetReason().c_str(), date.month, date.date, date.year, date.timehour, date.timemin);
-          status.publish(publish);
-          break;
+        switch (feed.type)
+        {
+          case BPLANTS:
+            {
+              balwaterlevellow = getwaterlevel(WATERLEVELBALCONY);
+              if (compute_water_pattern(&feed))
+                waterplants(feed.value1, RELAY3, RELAY4, balwaterlevellow, BCNT, BTOTAL);
+            }
+            break;
 
-        default:
-          break;
+          case TPLANTS:
+            {
+              terracewaterlevellow = getwaterlevel(WATERLEVELTERRACE);
+
+              if (compute_water_pattern(&feed))
+                waterplants(feed.value1, RELAY1, RELAY2, terracewaterlevellow, TCNT, TTOTAL);
+            }
+            break;
+
+          case RESETREPORT:
+            {
+              bcnt = feed.value1;
+              btotal = feed.value2;
+              tcnt = feed.value3;
+              ttotal = feed.value4;
+              resetEEROM(bcnt, btotal, tcnt, ttotal);
+            }
+            break;
+
+          case RESETDATA:
+            {
+              bcnt = tcnt = 0;
+              resetEEROM(bcnt, btotal, tcnt, ttotal);
+            }
+            break;
+
+          case GETREPORT:
+            {
+              balwaterlevellow = getwaterlevel(WATERLEVELBALCONY);
+              terracewaterlevellow = getwaterlevel(WATERLEVELTERRACE);
+            }
+            break;
+        }
+
+        watchdogfeed();
+
+        switch (feed.type)
+        {
+          case RESETREPORT:
+          case TPLANTS:
+          case BPLANTS:
+          case RESETDATA:
+            EEPROM.commit();
+          //break;
+
+          case GETREPORT:
+            {
+
+              long millisecs;
+
+              feed.type = REPORT;
+              bcnt = EEPROM.read(BCNT);
+              btotal = EEPROM.read(BTOTAL);
+              tcnt = EEPROM.read(TCNT);
+              ttotal = EEPROM.read(TTOTAL);
+              memset(publish, 0, sizeof(publish));
+
+              millisecs = millis();
+              int systemUpTimeMn = int((millisecs / (1000 * 60)) % 60);
+              int systemUpTimeHr = int((millisecs / (1000 * 60 * 60)) % 24);
+              int systemUpTimeDy = int((millisecs / (1000 * 60 * 60 * 24)) % 365);
+
+
+              sprintf(publish, "%d,%d,%d,%d,%d,%d,%d,V=%s-%s,%d,%d,%s,%s-%d-%d-%d:%d,%d-%d-%d",
+                      feed.type, bcnt, btotal, tcnt, ttotal,
+                      (balwaterlevellow < 50), (terracewaterlevellow < 50),
+                      __DATE__, __TIME__, balwaterlevellow, terracewaterlevellow,
+                      ESP.getResetReason().c_str(),
+                      feed.date.month, feed.date.date, feed.date.year, feed.date.timehour, feed.date.timemin,
+                      systemUpTimeDy, systemUpTimeHr, systemUpTimeMn);
+              status.publish(publish);
+              DEBUG_PRINT(publish);
+
+            }
+            break;
+
+          default:
+            break;
+        }
       }
     }
   }
+
+}
+
+bool waterplants(int timeperiod, int relay1, int relay2, int low, int cntoffset, int toffset)
+{
+  int cnt = 0;
+  int total = 0;
+  if (timeperiod && (low < 50))
+  {
+    delay(1000);
+
+    digitalWrite(relay1, !ENABLE_HIGH);
+    digitalWrite(relay2, !ENABLE_HIGH);
+
+    for (int count = 0; count < timeperiod; count++)
+    {
+      watchdogfeed();
+      delay(1000);
+    }
+
+    digitalWrite(relay1, ENABLE_HIGH);
+    digitalWrite(relay2, ENABLE_HIGH);
+
+    cnt = EEPROM.read(cntoffset);
+    total = EEPROM.read(toffset);
+    cnt++;
+
+
+    EEPROM.write(cntoffset, cnt);
+    if (cnt > total)
+    {
+      total = cnt;
+      EEPROM.write(toffset, total);
+    }
+    delay(1000);
+
+
+  } else
+  {
+    cnt = 0;
+    EEPROM.write(cntoffset, cnt);
+    return false;
+  }
+
+  return true;
 }
 
 bool waterpattern(int patterntype, int mhour, bool am, int hourp1, int hourp2)

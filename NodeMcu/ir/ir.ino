@@ -166,6 +166,7 @@ void loop()
     }
 
     switchcmd = mqttcmd ? mqttcmd : irhash;
+
     enum
     {
       ACOFF = 1,
@@ -178,6 +179,7 @@ void loop()
       FANSPEED3,
       FANSPEED4,
       FANSPEED5,
+      LCDDISPLAY,
       TATASKYBTN0 = 0x160AB9DD,
       TATASKYBTN1 = 0x1FB45C14,
       TATASKYBTN2 = 0x7AD7A7D9,
@@ -189,7 +191,7 @@ void loop()
       TATASKYBTN8 = 0x54BEF27E,
       TATASKYBTN9 = 0x5D69140F,
     };
-
+    
     switch (switchcmd)
     {
       case ACOFF:
@@ -202,6 +204,7 @@ void loop()
       case FANSPEED3:
       case FANSPEED4:
       case FANSPEED5:
+      case LCDDISPLAY:
       case TATASKYBTN0:
       case TATASKYBTN1:
       case TATASKYBTN2:
@@ -224,6 +227,7 @@ void loop()
     switch (switchcmd)
     {
       case ACOFF:
+      case TATASKYBTN1:
         {
           // Hash:
           // 3790E56F
@@ -237,6 +241,7 @@ void loop()
         break;
 
       case ACON:
+      case TATASKYBTN2:
         {
           // Hash:
           // 9ADEA691
@@ -250,6 +255,7 @@ void loop()
         break;
 
       case AC26C: //AC Set Temperature to 26
+      case TATASKYBTN3:
         {
           // 40DE90EB
           // For IR Scope/IrScrutinizer:
@@ -257,11 +263,12 @@ void loop()
           // For Arduino sketch:
           uint16_t raw[228] = {3358, 1328, 526, 1078, 524, 1078, 526, 380, 524, 378, 526, 378, 526, 1078, 522, 380, 496, 406, 524, 1080, 524, 1078, 524, 378, 526, 1078, 466, 430, 470, 430, 468, 1128, 468, 1130, 468, 430, 468, 1130, 468, 1130, 470, 428, 468, 430, 468, 1154, 502, 384, 468, 430, 468, 1130, 468, 430, 468, 430, 494, 430, 502, 380, 494, 404, 468, 428, 470, 428, 468, 430, 470, 430, 522, 376, 468, 428, 468, 430, 466, 430, 468, 430, 468, 430, 468, 1130, 468, 1128, 470, 1128, 468, 428, 470, 428, 470, 1130, 468, 430, 522, 378, 468, 1130, 468, 1128, 468, 428, 468, 428, 468, 426, 468, 430, 466, 428, 468, 432, 526, 1076, 468, 430, 468, 1128, 470, 428, 466, 428, 468, 428, 468, 428, 468, 428, 468, 1128, 470, 430, 524, 1076, 468, 1128, 468, 1128, 468, 1128, 468, 428, 468, 428, 468, 430, 494, 406, 522, 378, 494, 408, 468, 428, 468, 428, 468, 430, 468, 430, 468, 430, 468, 428, 468, 430, 468, 428, 468, 428, 468, 428, 468, 428, 468, 428, 468, 432, 526, 374, 468, 430, 468, 428, 468, 430, 468, 428, 468, 430, 468, 430, 468, 428, 468, 428, 468, 428, 466, 428, 468, 1132, 468, 428, 468, 428, 468, 428, 468, 1128, 468, 430, 468, 428, 468, 428, 468, 1128, 466, 430, 468, 428, 468, 1132, 524,};
           irsend.sendRaw(raw, 228, 38);
-          lcd.print("AC26C");
+          lcd.print("AC 26C");
         }
         break;
 
       case FANON:
+      case TATASKYBTN4:
         {
           //D7CB28C0
           //For IR Scope/IrScrutinizer:
@@ -274,6 +281,7 @@ void loop()
         break;
 
       case FANOFF:
+      case TATASKYBTN5:
         {
           // D546E1D2
           // For IR Scope/IrScrutinizer:
@@ -286,6 +294,7 @@ void loop()
         break;
 
       case FANSPEED1:
+      case TATASKYBTN6:
         {
           // 357004C2
           // For IR Scope/IrScrutinizer:
@@ -293,11 +302,12 @@ void loop()
           // For Arduino sketch:
           uint16_t raw[20] = {862, 828, 1708, 1672, 836, 852, 1736, 826, 864, 1644, 836, 854, 1706, 852, 836, 854, 862, 1644, 1736,};
           irsend.sendRaw(raw, 20, 38);
-          lcd.print("FANSPEED1");
+          lcd.print("FAN SPEED 1");
         }
         break;
 
       case FANSPEED2:
+      case TATASKYBTN7:
         {
           // C5D70323
           // For IR Scope/IrScrutinizer:
@@ -305,11 +315,12 @@ void loop()
           // For Arduino sketch:
           uint16_t raw[22] = {868, 822, 868, 822, 866, 822, 868, 822, 1738, 822, 866, 1642, 868, 820, 1740, 820, 868, 1640, 868, 822, 1740,};
           irsend.sendRaw(raw, 22, 38);
-          lcd.print("FANSPEED2");
+          lcd.print("FAN SPEED2 ");
         }
         break;
 
       case FANSPEED3:
+      case TATASKYBTN8:
         {
           // 67C3BCA9
           // For IR Scope/IrScrutinizer:
@@ -317,10 +328,12 @@ void loop()
           // For Arduino sketch:
           uint16_t raw[20] = {810, 880, 1680, 1698, 810, 880, 1682, 878, 808, 1698, 1680, 880, 810, 1698, 810, 880, 806, 882, 1680,};
           irsend.sendRaw(raw, 20, 38);
-          lcd.print("FANSPEED3");
+          lcd.print("FAN SPEED 3");
         }
         break;
+
       case FANSPEED4:
+      case TATASKYBTN9:
         {
           // DA4BDFF2
           // For IR Scope/IrScrutinizer:
@@ -328,7 +341,7 @@ void loop()
           // For Arduino sketch:
           uint16_t raw[24] = {868, 824, 864, 824, 866, 822, 866, 824, 1736, 822, 868, 1640, 1736, 824, 866, 1642, 866, 822, 866, 824, 866, 822, 866,};
           irsend.sendRaw(raw, 24, 38);
-          lcd.print("FANSPEED4");
+          lcd.print("FAN SPEED 4");
         }
         break;
       case FANSPEED5:
@@ -339,7 +352,7 @@ void loop()
           // For Arduino sketch:
           uint16_t raw[24] = {866, 824, 866, 824, 866, 822, 866, 822, 1738, 824, 864, 1642, 868, 822, 866, 820, 868, 822, 1738, 1640, 868, 822, 866,};
           irsend.sendRaw(raw, 24, 38);
-          lcd.print("FANSPEED5");
+          lcd.print("FAN SPEED 5");
         }
         break;
 
@@ -352,58 +365,10 @@ void loop()
                           value1, value2, value3, value4);
         }
         break;
-        
-      case TATASKYBTN1:
+
+      case LCDDISPLAY:
         {
-          lcd.print("TATASKYBTN1");
-        }
-        break;
-        
-      case TATASKYBTN2:
-        {
-          lcd.print("TATASKYBTN2");
-        }
-        break;
-        
-      case TATASKYBTN3:
-        {
-          lcd.print("TATASKYBTN3");
-        }
-        break;
-        
-      case TATASKYBTN4:
-        {
-          lcd.print("TATASKYBTN4");
-        }
-        break;
-        
-      case TATASKYBTN5:
-        {
-          lcd.print("TATASKYBTN5");
-        }
-        break;
-        
-      case TATASKYBTN6:
-        {
-          lcd.print("TATASKYBTN6");
-        }
-        break;
-        
-      case TATASKYBTN7:
-        {
-          lcd.print("TATASKYBTN7");
-        }
-        break;
-        
-      case TATASKYBTN8:
-        {
-          lcd.print("TATASKYBTN8");
-        }
-        break;
-        
-      case TATASKYBTN9:
-        {
-          lcd.print("TATASKYBTN9");
+          lcd.print(instring);
         }
         break;
 
@@ -464,6 +429,7 @@ void loop()
       count = avgTemp = avgV = 0;
     }
 #endif
+
     if ((subscription = mqtt.readSubscription(100)))
     {
       if (subscription == &plant)
@@ -479,12 +445,8 @@ void loop()
         }
       } else if (subscription == &mqttir)
       {
-        sscanf((char *)mqttir.lastread, "%d", &mqttcmd);
+        sscanf((char *)mqttir.lastread, "%d,%s", &mqttcmd, instring);
         lcdon = 100;
-        lcd.clear();
-        lcd.setCursor(0, 1);
-        lcd.print("Value = ");
-        lcd.print(mqttcmd);
       }
     }
 

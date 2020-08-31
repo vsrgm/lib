@@ -39,6 +39,8 @@ const char* password = WLAN_PASS;
 
 void setup()
 {
+  ESP.wdtDisable();
+
   Serial.begin(115200);
   Serial.println("Booting");
   WiFi.mode(WIFI_STA);
@@ -48,7 +50,7 @@ void setup()
     delay(5000);
     ESP.restart();
   }
-
+  watchdogfeed();
   // Port defaults to 8266
   // ArduinoOTA.setPort(8266);
 
@@ -97,7 +99,7 @@ void setup()
   Serial.println("Ready");
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
-
+  watchdogfeed();
 
   // initialize the LCD
   lcd.begin();
@@ -105,15 +107,21 @@ void setup()
   dht.setup(D3);   /* D1 is used for data communication */
   lcd.clear();
   mqtt.subscribe(&plant);
-
+  watchdogfeed();
 }
 
+void watchdogfeed()
+{
+  ESP.wdtFeed();
+  ESP.wdtDisable();
+}
 
 void loop()
 {
   int ret, type, value1, value2, value3, value4, levelb, levelt;
   char publish[100];
   char instring[100];
+  watchdogfeed();
 
   Adafruit_MQTT_Subscribe *subscription;
 
@@ -129,10 +137,12 @@ void loop()
     // Turn on the blacklight and print a message.
     lcd.backlight();
   }
+  watchdogfeed();
 
   delay(dht.getMinimumSamplingPeriod()); /* Delay of amount equal to sampling period */
   int humidity = dht.getHumidity();/* Get humidity value */
   int temperature = dht.getTemperature();/* Get temperature value */
+  watchdogfeed();
 
   if (!strncmp(dht.getStatusString(), "OK", 2))
   {
@@ -146,9 +156,11 @@ void loop()
     lcd.print(temperature);
     lcd.print("C");
   }
+  watchdogfeed();
 
   while ((subscription = mqtt.readSubscription(5000)))
   {
+    watchdogfeed();
     if (subscription == &plant)
     {
       char printformat[17];
@@ -206,6 +218,7 @@ unsigned char MQTT_connect()
     Serial.println("Retrying MQTT connection in 5 seconds...");
     mqtt.disconnect();
     delay(5000);  // wait 5 seconds
+    watchdogfeed();
     retries--;
     if (retries == 0)
     {
