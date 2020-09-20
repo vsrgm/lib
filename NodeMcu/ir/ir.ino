@@ -41,6 +41,7 @@ Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO
 Adafruit_MQTT_Subscribe plant = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME"/feeds/cmnplant"); // FeedName
 Adafruit_MQTT_Subscribe mqttir = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME"/feeds/irdisp"); // FeedName
 Adafruit_MQTT_Publish pstatus = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/cmnplant");
+Adafruit_MQTT_Publish mqttirstatus = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/irdisp");
 
 // Set the LCD address to 0x27/0x3f for a 16 chars and 2 line display
 LiquidCrystal_I2C lcd(0x3f, 16, 2);
@@ -180,18 +181,37 @@ void loop()
       FANSPEED4,
       FANSPEED5,
       LCDDISPLAY,
-      TATASKYBTN0 = 0x160AB9DD,
-      TATASKYBTN1 = 0x1FB45C14,
-      TATASKYBTN2 = 0x7AD7A7D9,
-      TATASKYBTN3 = 0x77D7A320,
-      TATASKYBTN4 = 0x1FF256EE,
-      TATASKYBTN5 = 0xDFF8AB96,
-      TATASKYBTN6 = 0x5CD90715,
-      TATASKYBTN7 = 0x5FD90BCC,
-      TATASKYBTN8 = 0x54BEF27E,
-      TATASKYBTN9 = 0x5D69140F,
+      BTN0 = 0x160AB9DD,
+      BTNA0 = 0x97483BFB,
+
+      BTN1 = 0x1FB45C14,
+      BTNA1 = 0xE318261B,
+
+      BTN2 = 0x7AD7A7D9,
+      BTNA2 = 0x511DBB,
+
+      BTN3 = 0x77D7A320,
+      BTNA3 = 0xEE886D7F,
+
+      BTN4 = 0x1FF256EE,
+      BTNA4 = 0x52A3D41F,
+
+      BTN5 = 0xDFF8AB96,
+      BTNA5 = 0xD7E84B1B,
+
+      BTN6 = 0x5CD90715,
+      BTNA6 = 0x20FE4DBB,
+
+      BTN7 = 0x5FD90BCC,
+      BTNA7 = 0x3967A663,
+
+      BTN8 = 0x54BEF27E,
+      BTNA8 = 0xA3C8EDDB,
+
+      BTN9 = 0x5D69140F,
+      BTNA9 = 0x2EC0A2A7,
     };
-    
+
     switch (switchcmd)
     {
       case ACOFF:
@@ -205,16 +225,26 @@ void loop()
       case FANSPEED4:
       case FANSPEED5:
       case LCDDISPLAY:
-      case TATASKYBTN0:
-      case TATASKYBTN1:
-      case TATASKYBTN2:
-      case TATASKYBTN3:
-      case TATASKYBTN4:
-      case TATASKYBTN5:
-      case TATASKYBTN6:
-      case TATASKYBTN7:
-      case TATASKYBTN8:
-      case TATASKYBTN9:
+      case BTN0:
+      case BTN1:
+      case BTN2:
+      case BTN3:
+      case BTN4:
+      case BTN5:
+      case BTN6:
+      case BTN7:
+      case BTN8:
+      case BTN9:
+      case BTNA0:
+      case BTNA1:
+      case BTNA2:
+      case BTNA3:
+      case BTNA4:
+      case BTNA5:
+      case BTNA6:
+      case BTNA7:
+      case BTNA8:
+      case BTNA9:
         {
           lcd.clear();
           lcd.setCursor(0, 0); // Cursor0 , Linea0
@@ -227,7 +257,8 @@ void loop()
     switch (switchcmd)
     {
       case ACOFF:
-      case TATASKYBTN1:
+      case BTN1:
+      case BTNA1:
         {
           // Hash:
           // 3790E56F
@@ -241,7 +272,8 @@ void loop()
         break;
 
       case ACON:
-      case TATASKYBTN2:
+      case BTN2:
+      case BTNA2:
         {
           // Hash:
           // 9ADEA691
@@ -255,7 +287,8 @@ void loop()
         break;
 
       case AC26C: //AC Set Temperature to 26
-      case TATASKYBTN3:
+      case BTN3:
+      case BTNA3:
         {
           // 40DE90EB
           // For IR Scope/IrScrutinizer:
@@ -268,7 +301,8 @@ void loop()
         break;
 
       case FANON:
-      case TATASKYBTN4:
+      case BTN4:
+      case BTNA4:
         {
           //D7CB28C0
           //For IR Scope/IrScrutinizer:
@@ -281,7 +315,8 @@ void loop()
         break;
 
       case FANOFF:
-      case TATASKYBTN5:
+      case BTN5:
+      case BTNA5:
         {
           // D546E1D2
           // For IR Scope/IrScrutinizer:
@@ -294,7 +329,8 @@ void loop()
         break;
 
       case FANSPEED1:
-      case TATASKYBTN6:
+      case BTN6:
+      case BTNA6:
         {
           // 357004C2
           // For IR Scope/IrScrutinizer:
@@ -307,7 +343,8 @@ void loop()
         break;
 
       case FANSPEED2:
-      case TATASKYBTN7:
+      case BTN7:
+      case BTNA7:
         {
           // C5D70323
           // For IR Scope/IrScrutinizer:
@@ -320,7 +357,8 @@ void loop()
         break;
 
       case FANSPEED3:
-      case TATASKYBTN8:
+      case BTN8:
+      case BTNA8:
         {
           // 67C3BCA9
           // For IR Scope/IrScrutinizer:
@@ -333,7 +371,8 @@ void loop()
         break;
 
       case FANSPEED4:
-      case TATASKYBTN9:
+      case BTN9:
+      case BTNA9:
         {
           // DA4BDFF2
           // For IR Scope/IrScrutinizer:
@@ -356,7 +395,8 @@ void loop()
         }
         break;
 
-      case TATASKYBTN0:
+      case BTN0:
+      case BTNA0:
         {
           memset(instring, 0x00, sizeof(instring));
           sprintf(instring, "4");
@@ -374,7 +414,13 @@ void loop()
 
       default:
         {
-
+          if (irhash)
+          {
+            Serial.println(switchcmd, HEX);
+            memset(instring, 0x00, sizeof(instring));
+            sprintf(instring, "0x%x", switchcmd);
+            mqttirstatus.publish(instring);
+          }
         }
         break;
     }
