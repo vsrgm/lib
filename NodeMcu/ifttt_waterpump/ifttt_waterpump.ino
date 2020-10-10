@@ -305,7 +305,7 @@ void loop()
   memset(&feed, 0x00, sizeof(feed));
   balwaterlevellow = getwaterlevel(WATERLEVELBALCONY);
   terracewaterlevellow = getwaterlevel(WATERLEVELTERRACE);
-  
+
   while (1)
   {
     watchdogfeed();
@@ -490,6 +490,15 @@ bool waterpattern(int patterntype, int mhour, bool am, int hourp1, int hourp2)
     case 2:
       {
         value = ((mhour % (am ? hourp1 : hourp2)) == 0) ? 1 : 0;
+      }
+      break;
+
+    case 3:
+      {
+        if ((mhour >= 6) && (mhour <= 18)) // 6AM to 6PM
+          value = ((mhour % hourp2) == 0) ? 1 : 0;
+        else
+          value = ((mhour % hourp1) == 0) ? 1 : 0;
       }
       break;
   }
