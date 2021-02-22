@@ -1,13 +1,3 @@
-/*  HTTPS on ESP8266 with follow redirects, chunked encoding support
-    Version 3.0
-    Author: Sujay Phadke
-    Github: @electronicsguy
-    Copyright (C) 2018 Sujay Phadke <electronicsguy123@gmail.com>
-    All rights reserved.
-
-    Example Arduino program
-*/
-
 #include <ESP8266WiFi.h>
 #include "HTTPSRedirect.h"
 #include "DebugMacros.h"
@@ -25,6 +15,10 @@ HTTPSRedirect* client = nullptr;
 String url = String("/macros/s/") + GScriptId + "/exec?cal";
 
 String payload_base =  "{\"command\": \"cell\", \
+                    \"sheet_name\": \"Temp1\", \
+                       \"values\": ";
+
+String payload_read =  "{\"command\": \"read\", \
                     \"sheet_name\": \"Temp1\", \
                        \"values\": ";
 String payload = "";
@@ -57,4 +51,16 @@ void loop()
 
   payload = payload_base + "\"" + "C1" + "," + "Fine" + "\"}";
   client->POST(url, host, payload, false);
+
+
+  /* read sequence */
+#if 0
+  payload = payload_read + "\"" + "A2" + "\"}";
+  client->POST(url, host, payload, false);
+#endif
+  client->GET(url3, host, false);
+  String sample = client->getResponseBody();
+  Serial.print("Received text = ");
+  Serial.print(sample);
+  Serial.print("\r\n");
 }

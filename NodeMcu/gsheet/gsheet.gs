@@ -1,6 +1,7 @@
 var SS = SpreadsheetApp.openByUrl("https://docs.google.com/spreadsheets/d/1cpEsRZYk61c78nDs-yTntMRSB8xoi8AeRr6t6UO0TRc/edit#gid=0");
 var sheet = SS.getSheetByName('Temp1');
 var str = "";
+var readvalue = "";
 
 function onOpen(){
   var ui = SpreadsheetApp.getUi();
@@ -35,6 +36,15 @@ function doPost(e) {
     }
     
     switch (parsedData.command) {
+      case "read":
+        var tmp = SS.getSheetByName(parsedData.sheet_name);
+        readvalue = parsedData.values.split(",");
+        var cell = tmp.getRange('D2'); 
+        cell.setValue(readvalue);
+        SpreadsheetApp.flush();
+        
+        break;
+        
       case "cell":
         var tmp = SS.getSheetByName(parsedData.sheet_name);
         var nextFreeRow = tmp.getLastRow() + 1;
@@ -61,4 +71,12 @@ function doPost(e) {
   else{
     return ContentService.createTextOutput("Error! Request body empty or in incorrect format.");
   }  
+}
+
+function doGet(e){
+  var read = e.parameter.read;
+  
+  if (read !== undefined){
+    return ContentService.createTextOutput(sheet.getRange(sheet.getRange('D2').getValue()).getValue());
+  }
 }
