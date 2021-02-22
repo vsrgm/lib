@@ -6,6 +6,7 @@
 #include <EEPROM.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266Ping.h>
+#include <ESP8266WebServer.h>
 
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_Client.h"
@@ -21,13 +22,7 @@
 // define the number of bytes you want to access
 #define EEPROM_SIZE 512
 #define STRING_SIZE 1024
-#if 0
-#define DEBUG_PRINT(x) memset(x, 0, sizeof(x));\
-  sprintf(x, "%s : %d", __FUNCTION__, __LINE__);\
-  debug.publish(x);
-#else
-#define DEBUG_PRINT(x) ;
-#endif
+
 /************ Global State (you don't need to change this!) ******************/
 
 // Create an ESP8266 WiFiClient class to connect to the MQTT server.
@@ -69,7 +64,6 @@ void setup()
   pinMode(WATERLEVELTERRACE, INPUT_PULLUP);
   pinMode(WATERLEVELBALCONY, INPUT_PULLUP);
   watchdogfeed();
-
 
   Serial.begin(115200);
   Serial.println("Booting");
@@ -180,7 +174,6 @@ void setup()
   // Setup MQTT subscription for onoff feed.
   mqtt.subscribe(&plant);
   watchdogfeed();
-
 }
 
 void watchdogfeed()
@@ -290,12 +283,10 @@ int compute_water_pattern(struct feedinput *feed)
 
 void loop()
 {
-
   int count = 0, ret;
   int balwaterlevellow = 0, terracewaterlevellow = 0;
   char instring[STRING_SIZE];
   char publish[STRING_SIZE];
-  DEBUG_PRINT(publish);
 
   struct feedinput feed;
 
@@ -321,11 +312,10 @@ void loop()
     }
 
     watchdogfeed();
-    DEBUG_PRINT(publish);
+    debug.publish("Start");
 
     while ((subscription = mqtt.readSubscription(5000)))
     {
-      DEBUG_PRINT(publish);
       watchdogfeed();
 
       if (subscription == &plant)
@@ -415,8 +405,7 @@ void loop()
                       feed.date.month, feed.date.date, feed.date.year, feed.date.timehour, feed.date.timemin,
                       systemUpTimeDy, systemUpTimeHr, systemUpTimeMn);
               status.publish(publish);
-              DEBUG_PRINT(publish);
-
+              debug.publish("Got Data");
             }
             break;
 
@@ -426,7 +415,6 @@ void loop()
       }
     }
   }
-
 }
 
 bool waterplants(int timeperiod, int relay1, int relay2, int low, int cntoffset, int toffset)

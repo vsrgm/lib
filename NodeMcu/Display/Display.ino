@@ -29,6 +29,7 @@ Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO
 // Setup a feed called 'onoff' for subscribing to changes.
 Adafruit_MQTT_Subscribe plant = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME"/feeds/cmnplant"); // FeedName
 Adafruit_MQTT_Publish status = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/cmnplant");
+Adafruit_MQTT_Publish debug = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/debug");
 
 // Set the LCD address to 0x27/0x3f for a 16 chars and 2 line display
 LiquidCrystal_I2C lcd(0x27, 16, 2);
@@ -122,10 +123,7 @@ void loop()
   char publish[100];
   char instring[100];
   watchdogfeed();
-
-  Adafruit_MQTT_Subscribe *subscription;
-
-  ArduinoOTA.handle();
+  unsigned int gettemponce = 1;
   ret = MQTT_connect();
   if ((ret == 0) || !(Ping.ping("www.google.com")))
   {
@@ -137,62 +135,93 @@ void loop()
     // Turn on the blacklight and print a message.
     lcd.backlight();
   }
-  watchdogfeed();
+  debug.publish("Display : reset");
 
-  delay(dht.getMinimumSamplingPeriod()); /* Delay of amount equal to sampling period */
-  int humidity = dht.getHumidity();/* Get humidity value */
-  int temperature = dht.getTemperature();/* Get temperature value */
-  watchdogfeed();
-
-  if (!strncmp(dht.getStatusString(), "OK", 2))
-  {
-    lcd.setCursor(0, 0); // Cursor0 , Linea0
-    lcd.print("H:");
-    lcd.print(humidity);
-    lcd.print("% ");
-
-    //lcd.setCursor(0, 1); // Cursor0 , Linea0
-    lcd.print("T:");
-    lcd.print(temperature);
-    lcd.print("C");
-  }
-  watchdogfeed();
-
-  while ((subscription = mqtt.readSubscription(5000)))
+  Adafruit_MQTT_Subscribe *subscription;
+  while (1)
   {
     watchdogfeed();
-    if (subscription == &plant)
+    ArduinoOTA.handle();
+    watchdogfeed();
+
+    ret = MQTT_connect();
+    if ((ret == 0) || !(Ping.ping("www.google.com")))
     {
-      char printformat[17];
-      sscanf((char *)plant.lastread, "%d,%d,%d,%d,%d,%d,%d",
-             &type, &value1, &value2, &value3, &value4,
-             &levelb, &levelt);
-      if (type == REPORT)
+      ESP.restart();
+      lcd.noBacklight();
+
+    } else
+    {
+      // Turn on the blacklight and print a message.
+      lcd.backlight();
+    }
+    watchdogfeed();
+
+    delay(dht.getMinimumSamplingPeriod()); /* Delay of amount equal to sampling period */
+    watchdogfeed();
+    int humidity = dht.getHumidity();/* Get humidity value */
+    int temperature = dht.getTemperature();/* Get temperature value */
+    watchdogfeed();
+
+    if (!strncmp(dht.getStatusString(), "OK", 2))
+    {
+      lcd.setCursor(0, 0); // Cursor0 , Linea0
+      lcd.print("H:");
+      lcd.print(humidity);
+      lcd.print("% ");
+
+      //lcd.setCursor(0, 1); // Cursor0 , Linea0
+      lcd.print("T:");
+      lcd.print(temperature);
+      lcd.print("C");
+    }
+    watchdogfeed();
+    debug.publish("Display : Loop");
+
+    if (gettemponce)
+    {
+      memset(instring, 0x00, sizeof(instring));
+      sprintf(instring, "4");
+      status.publish(instring);
+      gettemponce = 0;
+    }
+
+    while ((subscription = mqtt.readSubscription(5000)))
+    {
+      watchdogfeed();
+      if (subscription == &plant)
       {
-        lcd.setCursor(12, 0);
-        lcd.print("B");
-        lcd.print(levelb);
-        lcd.print("T");
-        lcd.print(levelt);
+        char printformat[17];
+        sscanf((char *)plant.lastread, "%d,%d,%d,%d,%d,%d,%d",
+               &type, &value1, &value2, &value3, &value4,
+               &levelb, &levelt);
+        if (type == REPORT)
+        {
+          lcd.setCursor(12, 0);
+          lcd.print("B");
+          lcd.print(levelb);
+          lcd.print("T");
+          lcd.print(levelt);
 
-        lcd.setCursor(0, 1);
-        lcd.print("B");
-        sprintf(printformat, "%02d", value1);
-        lcd.print(printformat);
-        lcd.print("/");
-        sprintf(printformat, "%02d", value2);
-        lcd.print(printformat);
-        lcd.print(" ");
-        lcd.print("T");
-        sprintf(printformat, "%02d", value3);
-        lcd.print(printformat);
-        lcd.print("/");
-        sprintf(printformat, "%02d   ", value4);
-        lcd.print(printformat);
+          lcd.setCursor(0, 1);
+          lcd.print("B");
+          sprintf(printformat, "%02d", value1);
+          lcd.print(printformat);
+          lcd.print("/");
+          sprintf(printformat, "%02d", value2);
+          lcd.print(printformat);
+          lcd.print(" ");
+          lcd.print("T");
+          sprintf(printformat, "%02d", value3);
+          lcd.print(printformat);
+          lcd.print("/");
+          sprintf(printformat, "%02d   ", value4);
+          lcd.print(printformat);
 
-        memset(publish, 0, sizeof(publish));
-        sprintf(publish, "%d,H=%d%,T=%dC", AUTOUPDATETEMPHUMID, humidity, temperature);
-        status.publish(publish);
+          memset(publish, 0, sizeof(publish));
+          sprintf(publish, "%d,H=%d%,T=%dC", AUTOUPDATETEMPHUMID, humidity, temperature);
+          status.publish(publish);
+        }
       }
     }
   }
@@ -210,14 +239,14 @@ unsigned char MQTT_connect()
 
   Serial.print("Connecting to MQTT... ");
 
-  uint8_t retries = 3;
+  uint8_t retries = 15;
 
   while ((ret = mqtt.connect()) != 0)
   { // connect will return 0 for connected
     Serial.println(mqtt.connectErrorString(ret));
-    Serial.println("Retrying MQTT connection in 5 seconds...");
+    Serial.println("Retrying MQTT connection in 1 seconds...");
     mqtt.disconnect();
-    delay(5000);  // wait 5 seconds
+    delay(1000);  // wait 5 seconds
     watchdogfeed();
     retries--;
     if (retries == 0)
