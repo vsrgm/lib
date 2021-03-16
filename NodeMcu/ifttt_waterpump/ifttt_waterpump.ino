@@ -7,6 +7,8 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266Ping.h>
 #include <ESP8266WebServer.h>
+#include <NTPClient.h>
+#include <WiFiUdp.h>
 
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_Client.h"
@@ -47,6 +49,11 @@ int bcnt = 0, tcnt = 0, btotal = 0, ttotal = 0;
 
 const char* ssid = WLAN_SSID;
 const char* password = WLAN_PASS;
+
+const long utcOffsetInSeconds = 19800;
+char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP, "europe.pool.ntp.org", utcOffsetInSeconds, 60000);
 
 void setup()
 {
@@ -174,6 +181,8 @@ void setup()
   // Setup MQTT subscription for onoff feed.
   mqtt.subscribe(&plant);
   watchdogfeed();
+  timeClient.begin();
+
 }
 
 void watchdogfeed()
@@ -481,6 +490,10 @@ bool waterpattern(int patterntype, int mhour, bool am, int hourp1, int hourp2)
       }
       break;
 
+    case 4:
+      timeClient.update();
+      mhour = timeClient.getHours();
+      am = mhour < 12;
     case 3:
       {
         if ((mhour >= 6) && (mhour <= 18)) // 6AM to 6PM
