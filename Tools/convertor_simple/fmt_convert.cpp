@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <stdlib.h>
+
 #define BYTE_CLAMP(temp) ((temp > 255) ? 255 : ((temp < 0) ? 0 :(unsigned char)temp))
 
 int convert_yuyv420_rgb888(unsigned char* yuyv_buffer,unsigned char* rgb888, unsigned int width, unsigned int height, int start_with)
@@ -401,7 +404,8 @@ int convert_rgb555_888(unsigned char* inbuf, unsigned char* outbuf, unsigned int
             }
        }
        return 0;
-}        
+}
+
 #if 0
 int convert_rgb555_888(unsigned char* rgb565,unsigned char* rgb888, unsigned int width, unsigned int height, int start_with)
 {
@@ -465,6 +469,7 @@ int convert_rgb555_888(unsigned char* rgb565,unsigned char* rgb888, unsigned int
     return 0;
 }
 #endif
+
 int convert_rgb565_888(unsigned char* rgb565,unsigned char* rgb888, unsigned int width, unsigned int height, int start_with)
 {
 
@@ -527,6 +532,7 @@ int convert_rgb565_888(unsigned char* rgb565,unsigned char* rgb888, unsigned int
     }
     return 0;
 }
+
 int convert_bayer12_bayer8(unsigned char *src_buffer, unsigned char *dest_buffer, int width, int height)
 {
     int index =0;
@@ -624,6 +630,59 @@ int convert_bayer8_rgb24(unsigned char *src_buffer, unsigned char *dest_buffer, 
     return 0;
 }
 
+int convert_bayer10_packed_rgbir(unsigned char *src_buffer, unsigned char *dest_buffer, int width, int height)
+{
+    /*
+     * B G  B G  B G ...
+     * G IR G IR G IR ...
+     */
+
+    unsigned int count = 0;
+    unsigned int widthinc = (unsigned int)(width*1.25);
+    for (unsigned int hidx = 0; hidx < height; hidx++)
+    {
+        for (unsigned int widx = 0; widx < width; widx+=4)
+        {
+            unsigned int widthidxinc = (unsigned int)(widx*1.25);
+             unsigned char* srcptr= &src_buffer[hidx * widthinc + widthidxinc];
+
+#if 0
+            dest_buffer[count++] = (src_ptr->B  & 0x3FF)>> 2;
+            dest_buffer[count++] = (src_ptr->G1 & 0x3FF)>> 2;
+            dest_buffer[count++] = (src_ptr->G2 & 0x3FF)>> 2;
+            dest_buffer[count++] = (src_ptr->IR & 0x3FF)>> 2;
+#elif 1
+             dest_buffer[count+ 0] = 0xFF & (((srcptr[0] & 0xFF)<<2 | (0x03 & srcptr[1]>>6)>> 2));           // 8 + 8 - 6 = 10
+             dest_buffer[count+ 1] = 0xff & (((srcptr[1] & 0x3F)<<4 | (0x0F & srcptr[2]>>4)>> 2));           // 6 + 4     = 10
+             dest_buffer[count+ 2] = 0xFF & (((srcptr[2] & 0x0F)<<6 | (0x3F & srcptr[3]>>2)>> 2));           // 4 + 6     = 10
+             dest_buffer[count+ 3] = 0xff & (((srcptr[3] & 0xC0)<<8 | (0x3F & srcptr[4])>> 2));              // 2 + 8     = 10
+             count += 4;
+#else
+             dest_buffer[count++] = (srcptr[2]<<2 | srcptr[3]>>6)>> 2;                    // 8 + 8 - 6 = 10
+             dest_buffer[count++] = ((srcptr[3] & 0x3F)<<4 | srcptr[0]>>4)>> 2;           // 6 + 4     = 10
+             dest_buffer[count++] = ((srcptr[0] & 0x0F)<<6 | srcptr[1]>>2)>> 2;           // 4 + 6     = 10
+             dest_buffer[count++] = ((srcptr[1] & 0xC0)<<8 | srcptr[6])>> 2;              // 2 + 8     = 10
+
+             dest_buffer[count++] = (srcptr[7]<<2 | srcptr[4]>>6)>> 2;                    // 8 + 8 - 6 = 10
+             dest_buffer[count++] = ((srcptr[4] & 0x3F)<<4 | srcptr[5]>>4)>> 2;           // 6 + 4     = 10
+             dest_buffer[count++] = ((srcptr[5] & 0x0F)<<6 | srcptr[10]>>2)>> 2;           // 4 + 6     = 10
+             dest_buffer[count++] = ((srcptr[10] & 0xC0)<<8 | srcptr[11])>> 2;              // 2 + 8     = 10
+
+             dest_buffer[count++] = (srcptr[8]<<2 | srcptr[9]>>6)>> 2;                    // 8 + 8 - 6 = 10
+             dest_buffer[count++] = ((srcptr[9] & 0x3F)<<4 | srcptr[14]>>4)>> 2;           // 6 + 4     = 10
+             dest_buffer[count++] = ((srcptr[14] & 0x0F)<<6 | srcptr[15]>>2)>> 2;           // 4 + 6     = 10
+             dest_buffer[count++] = ((srcptr[15] & 0xC0)<<8 | srcptr[12])>> 2;              // 2 + 8     = 10
+
+             dest_buffer[count++] = (srcptr[13]<<2 | srcptr[18]>>6)>> 2;                    // 8 + 8 - 6 = 10
+             dest_buffer[count++] = ((srcptr[18] & 0x3F)<<4 | srcptr[19]>>4)>> 2;           // 6 + 4     = 10
+             dest_buffer[count++] = ((srcptr[19] & 0x0F)<<6 | srcptr[16]>>2)>> 2;           // 4 + 6     = 10
+             dest_buffer[count++] = ((srcptr[16] & 0xC0)<<8 | srcptr[17])>> 2;              // 2 + 8     = 10
+#endif
+        }
+    }
+    printf("count %d - %d \n",count, width*height);
+
+}
 int convert_bmp_565_bmp_888(char *src_buffer, char *des_buffer, int width, int height)
 {
     int ret_val;

@@ -8,7 +8,7 @@ struct
 {
     enum pix_fmt fmt;
     char fmt_name[20];
-    int bpp;
+    float bpp;
     int bpp_padded;
 }img_pix_fmt[] = {
     {Y8, "Y8", 8, 0},
@@ -36,7 +36,9 @@ struct
     {BMP24_BGR, "BMP24_BGR", 24, 0 },
     {BMP24_RGB, "BMP24_RGB", 24, 0 },
 
-    {ABMP32_RGB, "BMP32_RGB", 32, 0 }
+    {ABMP32_RGB, "BMP32_RGB", 32, 0 },
+    {BAYER10_PACKED, "BAYER10_PACKED", 16, 0}
+
 };
 
 convert::convert(QWidget *parent) :
@@ -75,7 +77,8 @@ void convert::paintimage()
 {
     /* Take image data from file */
     FILE *fp;
-    unsigned int width, height, bpp;
+    unsigned int width, height;
+    unsigned int bpp;
     enum pix_fmt pix_fmt;
     unsigned char *src_buffer, *des_buffer;
     unsigned int file_length;
@@ -282,6 +285,14 @@ void convert::paintimage()
         case ABMP32_RGB: {
             convert_argb32_rgb(src_buffer, des_buffer, width, height);
         }break;
+
+        case BAYER10_PACKED: {
+            unsigned char *src_buffer1 = (unsigned char *)calloc(width * height * 2, 1);
+            convert_bayer10_packed_rgbir(src_buffer, src_buffer1, width, height);
+            convert_bayer8_rgb24(src_buffer1, des_buffer, width, height, 0);
+            free(src_buffer1);
+            break;
+        }
     }
 
     imageObject = new QImage(width, height, QImage::Format_RGB888);

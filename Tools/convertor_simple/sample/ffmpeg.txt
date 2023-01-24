@@ -1,0 +1,1 @@
+ffmpeg -vcodec png -i ./sample.png -vcodec rawvideo -f rawvideo -pix_fmt rgb565 texture.raw
