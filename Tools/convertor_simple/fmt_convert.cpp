@@ -619,9 +619,9 @@ int convert_bayer8_rgb24(unsigned char *src_buffer, unsigned char *dest_buffer, 
     };
             
     for(i=0,width_end_watch=0;i<width*(height-1);i++) {
-        dest_buffer[i*3+2] = src_buffer[pattern[pc][0][width_end_watch][i%2] +i];
-        dest_buffer[i*3+1] = src_buffer[pattern[pc][1][width_end_watch][i%2] +i];
-        dest_buffer[i*3+0] = src_buffer[pattern[pc][2][width_end_watch][i%2] +i];
+        dest_buffer[i*3+2] = src_buffer[pattern[pc][0][width_end_watch][i&1] +i];
+        dest_buffer[i*3+1] = src_buffer[pattern[pc][1][width_end_watch][i&1] +i];
+        dest_buffer[i*3+0] = src_buffer[pattern[pc][2][width_end_watch][i&1] +i];
 
         if((i%width) == 0) {
             width_end_watch = width_end_watch?0:1;
@@ -630,59 +630,105 @@ int convert_bayer8_rgb24(unsigned char *src_buffer, unsigned char *dest_buffer, 
     return 0;
 }
 
+int save_asyuv(unsigned char *des_buffer, unsigned int width, unsigned int height)
+{
+	/* Convert into YUV file and SAVE it */
+	FILE *yuvptr = fopen("sample.yuv", "wb");
+	unsigned char *yuvbuf = (unsigned char *)calloc(width * height*2, 1);
+
+	unsigned int widthinc, heightinc;
+	for (heightinc =0; heightinc < height; heightinc++)
+	{
+		for(widthinc = 0; widthinc < width; widthinc+=2)
+		{
+			unsigned char y1,u1,v1;
+			unsigned char y2,u2,v2;
+			unsigned char R1,G1,B1;
+			unsigned char R2,G2,B2;
+			R1 = des_buffer[(heightinc*width*3)+ widthinc*3 + 0];
+			G1 = des_buffer[(heightinc*width*3)+ widthinc*3 + 1];
+			B1 = des_buffer[(heightinc*width*3)+ widthinc*3 + 2];
+
+			R2 = des_buffer[(heightinc*width*3)+ widthinc*3 + 3];
+			G2 = des_buffer[(heightinc*width*3)+ widthinc*3 + 4];
+			B2 = des_buffer[(heightinc*width*3)+ widthinc*3 + 5];
+
+#define CLAMP(x) (x>255)?255:(x<0?0:x);
+			y1 = CLAMP((299*R1 +587*G1 +114*B1)/1000);
+			u1 = CLAMP(((-169*R1 -331*G1 +499*B1)/1000)+128);
+			v1 = CLAMP(((499*R1 -418*G1 -81*B1)/1000)+128);
+
+			y2 = CLAMP((299*R2 +587*G2 +114*B2)/1000);
+			u1 = CLAMP(((-169*R2 -331*G2 +499*B2)/1000)+128);
+			v1 = CLAMP(((499*R2 -418*G2 -81*B2)/1000)+128);
+
+			yuvbuf[(heightinc*width*2) + widthinc*2 +0] = y1;
+			yuvbuf[(heightinc*width*2) + widthinc*2 +1] = u1;
+			yuvbuf[(heightinc*width*2) + widthinc*2 +2] = y2;
+			yuvbuf[(heightinc*width*2) + widthinc*2 +3] = v1;
+		}
+	}
+	fwrite(yuvbuf,1, width * height*2, yuvptr);
+	fclose(yuvptr);
+	free(yuvbuf);
+}
 int convert_bayer10_packed_rgbir(unsigned char *src_buffer, unsigned char *dest_buffer, int width, int height)
 {
-    /*
-     * B G  B G  B G ...
-     * G IR G IR G IR ...
-     */
+	/*
+	 * B G B G (padded bits)  B G B G (padded bits) ...
+	 * G IR G IR (padded bits) G IR G IR (padded bits) ...
+	 */
+#if 1
+	unsigned int count = 0;
+	unsigned int widthinc = (unsigned int)(width*1.25);
+	for (unsigned int hidx = 0; hidx < height; hidx++)
+	{
+		for (unsigned int widx = 0; widx < width; widx+=4)
+		{
+			unsigned int widthidxinc = (unsigned int)(widx*1.25);
+			unsigned char* srcptr= &src_buffer[hidx * widthinc + widthidxinc];
 
-    unsigned int count = 0;
-    unsigned int widthinc = (unsigned int)(width*1.25);
-    for (unsigned int hidx = 0; hidx < height; hidx++)
-    {
-        for (unsigned int widx = 0; widx < width; widx+=4)
-        {
-            unsigned int widthidxinc = (unsigned int)(widx*1.25);
-             unsigned char* srcptr= &src_buffer[hidx * widthinc + widthidxinc];
-
-#if 0
-            dest_buffer[count++] = (src_ptr->B  & 0x3FF)>> 2;
-            dest_buffer[count++] = (src_ptr->G1 & 0x3FF)>> 2;
-            dest_buffer[count++] = (src_ptr->G2 & 0x3FF)>> 2;
-            dest_buffer[count++] = (src_ptr->IR & 0x3FF)>> 2;
-#elif 1
-             dest_buffer[count+ 0] = 0xFF & (((srcptr[0] & 0xFF)<<2 | (0x03 & srcptr[1]>>6)>> 2));           // 8 + 8 - 6 = 10
-             dest_buffer[count+ 1] = 0xff & (((srcptr[1] & 0x3F)<<4 | (0x0F & srcptr[2]>>4)>> 2));           // 6 + 4     = 10
-             dest_buffer[count+ 2] = 0xFF & (((srcptr[2] & 0x0F)<<6 | (0x3F & srcptr[3]>>2)>> 2));           // 4 + 6     = 10
-             dest_buffer[count+ 3] = 0xff & (((srcptr[3] & 0xC0)<<8 | (0x3F & srcptr[4])>> 2));              // 2 + 8     = 10
-             count += 4;
+			dest_buffer[count+ 1] = srcptr[1];
+			dest_buffer[count+ 0] = srcptr[0];
+			dest_buffer[count+ 3] = srcptr[3];
+			dest_buffer[count+ 2] = srcptr[2];
+			count+=4;		
+		}
+	}
 #else
-             dest_buffer[count++] = (srcptr[2]<<2 | srcptr[3]>>6)>> 2;                    // 8 + 8 - 6 = 10
-             dest_buffer[count++] = ((srcptr[3] & 0x3F)<<4 | srcptr[0]>>4)>> 2;           // 6 + 4     = 10
-             dest_buffer[count++] = ((srcptr[0] & 0x0F)<<6 | srcptr[1]>>2)>> 2;           // 4 + 6     = 10
-             dest_buffer[count++] = ((srcptr[1] & 0xC0)<<8 | srcptr[6])>> 2;              // 2 + 8     = 10
+	/* 
+     * B G  R G  B G  R G
+     * G IR G IR G IR G IR 
+     */
+	unsigned int count = 0;
+	unsigned int widthinc = (unsigned int)(width*1.25);
+	unsigned char boolcount = 0;
+	for (unsigned int hidx = 0; hidx < height; hidx+=2)
+	{
+		boolcount = boolcount?0:1;
+		for(unsigned int widx = 0; widx < width; widx+=4)
+		{
+			unsigned int widthidxinc = (unsigned int)(widx*1.25);
+			unsigned char* srcptr= &src_buffer[hidx * widthinc + widthidxinc];
+			unsigned char* srcptrnextline= &src_buffer[(hidx+1) * widthinc + widthidxinc];
 
-             dest_buffer[count++] = (srcptr[7]<<2 | srcptr[4]>>6)>> 2;                    // 8 + 8 - 6 = 10
-             dest_buffer[count++] = ((srcptr[4] & 0x3F)<<4 | srcptr[5]>>4)>> 2;           // 6 + 4     = 10
-             dest_buffer[count++] = ((srcptr[5] & 0x0F)<<6 | srcptr[10]>>2)>> 2;           // 4 + 6     = 10
-             dest_buffer[count++] = ((srcptr[10] & 0xC0)<<8 | srcptr[11])>> 2;              // 2 + 8     = 10
+			dest_buffer[count+ 1] = srcptr[0];  //B
+			dest_buffer[count+ 0] = srcptr[1];  //G
+			dest_buffer[count+ 3] = srcptr[0];  //B
+			dest_buffer[count+ 2] = srcptr[3];  //G
 
-             dest_buffer[count++] = (srcptr[8]<<2 | srcptr[9]>>6)>> 2;                    // 8 + 8 - 6 = 10
-             dest_buffer[count++] = ((srcptr[9] & 0x3F)<<4 | srcptr[14]>>4)>> 2;           // 6 + 4     = 10
-             dest_buffer[count++] = ((srcptr[14] & 0x0F)<<6 | srcptr[15]>>2)>> 2;           // 4 + 6     = 10
-             dest_buffer[count++] = ((srcptr[15] & 0xC0)<<8 | srcptr[12])>> 2;              // 2 + 8     = 10
+			dest_buffer[count + width + 1] = srcptrnextline[0];  //G
+			dest_buffer[count + width + 0] = srcptr[2];  //R
+			dest_buffer[count + width + 3] = srcptrnextline[2];  //G
+			dest_buffer[count + width + 2] = srcptr[2];  //R
+			count +=4;
 
-             dest_buffer[count++] = (srcptr[13]<<2 | srcptr[18]>>6)>> 2;                    // 8 + 8 - 6 = 10
-             dest_buffer[count++] = ((srcptr[18] & 0x3F)<<4 | srcptr[19]>>4)>> 2;           // 6 + 4     = 10
-             dest_buffer[count++] = ((srcptr[19] & 0x0F)<<6 | srcptr[16]>>2)>> 2;           // 4 + 6     = 10
-             dest_buffer[count++] = ((srcptr[16] & 0xC0)<<8 | srcptr[17])>> 2;              // 2 + 8     = 10
+		}
+		count +=width;
+	}
 #endif
-        }
-    }
-    printf("count %d - %d \n",count, width*height);
-
 }
+
 int convert_bmp_565_bmp_888(char *src_buffer, char *des_buffer, int width, int height)
 {
     int ret_val;

@@ -3,6 +3,7 @@
 #include "fmt_convert.h"
 #include <QMessageBox>
 #include <stdio.h>
+#include <bayer.h>
 
 struct
 {
@@ -165,6 +166,7 @@ void convert::paintimage()
 
         case UYVY: {
             convert_yuyv_rgb888(src_buffer, des_buffer, width, height, 2);
+			save_asyuv(des_buffer,width, height);
         }break;
 
         case YVYU: {
@@ -215,7 +217,8 @@ void convert::paintimage()
         }break;
 
         case BAYER8_BGGR: {
-            convert_bayer8_rgb24(src_buffer, des_buffer, width, height, 0);
+            //convert_bayer8_rgb24(src_buffer, des_buffer, width, height, 0);
+			dc1394_bayer_decoding_8bit(src_buffer, des_buffer,  width, height, DC1394_COLOR_FILTER_BGGR, DC1394_BAYER_METHOD_EDGESENSE);
         }break;
 
         case BAYER8_GBRG: {
@@ -287,9 +290,12 @@ void convert::paintimage()
         }break;
 
         case BAYER10_PACKED: {
-            unsigned char *src_buffer1 = (unsigned char *)calloc(width * height * 2, 1);
+            unsigned char *src_buffer1 = (unsigned char *)calloc(width * height, 1);
             convert_bayer10_packed_rgbir(src_buffer, src_buffer1, width, height);
-            convert_bayer8_rgb24(src_buffer1, des_buffer, width, height, 0);
+            //convert_bayer8_rgb24(src_buffer1, des_buffer, width, height, 0);
+			dc1394_bayer_decoding_8bit(src_buffer1, des_buffer,  width, height, DC1394_COLOR_FILTER_BGGR, DC1394_BAYER_METHOD_SIMPLE);
+
+			save_asyuv(des_buffer,width, height);
             free(src_buffer1);
             break;
         }
