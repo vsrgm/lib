@@ -675,58 +675,86 @@ int save_asyuv(unsigned char *des_buffer, unsigned int width, unsigned int heigh
 int convert_bayer10_packed_rgbir(unsigned char *src_buffer, unsigned char *dest_buffer, int width, int height)
 {
 	/*
-	 * B G B G (padded bits)  B G B G (padded bits) ...
+	 * B G R G (padded bits)  B G R G (padded bits) ...
+	 * G IR G IR (padded bits) G IR G IR (padded bits) ...
+	 * R G B G (padded bits)  B G R G (padded bits) ...
 	 * G IR G IR (padded bits) G IR G IR (padded bits) ...
 	 */
-#if 1
 	unsigned int count = 0;
+	unsigned int srccount = 0;
+
 	unsigned int widthinc = (unsigned int)(width*1.25);
 	for (unsigned int hidx = 0; hidx < height; hidx++)
 	{
-		for (unsigned int widx = 0; widx < width; widx+=4)
-		{
-			unsigned int widthidxinc = (unsigned int)(widx*1.25);
-			unsigned char* srcptr= &src_buffer[hidx * widthinc + widthidxinc];
+		srccount = 0;
+		unsigned int patternidx = hidx%4;
+		unsigned char* srcptr_even;
+		unsigned char* srcptr_odd;
 
-			dest_buffer[count+ 1] = srcptr[1];
-			dest_buffer[count+ 0] = srcptr[0];
-			dest_buffer[count+ 3] = srcptr[3];
-			dest_buffer[count+ 2] = srcptr[2];
-			count+=4;		
+		if ((hidx%2) == 0)
+		{
+			srcptr_even = &src_buffer[hidx * widthinc];
+			srcptr_odd  = &src_buffer[(hidx+1) * widthinc];
+		}
+		else
+		{
+			srcptr_even = &src_buffer[(hidx-1) * widthinc];
+			srcptr_odd  = &src_buffer[(hidx) * widthinc];
+		}
+
+		switch(patternidx)
+		{
+			case 2:
+			for (unsigned int widx = 0; widx < width; widx+=4)
+			{
+				dest_buffer[count+ 0] = srcptr_even[srccount + 0];
+				dest_buffer[count+ 1] = srcptr_even[srccount + 1];
+				dest_buffer[count+ 2] = srcptr_even[srccount + 0];
+				dest_buffer[count+ 3] = srcptr_even[srccount + 3];
+				srccount+=5;
+				count+=4;	
+			}
+			break;
+
+			case 3:
+			for (unsigned int widx = 0; widx < width; widx+=4)
+			{
+				dest_buffer[count+ 0] =  srcptr_odd[srccount  +0];
+				dest_buffer[count+ 1] =  srcptr_even[srccount +2];
+				dest_buffer[count+ 2] =  srcptr_odd[srccount  +2];
+				dest_buffer[count+ 3] =  srcptr_even[srccount +2];
+				srccount+=5;
+				count+=4;		
+			}
+			break;
+
+			case 0:
+			for (unsigned int widx = 0; widx < width; widx+=4)
+			{
+				dest_buffer[count+ 0] = srcptr_even[srccount + 2];
+				dest_buffer[count+ 1] = srcptr_even[srccount + 1];
+				dest_buffer[count+ 2] = srcptr_even[srccount + 2];
+				dest_buffer[count+ 3] = srcptr_even[srccount + 3];
+				srccount+=5;
+				count+=4;	
+			}
+			break;
+
+			case 1:
+			for (unsigned int widx = 0; widx < width; widx+=4)
+			{
+				dest_buffer[count+ 0] =  srcptr_odd[srccount  +0];
+				dest_buffer[count+ 1] =  srcptr_even[srccount +0];
+				dest_buffer[count+ 2] =  srcptr_odd[srccount  +2];
+				dest_buffer[count+ 3] =  srcptr_even[srccount +0];
+				srccount+=5;
+				count+=4;		
+			}
+			break;
 		}
 	}
-#else
-	/* 
-     * B G  R G  B G  R G
-     * G IR G IR G IR G IR 
-     */
-	unsigned int count = 0;
-	unsigned int widthinc = (unsigned int)(width*1.25);
-	unsigned char boolcount = 0;
-	for (unsigned int hidx = 0; hidx < height; hidx+=2)
-	{
-		boolcount = boolcount?0:1;
-		for(unsigned int widx = 0; widx < width; widx+=4)
-		{
-			unsigned int widthidxinc = (unsigned int)(widx*1.25);
-			unsigned char* srcptr= &src_buffer[hidx * widthinc + widthidxinc];
-			unsigned char* srcptrnextline= &src_buffer[(hidx+1) * widthinc + widthidxinc];
 
-			dest_buffer[count+ 1] = srcptr[0];  //B
-			dest_buffer[count+ 0] = srcptr[1];  //G
-			dest_buffer[count+ 3] = srcptr[0];  //B
-			dest_buffer[count+ 2] = srcptr[3];  //G
-
-			dest_buffer[count + width + 1] = srcptrnextline[0];  //G
-			dest_buffer[count + width + 0] = srcptr[2];  //R
-			dest_buffer[count + width + 3] = srcptrnextline[2];  //G
-			dest_buffer[count + width + 2] = srcptr[2];  //R
-			count +=4;
-
-		}
-		count +=width;
-	}
-#endif
+	return 0;
 }
 
 int convert_bmp_565_bmp_888(char *src_buffer, char *des_buffer, int width, int height)
