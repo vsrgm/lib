@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define BYTE_CLAMP(temp) ((temp > 255) ? 255 : ((temp < 0) ? 0 :(unsigned char)temp))
 
@@ -379,6 +380,73 @@ int convert_yuyv_rgb888(unsigned char* yuyv_buffer,unsigned char* rgb888, unsign
         }
     }
     return 0;
+}
+
+int perform_equalize_rgb24 (unsigned char *ptr, unsigned int width, unsigned int height)
+{
+	unsigned char R,G,B;
+	unsigned int R_count[256];
+	unsigned int G_count[256];
+	unsigned int B_count[256];
+    memset(R_count, 0x00, sizeof(R_count));
+	memset(G_count, 0x00, sizeof(G_count));
+	memset(B_count, 0x00, sizeof(B_count));
+	unsigned int R_sum = 0;
+	unsigned int G_sum = 0;
+	unsigned int B_sum = 0;
+	unsigned int cdf_R_count[256];
+	unsigned int cdf_G_count[256];
+	unsigned int cdf_B_count[256];
+	unsigned int cdf_R_min = 0;
+	unsigned int cdf_G_min = 0;
+	unsigned int cdf_B_min = 0;
+
+	unsigned char hv_R[256];
+	unsigned char hv_G[256];
+	unsigned char hv_B[256];
+
+	unsigned int R_total_count = width * height;
+	unsigned int G_total_count = R_total_count;
+	unsigned int B_total_count = R_total_count;
+
+    for(unsigned int i=0;i<(width*height);i++) {
+        R = ptr[i*3+2];
+        G = ptr[i*3+1];
+        B = ptr[i*3+0];
+
+	/* perform Histogram */
+		R_count[R]++;
+		G_count[G]++;
+		B_count[B]++;
+    }
+	#define CEIL(x) ((x)>255?255:((x)<0?0:(x)))
+	/* compute cdf and h(v) */
+	for (unsigned int cdf_idx=0; cdf_idx <256; cdf_idx++)
+	{
+		R_sum += R_count[cdf_idx];
+		G_sum += G_count[cdf_idx];
+		B_sum += B_count[cdf_idx];
+
+		cdf_R_min = (cdf_R_min > 0)?cdf_R_min:R_sum;
+		cdf_G_min = (cdf_G_min > 0)?cdf_G_min:G_sum;
+		cdf_B_min = (cdf_B_min > 0)?cdf_B_min:B_sum;
+
+		cdf_R_count[cdf_idx] = R_sum;
+		cdf_G_count[cdf_idx] = G_sum;
+		cdf_B_count[cdf_idx] = B_sum;
+		/* round((cdf(v)-cdf(min)/(MxN)-cdf(min)x(L-1) */
+		hv_R[cdf_idx] = CEIL(((cdf_R_count[cdf_idx] - cdf_R_min) * 255) / (R_total_count - cdf_R_min));
+		hv_G[cdf_idx] = CEIL(((cdf_G_count[cdf_idx] - cdf_G_min) * 255) / (G_total_count - cdf_G_min));
+		hv_B[cdf_idx] = CEIL(((cdf_B_count[cdf_idx] - cdf_B_min) * 255) / (B_total_count - cdf_B_min));
+	}
+
+	/* Equalize */
+	for(unsigned int i=0;i<(width*height);i++) {
+		ptr[i*3+2] = (ptr[i*3+2] > 240) ? ptr[i*3+2] : hv_R[ptr[i*3+2]];
+		ptr[i*3+1] = (ptr[i*3+1] > 240) ? ptr[i*3+1] : hv_G[ptr[i*3+1]];
+		ptr[i*3+0] = (ptr[i*3+0] > 240) ? ptr[i*3+0] : hv_B[ptr[i*3+0]];
+	}
+	return 0;
 }
 
 int convert_rgb555_888(unsigned char* inbuf, unsigned char* outbuf, unsigned int width, unsigned int height, int start_with)

@@ -17,5 +17,6 @@ int convert_nv12_rgb888(unsigned char* yuyv_buffer,unsigned char* rgb888, unsign
 int convert_argb32_rgb(unsigned char *src_buffer, unsigned char *des_buffer, int width, int height);
 int convert_bayer10_packed_rgbir(unsigned char *src_buffer, unsigned char *des_buffer, int width, int height);
 int save_asyuv(unsigned char *des_buffer, unsigned int width, unsigned int height);
+int perform_equalize_rgb24 (unsigned char *ptr, unsigned int width, unsigned int height);
 
 #endif // FMT_CONVERT_H
