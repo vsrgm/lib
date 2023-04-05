@@ -698,6 +698,15 @@ int convert_bayer8_rgb24(unsigned char *src_buffer, unsigned char *dest_buffer, 
     return 0;
 }
 
+int save_ir_asyuv(unsigned char *des_buffer, unsigned int width, unsigned int height)
+{
+	/* Convert into YUV file and SAVE it */
+	FILE *yuvptr = fopen("sample_ir.yuv", "wb");
+	fwrite(des_buffer,1, width * height, yuvptr);
+	fclose(yuvptr);
+}
+
+
 int save_asyuv(unsigned char *des_buffer, unsigned int width, unsigned int height)
 {
 	/* Convert into YUV file and SAVE it */
@@ -740,6 +749,27 @@ int save_asyuv(unsigned char *des_buffer, unsigned int width, unsigned int heigh
 	fclose(yuvptr);
 	free(yuvbuf);
 }
+
+int extract_bayer10_packed_ir(unsigned char *src_buffer, unsigned char *dest_buffer, int width, int height)
+{
+	unsigned int count=0;
+	unsigned int widthinc = (unsigned int)(width*1.25);
+	unsigned int widx = 0;
+	for (unsigned int hidx=1;hidx<height;hidx+=2)
+	{
+		for (widx=1;widx<widthinc;widx+=2)
+		{
+			if ((widx%5)==0)
+				widx++;
+
+			dest_buffer[count++] = src_buffer[hidx*widthinc + widx];
+		}
+	}
+	printf("Total IR count %d x %d = %d \n", width, height, count);
+
+	return 0;
+}
+
 int convert_bayer10_packed_rgbir(unsigned char *src_buffer, unsigned char *dest_buffer, int width, int height)
 {
 	/*

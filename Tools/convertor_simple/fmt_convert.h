@@ -18,5 +18,7 @@ int convert_argb32_rgb(unsigned char *src_buffer, unsigned char *des_buffer, int
 int convert_bayer10_packed_rgbir(unsigned char *src_buffer, unsigned char *des_buffer, int width, int height);
 int save_asyuv(unsigned char *des_buffer, unsigned int width, unsigned int height);
 int perform_equalize_rgb24 (unsigned char *ptr, unsigned int width, unsigned int height);
+int save_ir_asyuv(unsigned char *des_buffer, unsigned int width, unsigned int height);
+int extract_bayer10_packed_ir(unsigned char *src_buffer, unsigned char *dest_buffer, int width, int height);
 
 #endif // FMT_CONVERT_H

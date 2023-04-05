@@ -294,10 +294,15 @@ void convert::paintimage()
             convert_bayer10_packed_rgbir(src_buffer, src_buffer1, width, height);
             convert_bayer8_rgb24(src_buffer1, des_buffer, width, height, 3);
 			//dc1394_bayer_decoding_8bit(src_buffer1, des_buffer,  width, height, DC1394_COLOR_FILTER_BGGR, DC1394_BAYER_METHOD_SIMPLE);
-			perform_equalize_rgb24 (des_buffer, width, height);
-
+			perform_equalize_rgb24 (des_buffer, width, height);			
 			save_asyuv(des_buffer,width, height);
             free(src_buffer1);
+
+            unsigned char *src_ir = (unsigned char *)calloc((width * height)/4, 1);
+            extract_bayer10_packed_ir(src_buffer, src_ir, width, height);
+			save_ir_asyuv(src_ir,width/2, height/2);            
+            free(src_ir);
+
             break;
         }
     }
