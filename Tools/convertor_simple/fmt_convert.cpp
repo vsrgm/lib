@@ -706,6 +706,14 @@ int save_ir_asyuv(unsigned char *des_buffer, unsigned int width, unsigned int he
 	fclose(yuvptr);
 }
 
+int save_buffer(unsigned char *des_buffer, unsigned int size)
+{
+	/* Convert into YUV file and SAVE it */
+	FILE *raw = fopen("sample.raw", "wb");
+	fwrite(des_buffer,1, size, raw);
+    fclose(raw);
+}
+
 
 int save_asyuv(unsigned char *des_buffer, unsigned int width, unsigned int height)
 {

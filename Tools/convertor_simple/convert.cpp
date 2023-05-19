@@ -171,6 +171,8 @@ void convert::paintimage()
 
         case YVYU: {
             convert_yuyv_rgb888(src_buffer, des_buffer, width, height, 1);
+            save_buffer(des_buffer, width*height*3);
+
         }break;
 
         case YUYV: {
@@ -280,6 +282,7 @@ void convert::paintimage()
         }break;
 
         case BMP24_BGR: {
+            memcpy(des_buffer, src_buffer, width*height*3);
         }break;
 
         case BMP24_RGB: {
@@ -294,7 +297,7 @@ void convert::paintimage()
             convert_bayer10_packed_rgbir(src_buffer, src_buffer1, width, height);
             convert_bayer8_rgb24(src_buffer1, des_buffer, width, height, 3);
 			//dc1394_bayer_decoding_8bit(src_buffer1, des_buffer,  width, height, DC1394_COLOR_FILTER_BGGR, DC1394_BAYER_METHOD_SIMPLE);
-			perform_equalize_rgb24 (des_buffer, width, height);			
+			//perform_equalize_rgb24 (des_buffer, width, height);			
 			save_asyuv(des_buffer,width, height);
             free(src_buffer1);
 
