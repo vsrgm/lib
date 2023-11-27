@@ -38,7 +38,8 @@ struct
     {BMP24_RGB, "BMP24_RGB", 24, 0 },
 
     {ABMP32_RGB, "BMP32_RGB", 32, 0 },
-    {BAYER10_PACKED, "BAYER10_PACKED", 16, 0}
+    {BAYER10_PACKED, "BAYER10_PACKED", 16, 0},
+    {RGBIR16, "RGBIR", 16, 0}
 
 };
 
@@ -263,7 +264,7 @@ void convert::paintimage()
         }break;
         case BAYER10_BGGR: {
             convert_bayer_gen_rgb24((short unsigned int*)src_buffer, des_buffer,
-                        width, height, 0, img_pix_fmt[pix_fmt].bpp -8);
+                        width, height, 0,  img_pix_fmt[pix_fmt].bpp -8);
         }break;
 
         case BAYER10_GBRG: {
@@ -308,6 +309,22 @@ void convert::paintimage()
 
             break;
         }
+
+	case RGBIR16:
+	{
+            unsigned char *src_buffer1 = (unsigned char *)calloc(width * height, 1);
+	    convert_RGBIR16_bayer8(src_buffer, src_buffer1, width, height);
+            convert_bayer8_rgb24(src_buffer1, des_buffer, width, height, 1);
+	    perform_equalize_rgb24 (des_buffer, width, height);
+	    save_asyuv(des_buffer,width, height);
+            unsigned char *src_ir = (unsigned char *)calloc((width * height)/4, 1);
+	    extract_RGBIR16_IR8(src_buffer, src_ir, width, height);
+	    save_ir_asyuv(src_ir,width/2, height/2);            
+            free(src_buffer1);
+	    break;
+
+	}
+
     }
 
     imageObject = new QImage(width, height, QImage::Format_RGB888);

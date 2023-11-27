@@ -21,5 +21,7 @@ int perform_equalize_rgb24 (unsigned char *ptr, unsigned int width, unsigned int
 int save_ir_asyuv(unsigned char *des_buffer, unsigned int width, unsigned int height);
 int extract_bayer10_packed_ir(unsigned char *src_buffer, unsigned char *dest_buffer, int width, int height);
 int save_buffer(unsigned char *des_buffer, unsigned int size);
+int convert_RGBIR16_bayer8(unsigned char *src_buffer, unsigned char *dest_buffer, int width, int height);
+int extract_RGBIR16_IR8(unsigned char *src_buffer, unsigned char *dest_buffer, int width, int height);
 
 #endif // FMT_CONVERT_H
