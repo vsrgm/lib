@@ -86,7 +86,8 @@ enum pix_fmt
     ABMP32_RGB,
 
     BAYER10_PACKED,
-    RGBIR16
+    RGBIR16,
+    BGGR16
 };
 
 #endif // CONVERT_H

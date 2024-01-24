@@ -42,13 +42,14 @@ public:
     QVBoxLayout *verticalLayout_2;
     QLabel *label_2;
     QLineEdit *width;
+    QSpacerItem *verticalSpacer;
     QLabel *label_6;
     QLineEdit *frame_stride;
     QSpacerItem *horizontalSpacer_2;
     QVBoxLayout *verticalLayout_3;
     QLabel *label_3;
     QLineEdit *height;
-    QSpacerItem *verticalSpacer;
+    QSpacerItem *verticalSpacer_5;
     QSpacerItem *horizontalSpacer_3;
     QVBoxLayout *verticalLayout_4;
     QLabel *label_7;
@@ -75,7 +76,7 @@ public:
             convert->setObjectName(QStringLiteral("convert"));
         convert->setWindowModality(Qt::NonModal);
         convert->setEnabled(true);
-        convert->resize(1073, 642);
+        convert->resize(1210, 699);
         centralWidget = new QWidget(convert);
         centralWidget->setObjectName(QStringLiteral("centralWidget"));
         horizontalLayout_2 = new QHBoxLayout(centralWidget);
@@ -132,6 +133,10 @@ public:
 
         verticalLayout_2->addWidget(width);
 
+        verticalSpacer = new QSpacerItem(2, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+
+        verticalLayout_2->addItem(verticalSpacer);
+
         label_6 = new QLabel(centralWidget);
         label_6->setObjectName(QStringLiteral("label_6"));
 
@@ -162,9 +167,9 @@ public:
 
         verticalLayout_3->addWidget(height);
 
-        verticalSpacer = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+        verticalSpacer_5 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
 
-        verticalLayout_3->addItem(verticalSpacer);
+        verticalLayout_3->addItem(verticalSpacer_5);
 
 
         horizontalLayout->addLayout(verticalLayout_3);

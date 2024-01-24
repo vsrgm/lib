@@ -39,7 +39,8 @@ struct
 
     {ABMP32_RGB, "BMP32_RGB", 32, 0 },
     {BAYER10_PACKED, "BAYER10_PACKED", 16, 0},
-    {RGBIR16, "RGBIR", 16, 0}
+    {RGBIR16, "RGBIR", 16, 0},
+    {BGGR16, "BGGR16", 16, 0}
 
 };
 
@@ -312,17 +313,31 @@ void convert::paintimage()
 
 	case RGBIR16:
 	{
-            unsigned char *src_buffer1 = (unsigned char *)calloc(width * height, 1);
-	    convert_RGBIR16_bayer8(src_buffer, src_buffer1, width, height);
-            convert_bayer8_rgb24(src_buffer1, des_buffer, width, height, 1);
-	    perform_equalize_rgb24 (des_buffer, width, height);
-	    save_asyuv(des_buffer,width, height);
-            unsigned char *src_ir = (unsigned char *)calloc((width * height)/4, 1);
-	    extract_RGBIR16_IR8(src_buffer, src_ir, width, height);
-	    save_ir_asyuv(src_ir,width/2, height/2);            
-            free(src_buffer1);
-	    break;
-
+        unsigned char *src_buffer1 = (unsigned char *)calloc(width * height, 1);
+        convert_RGBIR16_bayer8(src_buffer, src_buffer1, width, height);
+        convert_bayer8_rgb24(src_buffer1, des_buffer, width, height, 1);
+        perform_equalize_rgb24 (des_buffer, width, height);
+        save_asyuv(des_buffer,width, height);
+        unsigned char *src_ir = (unsigned char *)calloc((width * height)/4, 1);
+        extract_RGBIR16_IR8(src_buffer, src_ir, width, height);
+        //perform_equalize_y8 (src_ir, width/2, height/2);
+        save_ir_asyuv(src_ir,width/2, height/2);            
+        free(src_buffer1);
+        break;
+	}
+	case BGGR16:
+	{
+        unsigned char *src_buffer1 = (unsigned char *)calloc(width * height, 1);
+        convert_bit16_bit8((unsigned short *)src_buffer, src_buffer1, width, height);
+        convert_bayer8_rgb24(src_buffer1, des_buffer, width, height, 2);
+        //perform_equalize_rgb24 (des_buffer, width, height);
+        save_asyuv(des_buffer,width, height);
+        unsigned char *src_ir = (unsigned char *)calloc((width * height)/4, 1);
+        extract_RGBIR16_IR8(src_buffer, src_ir, width, height);
+        //perform_equalize_y8 (src_ir, width/2, height/2);
+        save_ir_asyuv(src_ir,width/2, height/2);            
+        free(src_buffer1);
+        break;
 	}
 
     }

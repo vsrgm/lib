@@ -381,6 +381,44 @@ int convert_yuyv_rgb888(unsigned char* yuyv_buffer,unsigned char* rgb888, unsign
     }
     return 0;
 }
+int perform_equalize_y8 (unsigned char *ptr, unsigned int width, unsigned int height)
+{
+	unsigned char Y;
+	unsigned int Y_count[256];
+    memset(Y_count, 0x00, sizeof(Y_count));
+	unsigned int Y_sum = 0;
+	unsigned int cdf_Y_count[256];
+	unsigned int cdf_Y_min = 0;
+
+	unsigned char hv_Y[256];
+
+	unsigned int Y_total_count = width * height;
+
+    for(unsigned int i=0;i<(width*height);i++) {
+        Y = ptr[i];
+
+	/* perform Histogram */
+		Y_count[Y]++;
+    }
+	#define CEIL(x) ((x)>255?255:((x)<0?0:(x)))
+	/* compute cdf and h(v) */
+	for (unsigned int cdf_idx=0; cdf_idx <256; cdf_idx++)
+	{
+		Y_sum += Y_count[cdf_idx];
+
+		cdf_Y_min = (cdf_Y_min > 0)?cdf_Y_min:Y_sum;
+
+		cdf_Y_count[cdf_idx] = Y_sum;
+		/* round((cdf(v)-cdf(min)/(MxN)-cdf(min)x(L-1) */
+		hv_Y[cdf_idx] = CEIL(((cdf_Y_count[cdf_idx] - cdf_Y_min) * 255) / (Y_total_count - cdf_Y_min));
+	}
+
+	/* Equalize */
+	for(unsigned int i=0;i<(width*height);i++) {
+		ptr[i] = (ptr[i] > 240) ? ptr[i] : hv_Y[ptr[i]];
+	}
+	return 0;
+}
 
 int perform_equalize_rgb24 (unsigned char *ptr, unsigned int width, unsigned int height)
 {
@@ -777,6 +815,7 @@ int extract_bayer10_packed_ir(unsigned char *src_buffer, unsigned char *dest_buf
 
 	return 0;
 }
+       #include <arpa/inet.h>
 
 int extract_RGBIR16_IR8(unsigned char *src_buffer, unsigned char *dest_buffer, int width, int height)
 {
@@ -788,11 +827,18 @@ int extract_RGBIR16_IR8(unsigned char *src_buffer, unsigned char *dest_buffer, i
 		img = (unsigned short*) &src_buffer[hidx * widthinc];
 		for (unsigned int widx=1;widx<(widthinc/2);widx+=2)
 		{
-			dest_buffer[count++] = img[widx]>>8;
-			printf("count = %d \n",count);
+			dest_buffer[count++] = (img[widx])>>8;
 		}
 	}		
 	return 0;
+}
+
+int convert_bit16_bit8(unsigned short *src_buffer, unsigned char *dest_buffer, int width, int height)
+{
+    for (unsigned int idx=0; idx<(width*height); idx++)
+    {
+        dest_buffer[idx] = ((src_buffer[idx])) >>8;//htons
+    }
 }
 
 int convert_RGBIR16_bayer8(unsigned char *src_buffer, unsigned char *dest_buffer, int width, int height)

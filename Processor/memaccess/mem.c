@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
 
 	int fd = open("/dev/mem", O_SYNC);
 	printf("page_base = %x \n", page_base);
-	unsigned char *mem = mmap(NULL, page_offset + len, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, page_base);
+	volatile unsigned int *mem = mmap(NULL, page_offset + len, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, page_base);
 	if (mem == MAP_FAILED) {
 		perror("Can't map memory");
 		return -1;
@@ -31,8 +31,8 @@ int main(int argc, char *argv[]) {
 	int start_offset = offset - page_base;
 	printf("start_offset = 0x%x Mapped size 0x%x\n", start_offset,(page_offset + len));
 	for (i = start_offset; i < (page_offset + len); ++i) {
-	//	printf("0x%x => %02x \n", addr++, (int)mem[page_offset + i]);
-		mem[page_offset + i] = 0xFF;
+		printf("0x%x => 0x%x \n", addr, (int)mem[page_offset + i]);
+		addr+=4;
 	}
 
 	return 0;
