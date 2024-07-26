@@ -21,14 +21,14 @@ private:
     Ui::convert *ui;
     void paintimage();
     void resize_base(int width,int height);
+    unsigned char *src_buffer, *des_buffer;
 
 private slots:
     void on_pixel_fmt_currentIndexChanged(int index);
     void on_src_img_count_valueChanged(int );
     void on_height_lostFocus();
-    void on_bpp_pad_editingFinished();
-    void on_bpp_pad_textChanged(const QString &arg1);
     void on_bpp_pad_returnPressed();
+    void on_equalize_clicked();
 };
 
 #define SUCCESS 1
