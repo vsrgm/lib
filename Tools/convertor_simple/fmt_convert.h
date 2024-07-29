@@ -25,6 +25,8 @@ int convert_RGBIR16_bayer8(unsigned char *src_buffer, unsigned char *dest_buffer
 int extract_RGBIR16_IR8(unsigned char *src_buffer, unsigned char *dest_buffer, int width, int height);
 int perform_equalize_y8 (unsigned char *ptr, unsigned int width, unsigned int height);
 int convert_bit16_bit8(unsigned short *src_buffer, unsigned char *dest_buffer, int width, int height);
+int convert_yuy420_rgb888(unsigned char* yuyv_buffer, unsigned char* rgb888,
+       unsigned int width, unsigned int height);
 
 
 #endif // FMT_CONVERT_H

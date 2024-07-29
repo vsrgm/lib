@@ -7,34 +7,6 @@ namespace Ui {
     class convert;
 }
 
-class convert : public QMainWindow {
-    Q_OBJECT
-public:
-    convert(QWidget *parent = 0);
-    ~convert();
-    QImage *imageObject;
-
-protected:
-    void changeEvent(QEvent *e);
-
-private:
-    Ui::convert *ui;
-    void paintimage();
-    void resize_base(int width,int height);
-    unsigned char *src_buffer, *des_buffer;
-
-private slots:
-    void on_pixel_fmt_currentIndexChanged(int index);
-    void on_src_img_count_valueChanged(int );
-    void on_height_lostFocus();
-    void on_bpp_pad_returnPressed();
-    void on_equalize_clicked();
-};
-
-#define SUCCESS 1
-#define FAIL    -1
-#define MAX_LIMIT_BYTE 5 // T A 'R G B'
-
 enum g_pix_fmt
 {
     YUV = 4,
@@ -70,15 +42,15 @@ enum pix_fmt
     BAYER8_GRBG,
     BAYER8_RGGB,
 
-    BAYER10_BGGR,
-    BAYER10_GBRG,
-    BAYER10_GRBG,
-    BAYER10_RGGB,
-
     BAYER12_BGGR,
     BAYER12_GBRG,
     BAYER12_GRBG,
     BAYER12_RGGB,
+
+    BAYER_BGGR,
+    BAYER_GBRG,
+    BAYER_GRBG,
+    BAYER_RGGB,
 
     BMP24_BGR,
     BMP24_RGB,
@@ -89,5 +61,38 @@ enum pix_fmt
     RGBIR16,
     BGGR16
 };
+
+class convert : public QMainWindow {
+    Q_OBJECT
+public:
+    convert(QWidget *parent = 0);
+    ~convert();
+    QImage *imageObject;
+
+protected:
+    void changeEvent(QEvent *e);
+
+private:
+    Ui::convert *ui;
+    void paintimage();
+    void resize_base(int width,int height);
+    unsigned char *src_buffer, *des_buffer;
+    unsigned int width, height, bpp;
+    int frame_stride, size;  
+    enum pix_fmt pix_fmt;
+
+private slots:
+    void on_pixel_fmt_currentIndexChanged(int index);
+    void on_src_img_count_valueChanged(int );
+    void on_height_lostFocus();
+    void on_equalize_clicked();
+    void on_bpp_editingFinished();
+    void on_bpp_pad_editingFinished();
+};
+
+#define SUCCESS 1
+#define FAIL    -1
+#define MAX_LIMIT_BYTE 5 // T A 'R G B'
+
 
 #endif // CONVERT_H

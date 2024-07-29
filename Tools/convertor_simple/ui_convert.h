@@ -12,6 +12,7 @@
 #include <QtCore/QVariant>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QComboBox>
+#include <QtWidgets/QFormLayout>
 #include <QtWidgets/QFrame>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QLabel>
@@ -59,17 +60,18 @@ public:
     QSpacerItem *verticalSpacer_8;
     QFrame *line_4;
     QVBoxLayout *verticalLayout_5;
-    QLabel *label_9;
-    QLineEdit *bpp_pad;
     QLabel *label_10;
     QSpinBox *src_img_count;
     QSpacerItem *verticalSpacer_4;
     QFrame *line_5;
-    QVBoxLayout *verticalLayout_6;
+    QFormLayout *formLayout;
     QLabel *label_4;
     QComboBox *pixel_fmt;
-    QSpacerItem *verticalSpacer_5;
-    QSpacerItem *horizontalSpacer;
+    QLineEdit *bpp;
+    QLabel *label_11;
+    QLineEdit *bpp_pad;
+    QLabel *label_9;
+    QVBoxLayout *verticalLayout_6;
     QFrame *line_6;
     QHBoxLayout *horizontalLayout_5;
     QLabel *draw_window;
@@ -246,16 +248,6 @@ public:
         verticalLayout_5 = new QVBoxLayout();
         verticalLayout_5->setSpacing(6);
         verticalLayout_5->setObjectName(QString::fromUtf8("verticalLayout_5"));
-        label_9 = new QLabel(centralWidget);
-        label_9->setObjectName(QString::fromUtf8("label_9"));
-
-        verticalLayout_5->addWidget(label_9);
-
-        bpp_pad = new QLineEdit(centralWidget);
-        bpp_pad->setObjectName(QString::fromUtf8("bpp_pad"));
-
-        verticalLayout_5->addWidget(bpp_pad);
-
         label_10 = new QLabel(centralWidget);
         label_10->setObjectName(QString::fromUtf8("label_10"));
 
@@ -280,27 +272,45 @@ public:
 
         horizontalLayout->addWidget(line_5);
 
-        verticalLayout_6 = new QVBoxLayout();
-        verticalLayout_6->setSpacing(6);
-        verticalLayout_6->setObjectName(QString::fromUtf8("verticalLayout_6"));
+        formLayout = new QFormLayout();
+        formLayout->setSpacing(6);
+        formLayout->setObjectName(QString::fromUtf8("formLayout"));
         label_4 = new QLabel(centralWidget);
         label_4->setObjectName(QString::fromUtf8("label_4"));
 
-        verticalLayout_6->addWidget(label_4);
+        formLayout->setWidget(0, QFormLayout::LabelRole, label_4);
 
         pixel_fmt = new QComboBox(centralWidget);
         pixel_fmt->setObjectName(QString::fromUtf8("pixel_fmt"));
 
-        verticalLayout_6->addWidget(pixel_fmt);
+        formLayout->setWidget(0, QFormLayout::FieldRole, pixel_fmt);
 
-        verticalSpacer_5 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+        bpp = new QLineEdit(centralWidget);
+        bpp->setObjectName(QString::fromUtf8("bpp"));
 
-        verticalLayout_6->addItem(verticalSpacer_5);
+        formLayout->setWidget(1, QFormLayout::FieldRole, bpp);
 
-        horizontalSpacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+        label_11 = new QLabel(centralWidget);
+        label_11->setObjectName(QString::fromUtf8("label_11"));
 
-        verticalLayout_6->addItem(horizontalSpacer);
+        formLayout->setWidget(1, QFormLayout::LabelRole, label_11);
 
+        bpp_pad = new QLineEdit(centralWidget);
+        bpp_pad->setObjectName(QString::fromUtf8("bpp_pad"));
+
+        formLayout->setWidget(2, QFormLayout::FieldRole, bpp_pad);
+
+        label_9 = new QLabel(centralWidget);
+        label_9->setObjectName(QString::fromUtf8("label_9"));
+
+        formLayout->setWidget(2, QFormLayout::LabelRole, label_9);
+
+
+        horizontalLayout->addLayout(formLayout);
+
+        verticalLayout_6 = new QVBoxLayout();
+        verticalLayout_6->setSpacing(6);
+        verticalLayout_6->setObjectName(QString::fromUtf8("verticalLayout_6"));
 
         horizontalLayout->addLayout(verticalLayout_6);
 
@@ -391,23 +401,24 @@ public:
     {
         convert->setWindowTitle(QCoreApplication::translate("convert", "convert", nullptr));
         label->setText(QCoreApplication::translate("convert", "File path", nullptr));
-        file_path->setText(QCoreApplication::translate("convert", "/home/pie5zk/sample_skip10_frame.raw", nullptr));
+        file_path->setText(QCoreApplication::translate("convert", "./sample/YVYU_1824x940.raw", nullptr));
         label_5->setText(QCoreApplication::translate("convert", "Source integrity", nullptr));
         Source_img_integrity->setText(QCoreApplication::translate("convert", "FAIL", nullptr));
         label_2->setText(QCoreApplication::translate("convert", "Width", nullptr));
-        width->setText(QCoreApplication::translate("convert", "2592", nullptr));
+        width->setText(QCoreApplication::translate("convert", "1824", nullptr));
         label_6->setText(QCoreApplication::translate("convert", "Frame stride", nullptr));
         frame_stride->setText(QCoreApplication::translate("convert", "0", nullptr));
         label_3->setText(QCoreApplication::translate("convert", "Height", nullptr));
-        height->setText(QCoreApplication::translate("convert", "1944", nullptr));
+        height->setText(QCoreApplication::translate("convert", "940", nullptr));
         label_7->setText(QCoreApplication::translate("convert", "Number of frames", nullptr));
         num_frames->setText(QCoreApplication::translate("convert", "0", nullptr));
         label_8->setText(QCoreApplication::translate("convert", "Filesize", nullptr));
         file_size->setText(QCoreApplication::translate("convert", "0", nullptr));
-        label_9->setText(QCoreApplication::translate("convert", "Bpp padded", nullptr));
-        bpp_pad->setText(QCoreApplication::translate("convert", "0", nullptr));
         label_10->setText(QCoreApplication::translate("convert", "Image counter", nullptr));
         label_4->setText(QCoreApplication::translate("convert", "Pixel format", nullptr));
+        label_11->setText(QCoreApplication::translate("convert", "Bpp", nullptr));
+        bpp_pad->setText(QCoreApplication::translate("convert", "0", nullptr));
+        label_9->setText(QCoreApplication::translate("convert", "Bpp padded", nullptr));
         draw_window->setText(QString());
         equalize->setText(QCoreApplication::translate("convert", "equalize", nullptr));
         modified_draw_window->setText(QString());

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <arpa/inet.h>
 #define BYTE_CLAMP(temp) ((temp > 255) ? 255 : ((temp < 0) ? 0 :(unsigned char)temp))
 
 int convert_yuyv420_rgb888(unsigned char* yuyv_buffer,unsigned char* rgb888, unsigned int width, unsigned int height, int start_with)
@@ -740,7 +741,7 @@ int save_ir_asyuv(unsigned char *des_buffer, unsigned int width, unsigned int he
 {
 	/* Convert into YUV file and SAVE it */
 	FILE *yuvptr = fopen("sample_ir.yuv", "wb");
-	fwrite(des_buffer,1, width * height, yuvptr);
+	fwrite(des_buffer, width * height, 1, yuvptr);
 	fclose(yuvptr);
 }
 
@@ -748,8 +749,9 @@ int save_buffer(unsigned char *des_buffer, unsigned int size)
 {
 	/* Convert into YUV file and SAVE it */
 	FILE *raw = fopen("sample.raw", "wb");
-	fwrite(des_buffer,1, size, raw);
+	fwrite(des_buffer, size, 1,raw);
     fclose(raw);
+    return 0;
 }
 
 
@@ -760,7 +762,8 @@ int save_asyuv(unsigned char *des_buffer, unsigned int width, unsigned int heigh
 	unsigned char *yuvbuf = (unsigned char *)calloc(width * height*2, 1);
 
 	unsigned int widthinc, heightinc;
-	for (heightinc =0; heightinc < height; heightinc++)
+    unsigned int value;
+	for (heightinc = 0; heightinc < height; heightinc++)
 	{
 		for(widthinc = 0; widthinc < width; widthinc+=2)
 		{
@@ -789,11 +792,13 @@ int save_asyuv(unsigned char *des_buffer, unsigned int width, unsigned int heigh
 			yuvbuf[(heightinc*width*2) + widthinc*2 +1] = u1;
 			yuvbuf[(heightinc*width*2) + widthinc*2 +2] = y2;
 			yuvbuf[(heightinc*width*2) + widthinc*2 +3] = v1;
+            value = (heightinc*width*2) + widthinc*2 +3;
 		}
 	}
 	fwrite(yuvbuf,1, width * height*2, yuvptr);
 	fclose(yuvptr);
 	free(yuvbuf);
+    return 0;    
 }
 
 int extract_bayer10_packed_ir(unsigned char *src_buffer, unsigned char *dest_buffer, int width, int height)
@@ -815,7 +820,6 @@ int extract_bayer10_packed_ir(unsigned char *src_buffer, unsigned char *dest_buf
 
 	return 0;
 }
-       #include <arpa/inet.h>
 
 int extract_RGBIR16_IR8(unsigned char *src_buffer, unsigned char *dest_buffer, int width, int height)
 {
@@ -839,6 +843,7 @@ int convert_bit16_bit8(unsigned short *src_buffer, unsigned char *dest_buffer, i
     {
         dest_buffer[idx] = ((src_buffer[idx])) >>8;//htons
     }
+    return 0;
 }
 
 int convert_RGBIR16_bayer8(unsigned char *src_buffer, unsigned char *dest_buffer, int width, int height)

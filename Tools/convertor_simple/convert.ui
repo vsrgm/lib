@@ -43,7 +43,7 @@
           <item>
            <widget class="QLineEdit" name="file_path">
             <property name="text">
-             <string>/home/pie5zk/sample_skip10_frame.raw</string>
+             <string>./sample/YVYU_1824x940.raw</string>
             </property>
            </widget>
           </item>
@@ -95,7 +95,7 @@
           <item>
            <widget class="QLineEdit" name="width">
             <property name="text">
-             <string>2592</string>
+             <string>1824</string>
             </property>
            </widget>
           </item>
@@ -147,7 +147,7 @@
           <item>
            <widget class="QLineEdit" name="height">
             <property name="text">
-             <string>1944</string>
+             <string>940</string>
             </property>
            </widget>
           </item>
@@ -234,20 +234,6 @@
         <item>
          <layout class="QVBoxLayout" name="verticalLayout_5">
           <item>
-           <widget class="QLabel" name="label_9">
-            <property name="text">
-             <string>Bpp padded</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLineEdit" name="bpp_pad">
-            <property name="text">
-             <string>0</string>
-            </property>
-           </widget>
-          </item>
-          <item>
            <widget class="QLabel" name="label_10">
             <property name="text">
              <string>Image counter</string>
@@ -280,44 +266,45 @@
          </widget>
         </item>
         <item>
-         <layout class="QVBoxLayout" name="verticalLayout_6">
-          <item>
+         <layout class="QFormLayout" name="formLayout">
+          <item row="0" column="0">
            <widget class="QLabel" name="label_4">
             <property name="text">
              <string>Pixel format</string>
             </property>
            </widget>
           </item>
-          <item>
+          <item row="0" column="1">
            <widget class="QComboBox" name="pixel_fmt"/>
           </item>
-          <item>
-           <spacer name="verticalSpacer_5">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
+          <item row="1" column="1">
+           <widget class="QLineEdit" name="bpp"/>
           </item>
-          <item>
-           <spacer name="horizontalSpacer">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_11">
+            <property name="text">
+             <string>Bpp</string>
             </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLineEdit" name="bpp_pad">
+            <property name="text">
+             <string>0</string>
             </property>
-           </spacer>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_9">
+            <property name="text">
+             <string>Bpp padded</string>
+            </property>
+           </widget>
           </item>
          </layout>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout_6"/>
         </item>
        </layout>
       </item>
