@@ -5,6 +5,10 @@
 #include <stdio.h>
 #include <bayer.h>
 #include <string.h>
+#include <QPainter>
+#include <QImage>
+#include <QPen>
+
 struct
 {
     enum pix_fmt fmt;
@@ -166,18 +170,13 @@ void convert::paintimage()
             {
                 printf("Width %d Height %d \n", width, height);
                 convert_yuyv_rgb888(src_buffer, des_buffer, width, height, 2);
-                printf("%s %d \n", __func__, __LINE__);
                 save_asyuv(des_buffer,width, height);
-                printf("%s %d \n", __func__, __LINE__);
             }break;
 
         case YVYU:
             {
-                printf("%s %d \n", __func__, __LINE__);
                 convert_yuyv_rgb888(src_buffer, des_buffer, width, height, 1);
-                printf("%s %d \n", __func__, __LINE__);
                 save_buffer(des_buffer, width*height*3);
-                printf("%s %d \n", __func__, __LINE__);
             }break;
 
         case YUYV:
@@ -412,14 +411,20 @@ void convert::on_equalize_clicked()
 {
     unsigned int width = atoi(ui->width->text().toLocal8Bit().data());
     unsigned int height = atoi(ui->height->text().toLocal8Bit().data());
-    imageObject = new QImage(width, height, QImage::Format_RGB888);
-    if (des_buffer)
+    QImage *imageObject = new QImage(width, height, QImage::Format_RGB888);
+
+    unsigned char* modifed_buffer = (unsigned char*)calloc(width * height * 3, 1);
+    memcpy(modifed_buffer, des_buffer, width * height *3);
+    if (modifed_buffer)
     {
-        perform_equalize_rgb24 (des_buffer, width, height);
-        memcpy(imageObject->bits(), des_buffer, width * height *3);
+        perform_equalize_rgb24 (modifed_buffer, width, height);
+        memcpy(imageObject->bits(), modifed_buffer, width * height *3);
     }
     ui->modified_draw_window->setPixmap(QPixmap::fromImage(*imageObject));
     ui->modified_draw_window->update();
+
+    free(modifed_buffer);
+    delete imageObject;
 }
 
 
@@ -434,5 +439,47 @@ void convert::on_bpp_pad_editingFinished()
 {
     bpp = atoi(ui->bpp->text().toLocal8Bit().data()) + atoi(ui->bpp_pad->text().toLocal8Bit().data());
     paintimage();
+}
+
+
+void convert::on_Crop_clicked()
+{
+    unsigned int x = atoi(ui->crop_x->text().toLocal8Bit().data());
+    unsigned int y = atoi(ui->crop_y->text().toLocal8Bit().data());
+    unsigned int width = atoi(ui->crop_width->text().toLocal8Bit().data());
+    unsigned int height = atoi(ui->crop_height->text().toLocal8Bit().data());
+    unsigned int srcwidth = atoi(ui->width->text().toLocal8Bit().data());
+    unsigned int srcheight = atoi(ui->height->text().toLocal8Bit().data());
+    unsigned int bpp = 3;
+
+    QImage *srcimageObject = new QImage(srcwidth, srcheight, QImage::Format_RGB888);
+    memcpy(srcimageObject->bits(), des_buffer, srcwidth * srcheight *3);
+    QPainter painter(srcimageObject);
+    QPen pen;
+    pen.setWidth(1);
+    pen.setColor(Qt::red);
+    QRect rect;
+
+    painter.setPen(pen);
+    rect.setTopLeft(QPoint(x-(width/2),y-(height/2)));
+    rect.setWidth(width);
+    rect.setHeight(height);
+    painter.drawRect(rect);
+    ui->draw_window->setPixmap(QPixmap::fromImage(*srcimageObject));
+    ui->draw_window->update();
+
+    QImage *cropimageObject = new QImage(width, height, QImage::Format_RGB888);
+    int ret = perform_crop(cropimageObject->bits(), des_buffer, x, y, width, height, bpp, srcwidth, srcheight);
+    if (ret < 0)
+    {
+        QMessageBox msgBox;
+        msgBox.setText("Crop limit specified is not feasbile to crop");
+        msgBox.exec();
+    }
+
+    ui->modified_draw_window->setPixmap(QPixmap::fromImage(*cropimageObject));
+    ui->modified_draw_window->update();
+    //delete cropimageObject;
+    //delete srcimageObject;
 }
 

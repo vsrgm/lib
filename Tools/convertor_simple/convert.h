@@ -88,6 +88,7 @@ private slots:
     void on_equalize_clicked();
     void on_bpp_editingFinished();
     void on_bpp_pad_editingFinished();
+    void on_Crop_clicked();
 };
 
 #define SUCCESS 1

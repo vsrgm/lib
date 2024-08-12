@@ -27,6 +27,8 @@ int perform_equalize_y8 (unsigned char *ptr, unsigned int width, unsigned int he
 int convert_bit16_bit8(unsigned short *src_buffer, unsigned char *dest_buffer, int width, int height);
 int convert_yuy420_rgb888(unsigned char* yuyv_buffer, unsigned char* rgb888,
        unsigned int width, unsigned int height);
-
+int perform_crop(unsigned char *dptr, unsigned char *sptr, unsigned int x, unsigned int y,
+                 unsigned int width, unsigned int height, unsigned int bpp,
+                 unsigned int srcwidth, unsigned int srcheight);
 
 #endif // FMT_CONVERT_H

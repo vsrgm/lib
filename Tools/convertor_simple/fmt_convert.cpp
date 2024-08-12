@@ -421,6 +421,26 @@ int perform_equalize_y8 (unsigned char *ptr, unsigned int width, unsigned int he
 	return 0;
 }
 
+int perform_crop(unsigned char *dptr, unsigned char *sptr, unsigned int x, unsigned int y,
+                 unsigned int width, unsigned int height, unsigned int bpp,
+                 unsigned int srcwidth, unsigned int srcheight)
+{
+    int x_start = x-(width/2);
+    int y_start = y-(height/2);
+
+    if ((x_start < 0) || (y_start < 0) ||
+            ((width+x) > srcwidth) || ((height+y) > srcheight))
+    {
+        return -1;
+    }
+
+    for (unsigned int hidx = 0; hidx < height; hidx++)
+    {
+        memcpy(&dptr[hidx*width*bpp], &sptr[((y_start+hidx)*srcwidth + x_start)*bpp], width*bpp);
+    }
+    return 0;
+}
+
 int perform_equalize_rgb24 (unsigned char *ptr, unsigned int width, unsigned int height)
 {
 	unsigned char R,G,B;
