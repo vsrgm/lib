@@ -336,7 +336,6 @@ void convert::paintimage()
                 extract_bayer10_packed_ir(src_buffer, src_ir, width, height);
                 save_ir_asyuv(src_ir,width/2, height/2);
                 free(src_ir);
-
                 break;
             }
 
