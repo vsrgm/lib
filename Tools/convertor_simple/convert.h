@@ -37,20 +37,12 @@ enum pix_fmt
     RGB565_BGGR,
     RGB565_GRBG,
 
-    BAYER8_BGGR,
-    BAYER8_GBRG,
-    BAYER8_GRBG,
-    BAYER8_RGGB,
-
-    BAYER12_BGGR,
-    BAYER12_GBRG,
-    BAYER12_GRBG,
-    BAYER12_RGGB,
-
     BAYER_BGGR,
     BAYER_GBRG,
     BAYER_GRBG,
     BAYER_RGGB,
+
+    RCCG,
 
     BMP24_BGR,
     BMP24_RGB,
@@ -77,7 +69,7 @@ private:
     void paintimage();
     void resize_base(int width,int height);
     unsigned char *src_buffer, *des_buffer;
-    unsigned int width, height, bpp;
+    unsigned int width, height, bpp, bpp_container, bpp_shift;
     int frame_stride, size;  
     enum pix_fmt pix_fmt;
 
@@ -87,8 +79,9 @@ private slots:
     void on_height_lostFocus();
     void on_equalize_clicked();
     void on_bpp_editingFinished();
-    void on_bpp_pad_editingFinished();
     void on_Crop_clicked();
+    void on_bpp_container_editingFinished();
+    void on_bpp_shift_editingFinished();
 };
 
 #define SUCCESS 1

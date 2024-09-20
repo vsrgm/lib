@@ -68,10 +68,12 @@ public:
     QFormLayout *formLayout;
     QLabel *label_4;
     QComboBox *pixel_fmt;
-    QLineEdit *bpp;
     QLabel *label_11;
-    QLineEdit *bpp_pad;
+    QLineEdit *bpp;
+    QLineEdit *bpp_container;
     QLabel *label_9;
+    QLabel *label_16;
+    QLineEdit *bpp_shift;
     QVBoxLayout *verticalLayout_6;
     QFrame *line_6;
     QHBoxLayout *horizontalLayout_5;
@@ -106,7 +108,7 @@ public:
             convert->setObjectName(QString::fromUtf8("convert"));
         convert->setWindowModality(Qt::NonModal);
         convert->setEnabled(true);
-        convert->resize(1394, 653);
+        convert->resize(1494, 653);
         centralWidget = new QWidget(convert);
         centralWidget->setObjectName(QString::fromUtf8("centralWidget"));
         horizontalLayout_2 = new QHBoxLayout(centralWidget);
@@ -301,25 +303,35 @@ public:
 
         formLayout->setWidget(0, QFormLayout::FieldRole, pixel_fmt);
 
-        bpp = new QLineEdit(centralWidget);
-        bpp->setObjectName(QString::fromUtf8("bpp"));
-
-        formLayout->setWidget(1, QFormLayout::FieldRole, bpp);
-
         label_11 = new QLabel(centralWidget);
         label_11->setObjectName(QString::fromUtf8("label_11"));
 
-        formLayout->setWidget(1, QFormLayout::LabelRole, label_11);
+        formLayout->setWidget(2, QFormLayout::LabelRole, label_11);
 
-        bpp_pad = new QLineEdit(centralWidget);
-        bpp_pad->setObjectName(QString::fromUtf8("bpp_pad"));
+        bpp = new QLineEdit(centralWidget);
+        bpp->setObjectName(QString::fromUtf8("bpp"));
 
-        formLayout->setWidget(2, QFormLayout::FieldRole, bpp_pad);
+        formLayout->setWidget(2, QFormLayout::FieldRole, bpp);
+
+        bpp_container = new QLineEdit(centralWidget);
+        bpp_container->setObjectName(QString::fromUtf8("bpp_container"));
+
+        formLayout->setWidget(1, QFormLayout::FieldRole, bpp_container);
 
         label_9 = new QLabel(centralWidget);
         label_9->setObjectName(QString::fromUtf8("label_9"));
 
-        formLayout->setWidget(2, QFormLayout::LabelRole, label_9);
+        formLayout->setWidget(1, QFormLayout::LabelRole, label_9);
+
+        label_16 = new QLabel(centralWidget);
+        label_16->setObjectName(QString::fromUtf8("label_16"));
+
+        formLayout->setWidget(3, QFormLayout::LabelRole, label_16);
+
+        bpp_shift = new QLineEdit(centralWidget);
+        bpp_shift->setObjectName(QString::fromUtf8("bpp_shift"));
+
+        formLayout->setWidget(3, QFormLayout::FieldRole, bpp_shift);
 
 
         horizontalLayout->addLayout(formLayout);
@@ -519,8 +531,9 @@ public:
         label_10->setText(QCoreApplication::translate("convert", "Image counter", nullptr));
         label_4->setText(QCoreApplication::translate("convert", "Pixel format", nullptr));
         label_11->setText(QCoreApplication::translate("convert", "Bpp", nullptr));
-        bpp_pad->setText(QCoreApplication::translate("convert", "0", nullptr));
-        label_9->setText(QCoreApplication::translate("convert", "Bpp padded", nullptr));
+        bpp_container->setText(QCoreApplication::translate("convert", "0", nullptr));
+        label_9->setText(QCoreApplication::translate("convert", "Bpp container", nullptr));
+        label_16->setText(QCoreApplication::translate("convert", "Shift", nullptr));
         draw_window->setText(QString());
         label_14->setText(QCoreApplication::translate("convert", "Width", nullptr));
         Crop->setText(QCoreApplication::translate("convert", "Crop", nullptr));

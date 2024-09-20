@@ -12,7 +12,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1394</width>
+    <width>1494</width>
     <height>653</height>
    </rect>
   </property>
@@ -277,10 +277,7 @@
           <item row="0" column="1">
            <widget class="QComboBox" name="pixel_fmt"/>
           </item>
-          <item row="1" column="1">
-           <widget class="QLineEdit" name="bpp"/>
-          </item>
-          <item row="1" column="0">
+          <item row="2" column="0">
            <widget class="QLabel" name="label_11">
             <property name="text">
              <string>Bpp</string>
@@ -288,18 +285,31 @@
            </widget>
           </item>
           <item row="2" column="1">
-           <widget class="QLineEdit" name="bpp_pad">
+           <widget class="QLineEdit" name="bpp"/>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLineEdit" name="bpp_container">
             <property name="text">
              <string>0</string>
             </property>
            </widget>
           </item>
-          <item row="2" column="0">
+          <item row="1" column="0">
            <widget class="QLabel" name="label_9">
             <property name="text">
-             <string>Bpp padded</string>
+             <string>Bpp container</string>
             </property>
            </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="label_16">
+            <property name="text">
+             <string>Shift</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QLineEdit" name="bpp_shift"/>
           </item>
          </layout>
         </item>

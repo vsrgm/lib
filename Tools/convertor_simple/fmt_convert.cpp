@@ -423,6 +423,23 @@ int perform_equalize_y8 (unsigned char *ptr, unsigned int width, unsigned int he
     return 0;
 }
 
+int perform_stride_correction(unsigned char *dptr, unsigned char *sptr,
+        unsigned int dwidth, unsigned int dheight,
+        unsigned int swidth, unsigned int sheight, unsigned int bpp)
+{
+    if ((dwidth > swidth) || (dheight > sheight))
+    {
+        return -1;
+    }
+
+    for (unsigned int hidx = 0; hidx < dheight; hidx++)
+    {
+        memcpy(&dptr[hidx*dwidth*bpp], &sptr[hidx*swidth*bpp], dwidth*bpp);
+    }
+    return 0;
+}
+
+
 int perform_crop(unsigned char *dptr, unsigned char *sptr, unsigned int x, unsigned int y,
         unsigned int width, unsigned int height, unsigned int bpp,
         unsigned int srcwidth, unsigned int srcheight)
@@ -676,7 +693,10 @@ int convert_bayer12_bayer8(unsigned char *src_buffer, unsigned char *dest_buffer
     return 0;
 }
 
-int convert_bayer8_rgb24(unsigned char *src_buffer, unsigned char *dest_buffer, int width, int height, unsigned char pc)
+int convert_rccg_rgb24(
+        unsigned char *src_buffer, unsigned char *dest_buffer,
+        int width, int height, unsigned char pc,
+        unsigned int bpp, unsigned int shift)
 {
     int bayer_step    = width;
     unsigned int i,width_end_watch;
@@ -747,14 +767,160 @@ int convert_bayer8_rgb24(unsigned char *src_buffer, unsigned char *dest_buffer, 
         },
     };
 
-    for(i=0,width_end_watch=0;i<width*(height-1);i++) {
-        dest_buffer[i*3+2] = src_buffer[pattern[pc][0][width_end_watch][i&1] +i];
-        dest_buffer[i*3+1] = src_buffer[pattern[pc][1][width_end_watch][i&1] +i];
-        dest_buffer[i*3+0] = src_buffer[pattern[pc][2][width_end_watch][i&1] +i];
+    if (bpp == 8)
+    {
+        unsigned char *s_buffer = src_buffer;
+        for(i = 0, width_end_watch = 0; i < width*(height-1); i++)
+        {
+            unsigned short r, c, g, b;
+            g = s_buffer[pattern[pc][0][width_end_watch][i&1] +i];
+            c = s_buffer[pattern[pc][1][width_end_watch][i&1] +i];
+            r = s_buffer[pattern[pc][2][width_end_watch][i&1] +i];
 
-        if((i%width) == 0) {
-            width_end_watch = width_end_watch?0:1;
+            b = c - (0.7*r)- g;
+
+            dest_buffer[i*3+2] = b;
+            dest_buffer[i*3+1] = g;
+            dest_buffer[i*3+0] = r;
+
+            if((i%width) == 0)
+            {
+                width_end_watch = width_end_watch?0:1;
+            }
         }
+    }else
+    {
+        unsigned short *s_buffer = (unsigned short *)src_buffer;
+        for(i = 0, width_end_watch = 0; i < width*(height-1); i++)
+        {
+            unsigned short rccg_r, rccg_c,rccg_g;
+            unsigned char bgr_b, bgr_g, bgr_r;
+            rccg_g = s_buffer[pattern[pc][0][width_end_watch][i&1] +i] >> shift;
+            rccg_c = s_buffer[pattern[pc][1][width_end_watch][i&1] +i] >> shift;
+            rccg_r = s_buffer[pattern[pc][2][width_end_watch][i&1] +i] >> shift;
+
+            //b = c - (0.7*r)- g;
+            bgr_b = (unsigned char) (-4.56*rccg_g +7.21*rccg_c -1.65*rccg_r);
+            bgr_g = (unsigned char) (2.45*rccg_g -1.16*rccg_c  -0.29*rccg_r);
+            bgr_r = (unsigned char) (-1.14*rccg_g -0.6*rccg_c  +2.75*rccg_r);
+            
+            dest_buffer[i*3+2] = bgr_b;
+            dest_buffer[i*3+1] = bgr_g;
+            dest_buffer[i*3+0] = bgr_r;
+
+            if((i%width) == 0)
+            {
+                width_end_watch = width_end_watch?0:1;
+            }
+        }
+    }
+    return 0;
+}
+
+
+int convert_bayer_rgb24(
+        unsigned char *src_buffer, unsigned char *dest_buffer,
+        int width, int height, unsigned char pc,
+        unsigned int bpp, unsigned int shift)
+{
+    int bayer_step    = width;
+    unsigned int i,width_end_watch;
+    /*
+     * pc = 0 = BGGR
+     * pc = 1 = GBRG
+     * pc = 2 = RGGB
+     * pc = 3 = GRBG
+     */
+    int pattern[4][3][2][2]= {
+        {
+            /* B offset for BGGR */
+            {    {0,        -1,},
+                {bayer_step,    bayer_step-1,},
+            },
+            /* G offset for BGGR */
+            {    {1,        0,},
+                {0,        bayer_step,},
+            },
+            /* R offset for BGGR */
+            {    {bayer_step+1,    bayer_step,},
+                {1,        0,},
+            },
+        },
+
+        /* B offset for GBRG */
+        {
+            {    {1,        0,},
+                {bayer_step +1,    bayer_step,},
+            },
+            /* G offset for GBRG */
+            {    {0,        -1,},
+                {1,        0,},
+            },
+            /* R offset for GBRG */
+            {    {bayer_step,    bayer_step-1,},
+                {0,        -1,},
+            },
+        },
+
+        {
+            /* B offset for RGGB */
+            {    {bayer_step +1,    bayer_step,},
+                {1,        0,},
+            },
+            /* G offset for RGGB */
+            {    {1,        0,},
+                {0,        bayer_step,},
+            },
+            /* R offset for RGGB */
+            {    {0,        -1,},
+                {bayer_step,    bayer_step-1,},
+            },
+        },
+        /* B offset for GRBG */
+        {
+            {    {bayer_step,    bayer_step-1,},
+                {0,        -1,},
+            },
+            /* G offset for GRBG */
+            {    {0,        -1,},
+                {1,        0,},
+            },
+            /* R offset for GRBG */
+            {    {1,        0,},
+                {bayer_step+1,    bayer_step,},
+            },
+        },
+    };
+
+    if (bpp == 8)
+    {
+        unsigned char *s_buffer = src_buffer;
+        for(i = 0, width_end_watch = 0; i < width*(height-1); i++)
+        {
+            dest_buffer[i*3+2] = s_buffer[pattern[pc][0][width_end_watch][i&1] +i];
+            dest_buffer[i*3+1] = s_buffer[pattern[pc][1][width_end_watch][i&1] +i];
+            dest_buffer[i*3+0] = s_buffer[pattern[pc][2][width_end_watch][i&1] +i];
+
+            if((i%width) == 0)
+            {
+                width_end_watch = width_end_watch?0:1;
+            }
+        }
+    }else
+    {
+        unsigned short *s_buffer = (unsigned short *)src_buffer;
+        for(i = 0, width_end_watch = 0; i < width*(height-1); i++)
+        {
+            dest_buffer[i*3+2] = s_buffer[pattern[pc][0][width_end_watch][i&1] +i] >> shift;
+            dest_buffer[i*3+1] = s_buffer[pattern[pc][1][width_end_watch][i&1] +i] >> shift;
+            dest_buffer[i*3+0] = s_buffer[pattern[pc][2][width_end_watch][i&1] +i] >> shift;
+
+            if((i%width) == 0)
+            {
+                width_end_watch = width_end_watch?0:1;
+            }
+        }
+
     }
     return 0;
 }
