@@ -3,9 +3,26 @@
 #include <string.h>
 
 #include <arpa/inet.h>
-#define BYTE_CLAMP(temp) ((temp > 255) ? 255 : ((temp < 0) ? 0 :(unsigned char)temp))
+#define CLIP(x) (((x) > 0xFF) ? 0xFF : (((x) < 0) ? 0 :(uint8_t)(x)))
 
-int convert_yuyv420_rgb888(unsigned char* yuyv_buffer,unsigned char* rgb888, unsigned int width, unsigned int height, int start_with)
+int32_t convert_bgr888_rgb888(uint8_t *src_buffer, uint8_t *dest_buffer,
+        uint32_t width, uint32_t height)
+{
+    for (uint32_t hidx = 0; hidx < height; hidx++)
+    {
+        for (uint32_t widx = 0; widx < width; widx++)
+        {
+            uint32_t offset = ((hidx * width) + widx) * 3;
+            dest_buffer[offset]     = src_buffer[offset + 2];
+            dest_buffer[offset + 1] = src_buffer[offset + 1];
+            dest_buffer[offset + 2] = src_buffer[offset];
+        }
+    }
+    return 0;
+}
+
+int32_t convert_yuyv420_rgb888(uint8_t* yuyv_buffer,uint8_t* rgb888,
+       uint32_t width, uint32_t height, int32_t start_with)
 {
     /* 
      *    start_with
@@ -14,13 +31,12 @@ int convert_yuyv420_rgb888(unsigned char* yuyv_buffer,unsigned char* rgb888, uns
      *    UYVY = 2
      *    VYUY = 3
      */
-    int i = 0, j = 0;
-    unsigned char* rgb_buffer;
-    int temp;
-    int yuvcount = 0;
-    int rgbcount = 0;
+    int32_t hidx = 0, widx = 0;
+    uint8_t* rgb_buffer;
+    int32_t temp;
+    int32_t yuvcount = 0;
+    //int32_t rgbcount = 0;
     float u_val, v_val, y1_val, y2_val;
-    unsigned int time;
 
     rgb_buffer = rgb888;
 
@@ -29,9 +45,9 @@ int convert_yuyv420_rgb888(unsigned char* yuyv_buffer,unsigned char* rgb888, uns
     // G = Y - 0.344U' - 0.714V'    
     // B = Y + 1.770U'
 
-    for (i = 0; i < height; i++)
+    for (hidx = 0; hidx < height; hidx++)
     {
-        for (j = 0; j < width; j+= 2)
+        for (widx = 0; widx < width; widx+= 2)
         {
             switch (start_with)
             {
@@ -67,29 +83,29 @@ int convert_yuyv420_rgb888(unsigned char* yuyv_buffer,unsigned char* rgb888, uns
             u_val = u_val - 128;
             v_val = v_val - 128;        
 
-            temp = (int)(y1_val + (1.770 * u_val));
-            rgb_buffer[(((height-1)-i) * width * 3) + j*3 +0] = BYTE_CLAMP(temp);
+            temp = (int32_t)(y1_val + (1.770 * u_val));
+            rgb_buffer[(((height-1)-hidx) * width * 3) + widx*3 +0] = CLIP(temp);
 
-            temp = (int)(y1_val - (0.344 * u_val) - (0.714 * v_val));
-            rgb_buffer[(((height-1)-i) * width * 3) + j*3 +1] = BYTE_CLAMP(temp);
+            temp = (int32_t)(y1_val - (0.344 * u_val) - (0.714 * v_val));
+            rgb_buffer[(((height-1)-hidx) * width * 3) + widx*3 +1] = CLIP(temp);
 
-            temp = (int)(y1_val + (1.403 * v_val));
-            rgb_buffer[(((height-1)-i) * width * 3) + j*3 +2] = BYTE_CLAMP(temp);
+            temp = (int32_t)(y1_val + (1.403 * v_val));
+            rgb_buffer[(((height-1)-hidx) * width * 3) + widx*3 +2] = CLIP(temp);
 
-            temp = (int)(y2_val + (1.770 * u_val));
-            rgb_buffer[(((height-1)-i) * width * 3) + j*3 +3] = BYTE_CLAMP(temp);
+            temp = (int32_t)(y2_val + (1.770 * u_val));
+            rgb_buffer[(((height-1)-hidx) * width * 3) + widx*3 +3] = CLIP(temp);
 
-            temp = (int)(y2_val - (0.344 * u_val) - (0.714 * v_val));
-            rgb_buffer[(((height-1)-i) * width * 3) + j*3 +4] = BYTE_CLAMP(temp);
+            temp = (int32_t)(y2_val - (0.344 * u_val) - (0.714 * v_val));
+            rgb_buffer[(((height-1)-hidx) * width * 3) + widx*3 +4] = CLIP(temp);
 
-            temp = (int)(y2_val + (1.403 * v_val));
-            rgb_buffer[(((height-1)-i) * width * 3) + j*3 +5] = BYTE_CLAMP(temp);
+            temp = (int32_t)(y2_val + (1.403 * v_val));
+            rgb_buffer[(((height-1)-hidx) * width * 3) + widx*3 +5] = CLIP(temp);
         }
     }
     return 0;
 }
 
-int convert_nv12_rgb888(unsigned char* yuyv_buffer,unsigned char* rgb888, unsigned int width, unsigned int height)
+int32_t convert_nv12_rgb888(uint8_t* yuyv_buffer,uint8_t* rgb888, uint32_t width, uint32_t height)
 {
     /* 
      *    start_with
@@ -98,45 +114,43 @@ int convert_nv12_rgb888(unsigned char* yuyv_buffer,unsigned char* rgb888, unsign
      *    UYVY = 2
      *    VYUY = 3
      */
-    int i = 0, j = 0;
-    unsigned char* rgb_buffer;
-    int temp;
-    int yuvcount = 0;
-    int u_count = (width * height);
-    int v_count = u_count + (u_count/4);
-    //    int rgbcount = 0;
+    uint8_t* rgb_buffer;
+    int32_t temp;
+    int32_t yuvcount = 0;
+    int32_t u_count = (width * height);
+    int32_t v_count = u_count + (u_count/4);
+    //    int32_t rgbcount = 0;
     //    float u_val, v_val, y1_val, y2_val,y3_val, y4_val;
-    unsigned int time;
+    uint32_t time;
 
     rgb_buffer = rgb888;
-    unsigned char *y_channel = yuyv_buffer;
-    unsigned char *u_channel = yuyv_buffer + u_count;
-    unsigned char *v_channel = yuyv_buffer + v_count;
+    uint8_t *y_channel = yuyv_buffer;
+    uint8_t *u_channel = yuyv_buffer + u_count;
+    uint8_t *v_channel = yuyv_buffer + v_count;
 
-    int r,g,b;
+    int32_t r,g,b;
     // memset(rgb_buffer, 0x00, (still_height * still_width * 3));
     // R = Y + 1.403V'
     // G = Y - 0.344U' - 0.714V'    
     // B = Y + 1.770U'
-#define CLAMP(x) x>0xFF?0xFF:(x<0)?0:x
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            int yy = y_channel[(y * width) + x];
-            int uu = u_channel[(((y / 2) * (width / 2)) + (x / 2))*2];
-            int vv = u_channel[(((y / 2) * (width / 2)) + (x / 2))*2 +1];
+    for (int32_t y = 0; y < height; y++) {
+        for (int32_t x = 0; x < width; x++) {
+            int32_t yy = y_channel[(y * width) + x];
+            int32_t uu = u_channel[(((y / 2) * (width / 2)) + (x / 2))*2];
+            int32_t vv = u_channel[(((y / 2) * (width / 2)) + (x / 2))*2 +1];
 
             r = 1.164 * (yy - 16) + 1.596 * (vv - 128);
             g = 1.164 * (yy - 16) - 0.813 * (vv - 128) - 0.391 * (uu - 128);
             b = 1.164 * (yy - 16) + 2.018 * (uu - 128);
-            *rgb_buffer++ = CLAMP(r);
-            *rgb_buffer++ = CLAMP(g);
-            *rgb_buffer++ = CLAMP(b);
+            *rgb_buffer++ = CLIP(r);
+            *rgb_buffer++ = CLIP(g);
+            *rgb_buffer++ = CLIP(b);
         }
     }
     return 0;
 }
 
-int convert_yuy420p_rgb888(unsigned char* yuyv_buffer,unsigned char* rgb888, unsigned int width, unsigned int height)
+int32_t convert_yuy420p_rgb888(uint8_t* yuyv_buffer,uint8_t* rgb888, uint32_t width, uint32_t height)
 {
     /* 
      *    start_with
@@ -145,45 +159,40 @@ int convert_yuy420p_rgb888(unsigned char* yuyv_buffer,unsigned char* rgb888, uns
      *    UYVY = 2
      *    VYUY = 3
      */
-    int i = 0, j = 0;
-    unsigned char* rgb_buffer;
-    int temp;
-    int yuvcount = 0;
-    int u_count = (width * height);
-    int v_count = u_count + (u_count/4);
-    int rgbcount = 0;
-    float u_val, v_val, y1_val, y2_val,y3_val, y4_val;
-    unsigned int time;
+    uint8_t* rgb_buffer;
+    int32_t temp;
+    int32_t u_count = (width * height);
+    int32_t v_count = u_count + (u_count/4);
+    int32_t rgbcount = 0;
 
     rgb_buffer = rgb888;
-    unsigned char *y_channel = yuyv_buffer;
-    unsigned char *u_channel = yuyv_buffer + u_count;
-    unsigned char *v_channel = yuyv_buffer + v_count;
+    uint8_t *y_channel = yuyv_buffer;
+    uint8_t *u_channel = yuyv_buffer + u_count;
+    uint8_t *v_channel = yuyv_buffer + v_count;
 
-    int r,g,b;
+    int32_t r,g,b;
     // memset(rgb_buffer, 0x00, (still_height * still_width * 3));
     // R = Y + 1.403V'
     // G = Y - 0.344U' - 0.714V'    
     // B = Y + 1.770U'
-#define CLAMP(x) x>0xFF?0xFF:(x<0)?0:x
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            int yy = y_channel[(y * width) + x];
-            int uu = u_channel[((y / 2) * (width / 2)) + (x / 2)];
-            int vv = v_channel[((y / 2) * (width / 2)) + (x / 2)];
+    for (int32_t y = 0; y < height; y++) {
+        for (int32_t x = 0; x < width; x++) {
+            int32_t yy = y_channel[(y * width) + x];
+            int32_t uu = u_channel[((y / 2) * (width / 2)) + (x / 2)];
+            int32_t vv = v_channel[((y / 2) * (width / 2)) + (x / 2)];
 
             r = 1.164 * (yy - 16) + 1.596 * (vv - 128);
             g = 1.164 * (yy - 16) - 0.813 * (vv - 128) - 0.391 * (uu - 128);
             b = 1.164 * (yy - 16) + 2.018 * (uu - 128);
-            *rgb_buffer++ = CLAMP(r);
-            *rgb_buffer++ = CLAMP(g);
-            *rgb_buffer++ = CLAMP(b);
+            *rgb_buffer++ = CLIP(r);
+            *rgb_buffer++ = CLIP(g);
+            *rgb_buffer++ = CLIP(b);
         }
     }
     return 0;
 }
 
-int convert_yuy422p_rgb888(unsigned char* yuyv_buffer,unsigned char* rgb888, unsigned int width, unsigned int height)
+int32_t convert_yuy422p_rgb888(uint8_t* yuyv_buffer,uint8_t* rgb888, uint32_t width, uint32_t height)
 {
     /* 
      *    start_with
@@ -192,15 +201,14 @@ int convert_yuy422p_rgb888(unsigned char* yuyv_buffer,unsigned char* rgb888, uns
      *    UYVY = 2
      *    VYUY = 3
      */
-    int i = 0, j = 0;
-    unsigned char* rgb_buffer;
-    int temp;
-    int yuvcount = 0;
-    int u_count = (width * height);
-    int v_count = u_count + (u_count/2);
-    int rgbcount = 0;
+    int32_t widx = 0, hidx = 0;
+    uint8_t* rgb_buffer;
+    int32_t temp;
+    int32_t yuvcount = 0;
+    int32_t u_count = (width * height);
+    int32_t v_count = u_count + (u_count/2);
+    int32_t rgbcount = 0;
     float u_val, v_val, y1_val, y2_val;
-    unsigned int time;
 
     rgb_buffer = rgb888;
 
@@ -209,9 +217,9 @@ int convert_yuy422p_rgb888(unsigned char* yuyv_buffer,unsigned char* rgb888, uns
     // G = Y - 0.344U' - 0.714V'    
     // B = Y + 1.770U'
 
-    for (i = 0; i < height; i++)
+    for (hidx = 0; hidx < height; hidx++)
     {
-        for (j = 0; j < width; j+= 2)
+        for (widx = 0; widx < width; widx+= 2)
         {
             y1_val = (float)yuyv_buffer[yuvcount++];
             u_val = (float)yuyv_buffer[u_count++];
@@ -221,34 +229,34 @@ int convert_yuy422p_rgb888(unsigned char* yuyv_buffer,unsigned char* rgb888, uns
             u_val = u_val - 128;
             v_val = v_val - 128;        
 
-            temp = (int)(y1_val + (1.770 * u_val));
-            rgb_buffer[(((height-1)-i) * width * 3) + j*3 +0] = BYTE_CLAMP(temp);
+            temp = (int32_t)(y1_val + (1.770 * u_val));
+            rgb_buffer[(((height-1)-hidx) * width * 3) + widx*3 +0] = CLIP(temp);
 
-            temp = (int)(y1_val - (0.344 * u_val) - (0.714 * v_val));
-            rgb_buffer[(((height-1)-i) * width * 3) + j*3 +1] = BYTE_CLAMP(temp);
+            temp = (int32_t)(y1_val - (0.344 * u_val) - (0.714 * v_val));
+            rgb_buffer[(((height-1)-hidx) * width * 3) + widx*3 +1] = CLIP(temp);
 
-            temp = (int)(y1_val + (1.403 * v_val));
-            rgb_buffer[(((height-1)-i) * width * 3) + j*3 +2] = BYTE_CLAMP(temp);
+            temp = (int32_t)(y1_val + (1.403 * v_val));
+            rgb_buffer[(((height-1)-hidx) * width * 3) + widx*3 +2] = CLIP(temp);
 
-            temp = (int)(y2_val + (1.770 * u_val));
-            rgb_buffer[(((height-1)-i) * width * 3) + j*3 +3] = BYTE_CLAMP(temp);
+            temp = (int32_t)(y2_val + (1.770 * u_val));
+            rgb_buffer[(((height-1)-hidx) * width * 3) + widx*3 +3] = CLIP(temp);
 
-            temp = (int)(y2_val - (0.344 * u_val) - (0.714 * v_val));
-            rgb_buffer[(((height-1)-i) * width * 3) + j*3 +4] = BYTE_CLAMP(temp);
+            temp = (int32_t)(y2_val - (0.344 * u_val) - (0.714 * v_val));
+            rgb_buffer[(((height-1)-hidx) * width * 3) + widx*3 +4] = CLIP(temp);
 
-            temp = (int)(y2_val + (1.403 * v_val));
-            rgb_buffer[(((height-1)-i) * width * 3) + j*3 +5] = BYTE_CLAMP(temp);
+            temp = (int32_t)(y2_val + (1.403 * v_val));
+            rgb_buffer[(((height-1)-hidx) * width * 3) + widx*3 +5] = CLIP(temp);
         }
     }
     return 0;
 }
-int convert_y8_rgb888(unsigned char* yuyv_buffer,unsigned char* rgb888, unsigned int width, unsigned int height)
+int32_t convert_y8_rgb888(uint8_t* yuyv_buffer,uint8_t* rgb888, uint32_t width, uint32_t height)
 {
-    int i = 0, j = 0;
-    unsigned char* rgb_buffer;
-    int yuvcount = 0;
+    int32_t hidx = 0, widx = 0;
+    uint8_t* rgb_buffer;
+    int32_t yuvcount = 0;
     float y_val;
-    unsigned int time;
+    uint32_t time;
 
     rgb_buffer = rgb888;
 
@@ -257,27 +265,27 @@ int convert_y8_rgb888(unsigned char* yuyv_buffer,unsigned char* rgb888, unsigned
     // G = Y - 0.344U' - 0.714V'    
     // B = Y + 1.770U'
 
-    for (i = 0; i < height; i++)
+    for (hidx = 0; hidx < height; hidx++)
     {
-        for (j = 0; j < width; j++)
+        for (widx = 0; widx < width; widx++)
         {
             y_val = (float)yuyv_buffer[yuvcount++];
 
-            rgb_buffer[(((height-1)-i) * width * 3) + j*3 +0] = y_val;
-            rgb_buffer[(((height-1)-i) * width * 3) + j*3 +1] = y_val;                
-            rgb_buffer[(((height-1)-i) * width * 3) + j*3 +2] = y_val;
+            rgb_buffer[(((height-1)-hidx) * width * 3) + widx*3 +0] = y_val;
+            rgb_buffer[(((height-1)-hidx) * width * 3) + widx*3 +1] = y_val; 
+            rgb_buffer[(((height-1)-hidx) * width * 3) + widx*3 +2] = y_val;
         }
     }
     return 0;
 }
 
-int convert_y16_rgb888(unsigned short* yuyv_buffer,unsigned char* rgb888, unsigned int width, unsigned int height)
+int32_t convert_y16_rgb888(uint16_t* yuyv_buffer,uint8_t* rgb888, uint32_t width, uint32_t height)
 {
-    int i = 0, j = 0;
-    unsigned char* rgb_buffer;
-    int yuvcount = 0;
-    unsigned short y_val;
-    unsigned int time;
+    int32_t hidx = 0, widx = 0;
+    uint8_t* rgb_buffer;
+    int32_t yuvcount = 0;
+    uint16_t y_val;
+    uint32_t time;
 
     rgb_buffer = rgb888;
 
@@ -286,21 +294,21 @@ int convert_y16_rgb888(unsigned short* yuyv_buffer,unsigned char* rgb888, unsign
     // G = Y - 0.344U' - 0.714V'    
     // B = Y + 1.770U'
 
-    for (i = 0; i < height; i++)
+    for (hidx = 0; hidx < height; hidx++)
     {
-        for (j = 0; j < width; j++)
+        for (widx = 0; widx < width; widx++)
         {
-            y_val = (unsigned short)yuyv_buffer[yuvcount++];
+            y_val = (uint16_t)yuyv_buffer[yuvcount++];
 
-            rgb_buffer[(((height-1)-i) * width * 3) + j*3 +0] = y_val>>3;
-            rgb_buffer[(((height-1)-i) * width * 3) + j*3 +1] = y_val>>3;                
-            rgb_buffer[(((height-1)-i) * width * 3) + j*3 +2] = y_val>>3;
+            rgb_buffer[(((height-1)-hidx) * width * 3) + widx*3 +0] = y_val>>3;
+            rgb_buffer[(((height-1)-hidx) * width * 3) + widx*3 +1] = y_val>>3;
+            rgb_buffer[(((height-1)-hidx) * width * 3) + widx*3 +2] = y_val>>3;
         }
     }
     return 0;
 }
 
-int convert_yuyv_rgb888(unsigned char* yuyv_buffer,unsigned char* rgb888, unsigned int width, unsigned int height, int start_with)
+int32_t convert_yuyv_rgb888(uint8_t* yuyv_buffer,uint8_t* rgb888, uint32_t width, uint32_t height, int32_t start_with)
 {
     /* 
      *    start_with
@@ -309,13 +317,13 @@ int convert_yuyv_rgb888(unsigned char* yuyv_buffer,unsigned char* rgb888, unsign
      *    UYVY = 2
      *    VYUY = 3
      */
-    int i = 0, j = 0;
-    unsigned char* rgb_buffer;
-    int temp;
-    int yuvcount = 0;
-    int rgbcount = 0;
+    int32_t hidx = 0, widx = 0;
+    uint8_t* rgb_buffer;
+    int32_t temp;
+    int32_t yuvcount = 0;
+    int32_t rgbcount = 0;
     float u_val, v_val, y1_val, y2_val;
-    unsigned int time;
+    uint32_t time;
 
     rgb_buffer = rgb888;
 
@@ -324,9 +332,9 @@ int convert_yuyv_rgb888(unsigned char* yuyv_buffer,unsigned char* rgb888, unsign
     // G = Y - 0.344U' - 0.714V'    
     // B = Y + 1.770U'
 
-    for (i = 0; i < height; i++)
+    for (hidx = 0; hidx < height; hidx++)
     {
-        for (j = 0; j < width; j+= 2)
+        for (widx = 0; widx < width; widx+= 2)
         {
             switch (start_with)
             {
@@ -362,50 +370,49 @@ int convert_yuyv_rgb888(unsigned char* yuyv_buffer,unsigned char* rgb888, unsign
             u_val = u_val - 128;
             v_val = v_val - 128;        
 
-            temp = (int)(y1_val + (1.770 * u_val));
-            rgb_buffer[(((height-1)-i) * width * 3) + j*3 +0] = BYTE_CLAMP(temp);
+            temp = (int32_t)(y1_val + (1.770 * u_val));
+            rgb_buffer[(((height-1)-hidx) * width * 3) + widx*3 +0] = CLIP(temp);
 
-            temp = (int)(y1_val - (0.344 * u_val) - (0.714 * v_val));
-            rgb_buffer[(((height-1)-i) * width * 3) + j*3 +1] = BYTE_CLAMP(temp);
+            temp = (int32_t)(y1_val - (0.344 * u_val) - (0.714 * v_val));
+            rgb_buffer[(((height-1)-hidx) * width * 3) + widx*3 +1] = CLIP(temp);
 
-            temp = (int)(y1_val + (1.403 * v_val));
-            rgb_buffer[(((height-1)-i) * width * 3) + j*3 +2] = BYTE_CLAMP(temp);
+            temp = (int32_t)(y1_val + (1.403 * v_val));
+            rgb_buffer[(((height-1)-hidx) * width * 3) + widx*3 +2] = CLIP(temp);
 
-            temp = (int)(y2_val + (1.770 * u_val));
-            rgb_buffer[(((height-1)-i) * width * 3) + j*3 +3] = BYTE_CLAMP(temp);
+            temp = (int32_t)(y2_val + (1.770 * u_val));
+            rgb_buffer[(((height-1)-hidx) * width * 3) + widx*3 +3] = CLIP(temp);
 
-            temp = (int)(y2_val - (0.344 * u_val) - (0.714 * v_val));
-            rgb_buffer[(((height-1)-i) * width * 3) + j*3 +4] = BYTE_CLAMP(temp);
+            temp = (int32_t)(y2_val - (0.344 * u_val) - (0.714 * v_val));
+            rgb_buffer[(((height-1)-hidx) * width * 3) + widx*3 +4] = CLIP(temp);
 
-            temp = (int)(y2_val + (1.403 * v_val));
-            rgb_buffer[(((height-1)-i) * width * 3) + j*3 +5] = BYTE_CLAMP(temp);
+            temp = (int32_t)(y2_val + (1.403 * v_val));
+            rgb_buffer[(((height-1)-hidx) * width * 3) + widx*3 +5] = CLIP(temp);
         }
     }
     return 0;
 }
 
-int perform_equalize_y8 (unsigned char *ptr, unsigned int width, unsigned int height)
+int32_t perform_equalize_y8 (uint8_t *ptr, uint32_t width, uint32_t height)
 {
-    unsigned char Y;
-    unsigned int Y_count[256];
+    uint8_t Y;
+    uint32_t Y_count[256];
     memset(Y_count, 0x00, sizeof(Y_count));
-    unsigned int Y_sum = 0;
-    unsigned int cdf_Y_count[256];
-    unsigned int cdf_Y_min = 0;
+    uint32_t Y_sum = 0;
+    uint32_t cdf_Y_count[256];
+    uint32_t cdf_Y_min = 0;
 
-    unsigned char hv_Y[256];
+    uint8_t hv_Y[256];
 
-    unsigned int Y_total_count = width * height;
+    uint32_t Y_total_count = width * height;
 
-    for(unsigned int i=0;i<(width*height);i++) {
-        Y = ptr[i];
+    for(uint32_t hidx=0;hidx<(width*height);hidx++) {
+        Y = ptr[hidx];
 
         /* perform Histogram */
         Y_count[Y]++;
     }
-#define CEIL(x) ((x)>255?255:((x)<0?0:(x)))
     /* compute cdf and h(v) */
-    for (unsigned int cdf_idx=0; cdf_idx <256; cdf_idx++)
+    for (uint32_t cdf_idx=0; cdf_idx <256; cdf_idx++)
     {
         Y_sum += Y_count[cdf_idx];
 
@@ -413,26 +420,26 @@ int perform_equalize_y8 (unsigned char *ptr, unsigned int width, unsigned int he
 
         cdf_Y_count[cdf_idx] = Y_sum;
         /* round((cdf(v)-cdf(min)/(MxN)-cdf(min)x(L-1) */
-        hv_Y[cdf_idx] = CEIL(((cdf_Y_count[cdf_idx] - cdf_Y_min) * 255) / (Y_total_count - cdf_Y_min));
+        hv_Y[cdf_idx] = CLIP(((cdf_Y_count[cdf_idx] - cdf_Y_min) * 255) / (Y_total_count - cdf_Y_min));
     }
 
     /* Equalize */
-    for(unsigned int i=0;i<(width*height);i++) {
-        ptr[i] = (ptr[i] > 240) ? ptr[i] : hv_Y[ptr[i]];
+    for(uint32_t hidx=0;hidx<(width*height);hidx++) {
+        ptr[hidx] = (ptr[hidx] > 240) ? ptr[hidx] : hv_Y[ptr[hidx]];
     }
     return 0;
 }
 
-int perform_stride_correction(unsigned char *dptr, unsigned char *sptr,
-        unsigned int dwidth, unsigned int dheight,
-        unsigned int swidth, unsigned int sheight, unsigned int bpp)
+int32_t perform_stride_correction(uint8_t *dptr, uint8_t *sptr,
+        uint32_t dwidth, uint32_t dheight,
+        uint32_t swidth, uint32_t sheight, uint32_t bpp)
 {
     if ((dwidth > swidth) || (dheight > sheight))
     {
         return -1;
     }
 
-    for (unsigned int hidx = 0; hidx < dheight; hidx++)
+    for (uint32_t hidx = 0; hidx < dheight; hidx++)
     {
         memcpy(&dptr[hidx*dwidth*bpp], &sptr[hidx*swidth*bpp], dwidth*bpp);
     }
@@ -440,12 +447,12 @@ int perform_stride_correction(unsigned char *dptr, unsigned char *sptr,
 }
 
 
-int perform_crop(unsigned char *dptr, unsigned char *sptr, unsigned int x, unsigned int y,
-        unsigned int width, unsigned int height, unsigned int bpp,
-        unsigned int srcwidth, unsigned int srcheight)
+int32_t perform_crop(uint8_t *dptr, uint8_t *sptr, uint32_t x, uint32_t y,
+        uint32_t width, uint32_t height, uint32_t bpp,
+        uint32_t srcwidth, uint32_t srcheight)
 {
-    int x_start = x-(width/2);
-    int y_start = y-(height/2);
+    int32_t x_start = x-(width/2);
+    int32_t y_start = y-(height/2);
 
     if ((x_start < 0) || (y_start < 0) ||
             ((width+x) > srcwidth) || ((height+y) > srcheight))
@@ -453,53 +460,55 @@ int perform_crop(unsigned char *dptr, unsigned char *sptr, unsigned int x, unsig
         return -1;
     }
 
-    for (unsigned int hidx = 0; hidx < height; hidx++)
+    for (uint32_t hidx = 0; hidx < height; hidx++)
     {
         memcpy(&dptr[hidx*width*bpp], &sptr[((y_start+hidx)*srcwidth + x_start)*bpp], width*bpp);
     }
     return 0;
 }
 
-int perform_equalize_rgb24 (unsigned char *ptr, unsigned int width, unsigned int height)
+int32_t perform_equalize_rgb24 (uint8_t *ptr, uint32_t width, uint32_t height)
 {
-    unsigned char R,G,B;
-    unsigned int R_count[256];
-    unsigned int G_count[256];
-    unsigned int B_count[256];
+    uint8_t R,G,B;
+    uint32_t R_count[256];
+    uint32_t G_count[256];
+    uint32_t B_count[256];
+    uint32_t R_sum = 0;
+    uint32_t G_sum = 0;
+    uint32_t B_sum = 0;
+    uint32_t cdf_R_count[256];
+    uint32_t cdf_G_count[256];
+    uint32_t cdf_B_count[256];
+    uint32_t cdf_R_min = 0;
+    uint32_t cdf_G_min = 0;
+    uint32_t cdf_B_min = 0;
+
+    uint8_t hv_R[256];
+    uint8_t hv_G[256];
+    uint8_t hv_B[256];
+
+    uint32_t R_total_count = width * height;
+    uint32_t G_total_count = R_total_count;
+    uint32_t B_total_count = R_total_count;
+
     memset(R_count, 0x00, sizeof(R_count));
     memset(G_count, 0x00, sizeof(G_count));
     memset(B_count, 0x00, sizeof(B_count));
-    unsigned int R_sum = 0;
-    unsigned int G_sum = 0;
-    unsigned int B_sum = 0;
-    unsigned int cdf_R_count[256];
-    unsigned int cdf_G_count[256];
-    unsigned int cdf_B_count[256];
-    unsigned int cdf_R_min = 0;
-    unsigned int cdf_G_min = 0;
-    unsigned int cdf_B_min = 0;
 
-    unsigned char hv_R[256];
-    unsigned char hv_G[256];
-    unsigned char hv_B[256];
-
-    unsigned int R_total_count = width * height;
-    unsigned int G_total_count = R_total_count;
-    unsigned int B_total_count = R_total_count;
-
-    for(unsigned int i=0;i<(width*height);i++) {
-        R = ptr[i*3+2];
-        G = ptr[i*3+1];
-        B = ptr[i*3+0];
+    for(uint32_t idx=0; idx<(width*height); idx++)
+    {
+        R = ptr[idx*3+2];
+        G = ptr[idx*3+1];
+        B = ptr[idx*3+0];
 
         /* perform Histogram */
         R_count[R]++;
         G_count[G]++;
         B_count[B]++;
     }
-#define CEIL(x) ((x)>255?255:((x)<0?0:(x)))
+
     /* compute cdf and h(v) */
-    for (unsigned int cdf_idx=0; cdf_idx <256; cdf_idx++)
+    for (uint32_t cdf_idx=0; cdf_idx <256; cdf_idx++)
     {
         R_sum += R_count[cdf_idx];
         G_sum += G_count[cdf_idx];
@@ -513,30 +522,34 @@ int perform_equalize_rgb24 (unsigned char *ptr, unsigned int width, unsigned int
         cdf_G_count[cdf_idx] = G_sum;
         cdf_B_count[cdf_idx] = B_sum;
         /* round((cdf(v)-cdf(min)/(MxN)-cdf(min)x(L-1) */
-        hv_R[cdf_idx] = CEIL(((cdf_R_count[cdf_idx] - cdf_R_min) * 255) / (R_total_count - cdf_R_min));
-        hv_G[cdf_idx] = CEIL(((cdf_G_count[cdf_idx] - cdf_G_min) * 255) / (G_total_count - cdf_G_min));
-        hv_B[cdf_idx] = CEIL(((cdf_B_count[cdf_idx] - cdf_B_min) * 255) / (B_total_count - cdf_B_min));
+        hv_R[cdf_idx] = CLIP((((cdf_R_count[cdf_idx] - cdf_R_min) * 255) / (R_total_count - cdf_R_min)));
+        hv_G[cdf_idx] = CLIP((((cdf_G_count[cdf_idx] - cdf_G_min) * 255) / (G_total_count - cdf_G_min)));
+        hv_B[cdf_idx] = CLIP((((cdf_B_count[cdf_idx] - cdf_B_min) * 255) / (B_total_count - cdf_B_min)));
     }
 
     /* Equalize */
-    for(unsigned int i=0;i<(width*height);i++) {
-        ptr[i*3+2] = (ptr[i*3+2] > 240) ? ptr[i*3+2] : hv_R[ptr[i*3+2]];
-        ptr[i*3+1] = (ptr[i*3+1] > 240) ? ptr[i*3+1] : hv_G[ptr[i*3+1]];
-        ptr[i*3+0] = (ptr[i*3+0] > 240) ? ptr[i*3+0] : hv_B[ptr[i*3+0]];
+    for(uint32_t idx=0; idx<(width*height); idx++)
+    {
+        ptr[idx*3+2] = hv_R[ptr[idx*3+2]];
+        ptr[idx*3+1] = hv_G[ptr[idx*3+1]];
+        ptr[idx*3+0] = hv_B[ptr[idx*3+0]];
     }
     return 0;
 }
 
-int convert_rgb555_888(unsigned char* inbuf, unsigned char* outbuf, unsigned int width, unsigned int height, int start_with)
-{     unsigned int row_cnt, pix_cnt;     
-    unsigned int off1 = 0, off2 = 0;
-    unsigned char  tbi1, tbi2, R5, G5, B5, R8, G8, B8;
+int32_t convert_rgb555_888(uint8_t* inbuf, uint8_t* outbuf, uint32_t width, uint32_t height, int32_t start_with)
+{
+    uint32_t row_cnt, pix_cnt;
+    uint32_t off1 = 0, off2 = 0;
+    uint8_t  tbi1, tbi2, R5, G5, B5, R8, G8, B8;
 
     for (row_cnt = 0; row_cnt < height; row_cnt++) 
-    {     off1 = row_cnt * width * 2;
+    {
+        off1 = row_cnt * width * 2;
         off2 = row_cnt * width * 3;
         for(pix_cnt=0; pix_cnt < width; pix_cnt++)
-        {    tbi1 = inbuf[off1 + (pix_cnt * 2)];
+        {
+            tbi1 = inbuf[off1 + (pix_cnt * 2)];
             tbi2 = inbuf[off1 + (pix_cnt * 2) + 1];
             B5 = tbi1 & 0x1F;
             G5 = (((tbi1 & 0xE0) >> 5) | ((tbi2 & 0x03) << 3)) & 0x1F;
@@ -553,7 +566,7 @@ int convert_rgb555_888(unsigned char* inbuf, unsigned char* outbuf, unsigned int
 }
 
 #if 0
-int convert_rgb555_888(unsigned char* rgb565,unsigned char* rgb888, unsigned int width, unsigned int height, int start_with)
+int32_t convert_rgb555_888(uint8_t* rgb565,uint8_t* rgb888, uint32_t width, uint32_t height, int32_t start_with)
 {
 
     /*
@@ -562,18 +575,18 @@ int convert_rgb555_888(unsigned char* rgb565,unsigned char* rgb888, unsigned int
      * BGGR = 2
      * GRBG = 3
      */
-    int r,g,b,rg,gb,bg,gr,i,j;
+    int32_t r,g,b,rg,gb,bg,gr,hidx,widx;
 
-    for (i=0; i<height; i++)
+    for (hidx=0; hidx<height; hidx++)
     {
-        for(j=0; j<width; j++)
+        for(widx=0; widx<width; widx++)
         {
             switch (start_with)
             {
                 case 0:
                     {
-                        rg = rgb565[(i * width*2)+j*2+0];
-                        gb = rgb565[(i * width*2)+j*2+1];
+                        rg = rgb565[(hidx * width*2)+widx*2+0];
+                        gb = rgb565[(hidx * width*2)+widx*2+1];
                         r = (0x7C & rg) << 1;
                         g = ((rg & 0x3)<<6) | ((gb&0xE0)>>2);
                         b = (gb & 0x1F) << 2;
@@ -581,8 +594,8 @@ int convert_rgb555_888(unsigned char* rgb565,unsigned char* rgb888, unsigned int
 
                 case 1:
                     {
-                        gb = rgb565[(i * width*2)+j*2+0];
-                        rg = rgb565[(i * width*2)+j*2+1];
+                        gb = rgb565[(hidx * width*2)+widx*2+0];
+                        rg = rgb565[(hidx * width*2)+widx*2+1];
                         r = (0x7C & rg) << 1;
                         g = ((rg & 0x3)<<6) | ((gb&0xE0)>>2);
                         b = (gb & 0x1F) << 2;
@@ -591,8 +604,8 @@ int convert_rgb555_888(unsigned char* rgb565,unsigned char* rgb888, unsigned int
 
                 case 2:
                     {
-                        bg = rgb565[(i * width*2)+j*2+0];
-                        gr = rgb565[(i * width*2)+j*2+1];
+                        bg = rgb565[(hidx * width*2)+widx*2+0];
+                        gr = rgb565[(hidx * width*2)+widx*2+1];
                         b = (0x7C & bg) << 1;
                         g = ((bg & 0x3)<<6) | ((gr&0xE0)>>2);
                         r = (gr & 0x1F) << 2;
@@ -601,22 +614,22 @@ int convert_rgb555_888(unsigned char* rgb565,unsigned char* rgb888, unsigned int
 
                 case 3:
                     {
-                        gr = rgb565[(i * width*2)+j*2+0];
-                        bg = rgb565[(i * width*2)+j*2+1];
+                        gr = rgb565[(hidx * width*2)+widx*2+0];
+                        bg = rgb565[(hidx * width*2)+widx*2+1];
 
                     }break;
             }
 
-            rgb888[(((height-1)-i) * width * 3)+ j*3 +0] = 0xFF & b;
-            rgb888[(((height-1)-i) * width * 3)+ j*3 +1] = 0xFF & g;
-            rgb888[(((height-1)-i) * width * 3)+ j*3 +2] = 0xFF & r;
+            rgb888[(((height-1)-hidx) * width * 3)+ widx*3 +0] = 0xFF & b;
+            rgb888[(((height-1)-hidx) * width * 3)+ widx*3 +1] = 0xFF & g;
+            rgb888[(((height-1)-hidx) * width * 3)+ widx*3 +2] = 0xFF & r;
         }
     }
     return 0;
 }
 #endif
 
-int convert_rgb565_888(unsigned char* rgb565,unsigned char* rgb888, unsigned int width, unsigned int height, int start_with)
+int32_t convert_rgb565_888(uint8_t* rgb565,uint8_t* rgb888, uint32_t width, uint32_t height, int32_t start_with)
 {
 
     /*
@@ -625,18 +638,18 @@ int convert_rgb565_888(unsigned char* rgb565,unsigned char* rgb888, unsigned int
      * BGGR = 2
      * GRBG = 3
      */
-    int r,g,b,rg,gb,bg,gr,i,j;
+    int32_t r,g,b,rg,gb,bg,gr,hidx,widx;
 
-    for (i=0; i<height; i++)
+    for (hidx=0; hidx<height; hidx++)
     {
-        for(j=0; j<width; j++)
+        for(widx=0; widx<width; widx++)
         {
             switch (start_with)
             {
                 case 0:
                     {
-                        rg = rgb565[(i * width*2)+j*2+0];
-                        gb = rgb565[(i * width*2)+j*2+1];
+                        rg = rgb565[(hidx * width*2)+widx*2+0];
+                        gb = rgb565[(hidx * width*2)+widx*2+1];
                         r = (0xF7 & rg);
                         g = (((rg&0x7)<<3) | ((gb&0xE0)>>5)) << 2;
                         b = ((gb&0x1F) << 3);
@@ -644,8 +657,8 @@ int convert_rgb565_888(unsigned char* rgb565,unsigned char* rgb888, unsigned int
 
                 case 1:
                     {
-                        gb = rgb565[(i * width*2)+j*2+0];
-                        rg = rgb565[(i * width*2)+j*2+1];
+                        gb = rgb565[(hidx * width*2)+widx*2+0];
+                        rg = rgb565[(hidx * width*2)+widx*2+1];
                         r = (0xF7 & rg);
                         g = (((rg&0x7)<<3) | ((gb&0xE0)>>5)) << 2;
                         b = ((gb&0x1F) << 3);
@@ -653,8 +666,8 @@ int convert_rgb565_888(unsigned char* rgb565,unsigned char* rgb888, unsigned int
 
                 case 2:
                     {
-                        bg = rgb565[(i * width*2)+j*2+0];
-                        gr = rgb565[(i * width*2)+j*2+1];
+                        bg = rgb565[(hidx * width*2)+widx*2+0];
+                        gr = rgb565[(hidx * width*2)+widx*2+1];
                         r = (gr & 0x1F) << 3;
                         g = ((bg & 0x7) << 3 | (gr & 0xE0)>>5) << 2;
                         b = (0xF7 & gb);
@@ -662,8 +675,8 @@ int convert_rgb565_888(unsigned char* rgb565,unsigned char* rgb888, unsigned int
 
                 case 3:
                     {
-                        gr = rgb565[(i * width*2)+j*2+0];
-                        bg = rgb565[(i * width*2)+j*2+1];
+                        gr = rgb565[(hidx * width*2)+widx*2+0];
+                        bg = rgb565[(hidx * width*2)+widx*2+1];
                         b = (0xF7 & bg);
                         g = (((bg&0x7)<<3) | ((gr&0xE0)>>5)) << 2;
                         r = ((gr&0x1F) << 3);
@@ -671,97 +684,109 @@ int convert_rgb565_888(unsigned char* rgb565,unsigned char* rgb888, unsigned int
                     }break;
             }
 
-            rgb888[(((height-1)-i) * width * 3)+ j*3 +0] = 0xFF & b;
-            rgb888[(((height-1)-i) * width * 3)+ j*3 +1] = 0xFF & g;
-            rgb888[(((height-1)-i) * width * 3)+ j*3 +2] = 0xFF & r;
+            rgb888[(((height-1)-hidx) * width * 3)+ widx*3 +0] = 0xFF & b;
+            rgb888[(((height-1)-hidx) * width * 3)+ widx*3 +1] = 0xFF & g;
+            rgb888[(((height-1)-hidx) * width * 3)+ widx*3 +2] = 0xFF & r;
         }
     }
     return 0;
 }
 
-int convert_bayer12_bayer8(unsigned char *src_buffer, unsigned char *dest_buffer, int width, int height)
+int32_t convert_bayer12_bayer8(uint8_t *src_buffer, uint8_t *dest_buffer, int32_t width, int32_t height)
 {
-    int index =0;
-    int hindex, windex;
-    for (hindex = 0; hindex < height; hindex++) {
-        for (windex = 0; windex < width/2; windex++) {
-            dest_buffer[index++] = src_buffer[(int)(hindex*width*1.5)+ (windex * 3) +0];
-            dest_buffer[index] = (src_buffer[(int)(hindex*width*1.5)+ (windex * 3) +1] & 0XF)<<4;
-            dest_buffer[index++] |= (src_buffer[(int)(hindex*width*1.5)+ (windex * 3) +1] & 0XF0)>>4;
+    int32_t index =0;
+    int32_t hindex, windex;
+    for (hindex = 0; hindex < height; hindex++)
+    {
+        for (windex = 0; windex < width/2; windex++)
+        {
+            dest_buffer[index++] = src_buffer[(int32_t)(hindex*width*1.5)+ (windex * 3) +0];
+            dest_buffer[index] = (src_buffer[(int32_t)(hindex*width*1.5)+ (windex * 3) +1] & 0XF)<<4;
+            dest_buffer[index++] |= (src_buffer[(int32_t)(hindex*width*1.5)+ (windex * 3) +1] & 0XF0)>>4;
         }
     }
     return 0;
 }
 
-int convert_rccg_rgb24(
-        unsigned char *src_buffer, unsigned char *dest_buffer,
-        int width, int height, unsigned char pc,
-        unsigned int bpp, unsigned int shift)
+int32_t convert_rccg_rgb24(
+        uint8_t *src_buffer, uint8_t *dest_buffer,
+        int32_t width, int32_t height, uint8_t pc,
+        uint32_t bpp, uint32_t shift)
 {
-    int bayer_step    = width;
-    unsigned int i,width_end_watch;
+    int32_t bayer_step    = width;
+    uint32_t idx, width_end_watch;
     /*
      * pc = 0 = BGGR
      * pc = 1 = GBRG
      * pc = 2 = RGGB
      * pc = 3 = GRBG
      */
-    int pattern[4][3][2][2]= {
+    int32_t pattern[4][3][2][2]= {
         {
             /* B offset for BGGR */
-            {    {0,        -1,},
+            {
+                {0,        -1,},
                 {bayer_step,    bayer_step-1,},
             },
             /* G offset for BGGR */
-            {    {1,        0,},
+            {
+                {1,        0,},
                 {0,        bayer_step,},
             },
             /* R offset for BGGR */
-            {    {bayer_step+1,    bayer_step,},
+            {
+                {bayer_step+1,    bayer_step,},
                 {1,        0,},
             },
         },
-
-        /* B offset for GBRG */
         {
-            {    {1,        0,},
+            /* B offset for GBRG */
+            {
+                {1,        0,},
                 {bayer_step +1,    bayer_step,},
             },
             /* G offset for GBRG */
-            {    {0,        -1,},
+            {
+                {0,        -1,},
                 {1,        0,},
             },
             /* R offset for GBRG */
-            {    {bayer_step,    bayer_step-1,},
+            {
+                {bayer_step,    bayer_step-1,},
                 {0,        -1,},
             },
         },
-
         {
             /* B offset for RGGB */
-            {    {bayer_step +1,    bayer_step,},
+            {
+                {bayer_step +1,    bayer_step,},
                 {1,        0,},
             },
             /* G offset for RGGB */
-            {    {1,        0,},
+            {
+                {1,        0,},
                 {0,        bayer_step,},
             },
             /* R offset for RGGB */
-            {    {0,        -1,},
+            {
+                {0,        -1,},
                 {bayer_step,    bayer_step-1,},
             },
         },
-        /* B offset for GRBG */
         {
-            {    {bayer_step,    bayer_step-1,},
+            /* B offset for GRBG */
+            {
+                {bayer_step,    bayer_step-1,},
                 {0,        -1,},
             },
             /* G offset for GRBG */
-            {    {0,        -1,},
+            {
+                {0,        -1,},
                 {1,        0,},
             },
             /* R offset for GRBG */
-            {    {1,        0,},
+            {
+                {1,        0,},
                 {bayer_step+1,    bayer_step,},
             },
         },
@@ -769,46 +794,88 @@ int convert_rccg_rgb24(
 
     if (bpp == 8)
     {
-        unsigned char *s_buffer = src_buffer;
-        for(i = 0, width_end_watch = 0; i < width*(height-1); i++)
+        uint8_t *s_buffer = src_buffer;
+        for(idx = 0, width_end_watch = 0; idx < width*(height-1); idx++)
         {
-            unsigned short r, c, g, b;
-            g = s_buffer[pattern[pc][0][width_end_watch][i&1] +i];
-            c = s_buffer[pattern[pc][1][width_end_watch][i&1] +i];
-            r = s_buffer[pattern[pc][2][width_end_watch][i&1] +i];
+            uint16_t r, c, g, b;
+            g = s_buffer[pattern[pc][0][width_end_watch][idx&1] +idx];
+            c = s_buffer[pattern[pc][1][width_end_watch][idx&1] +idx];
+            r = s_buffer[pattern[pc][2][width_end_watch][idx&1] +idx];
 
             b = c - (0.7*r)- g;
 
-            dest_buffer[i*3+2] = b;
-            dest_buffer[i*3+1] = g;
-            dest_buffer[i*3+0] = r;
+            dest_buffer[idx*3+2] = b;
+            dest_buffer[idx*3+1] = g;
+            dest_buffer[idx*3+0] = r;
 
-            if((i%width) == 0)
+            if(((idx+1)%width) == 0)
             {
                 width_end_watch = width_end_watch?0:1;
             }
         }
     }else
     {
-        unsigned short *s_buffer = (unsigned short *)src_buffer;
-        for(i = 0, width_end_watch = 0; i < width*(height-1); i++)
+        uint16_t *s_buffer = (uint16_t *)src_buffer;
+        for(idx = 0, width_end_watch = 0; idx < width*(height-1); idx++)
         {
-            unsigned short rccg_r, rccg_c,rccg_g;
-            unsigned char bgr_b, bgr_g, bgr_r;
-            rccg_g = s_buffer[pattern[pc][0][width_end_watch][i&1] +i] >> shift;
-            rccg_c = s_buffer[pattern[pc][1][width_end_watch][i&1] +i] >> shift;
-            rccg_r = s_buffer[pattern[pc][2][width_end_watch][i&1] +i] >> shift;
+            uint16_t rccg_r, rccg_c,rccg_g;
+            uint8_t bgr_b, bgr_g, bgr_r;
+            int32_t d_rccg_r, d_rccg_c, d_rccg_g;
+            uint32_t s_rgb_r, s_rgb_g, s_rgb_b;
+            uint32_t idx_g, idx_c, idx_r;
+            uint32_t y[]={0, 1024, 2048, 4096, 6144, 8192, 12288, 16384, 20480,
+                24576, 32768, 40960, 49152, 57344, 65536, 81920, 98304, 114688,
+                131072, 163840, 196608, 262144, 393216, 524288, 786432, 1048576,
+                1572864, 2097152, 3145728, 4194304, 6291456, 8388608, 12582912, 16777216};
+            uint32_t x[]={0, 1024, 2047, 3071, 3583, 4095, 4607, 5119, 5631,
+                6143, 6655, 7167, 7679, 8191, 8703, 9727, 10239, 10751, 11263,
+                12287, 13311, 14335, 16383, 18431, 22527, 24575, 28671, 32767,
+                36863, 40959, 45055, 49151, 57343, 65535};
+ 
+            rccg_g = s_buffer[pattern[pc][0][width_end_watch][idx&1] +idx];
+            rccg_c = s_buffer[pattern[pc][1][width_end_watch][idx&1] +idx];
+            rccg_r = s_buffer[pattern[pc][2][width_end_watch][idx&1] +idx];
+ 
+            for (idx_g=1; idx_g < (sizeof(x)/sizeof(x[0])); idx_g++)
+            {
+                if (x[idx_g] > rccg_g)
+                    break;
+            }
+            
+            d_rccg_g = y[idx_g-1] + ((rccg_g - x[idx_g-1]) * (y[idx_g]-y[idx_g-1])/(x[idx_g]-x[idx_g-1]));
+            for (idx_c=1; idx_c < (sizeof(x)/sizeof(x[0])); idx_c++)
+            {
+                if (x[idx_c] > rccg_c)
+                    break;
+            }
+            d_rccg_c = y[idx_c-1] + ((rccg_c - x[idx_c-1]) * (y[idx_c]-y[idx_c-1])/(x[idx_c]-x[idx_c-1]));
+ 
+            for (idx_r=1; idx_r < (sizeof(x)/sizeof(x[0])); idx_r++)
+            {
+                if (x[idx_r] > rccg_r)
+                    break;
+            }
+            d_rccg_r = y[idx_r-1] + ((rccg_r - x[idx_r-1]) * (y[idx_r]-y[idx_r-1])/(x[idx_r]-x[idx_r-1]));
+ 
+            d_rccg_g = CLIP(d_rccg_g >> shift);
+            d_rccg_c = CLIP(d_rccg_c >> shift);
+            d_rccg_r = CLIP(d_rccg_r >> shift);
 
             //b = c - (0.7*r)- g;
-            bgr_b = (unsigned char) (-4.56*rccg_g +7.21*rccg_c -1.65*rccg_r);
-            bgr_g = (unsigned char) (2.45*rccg_g -1.16*rccg_c  -0.29*rccg_r);
-            bgr_r = (unsigned char) (-1.14*rccg_g -0.6*rccg_c  +2.75*rccg_r);
-            
-            dest_buffer[i*3+2] = bgr_b;
-            dest_buffer[i*3+1] = bgr_g;
-            dest_buffer[i*3+0] = bgr_r;
+            bgr_b = (uint8_t) CLIP((-4.56*d_rccg_g +7.21*d_rccg_c -1.65*d_rccg_r));
+            bgr_g = (uint8_t) CLIP((2.45*d_rccg_g -1.16*d_rccg_c  -0.29*d_rccg_r));
+            bgr_r = (uint8_t) CLIP((-1.14*d_rccg_g -0.6*d_rccg_c  +2.75*d_rccg_r));
 
-            if((i%width) == 0)
+            s_rgb_r = CLIP (+1.08*bgr_r +0.07*bgr_g -0.15*bgr_b);
+            s_rgb_g = CLIP (-0.38*bgr_r +1.43*bgr_g -0.05*bgr_b);
+            s_rgb_b = CLIP (-0.02*bgr_r -0.15*bgr_g +1.17*bgr_b);
+
+            // bgr_b = CLIP(bgr_b - 30);
+            dest_buffer[idx*3+2] = bgr_b;//s_rgb_b;
+            dest_buffer[idx*3+1] = bgr_g;//s_rgb_g;
+            dest_buffer[idx*3+0] = bgr_r;//s_rgb_r;
+ 
+            if(((idx +1)%width) == 0)
             {
                 width_end_watch = width_end_watch?0:1;
             }
@@ -817,21 +884,20 @@ int convert_rccg_rgb24(
     return 0;
 }
 
-
-int convert_bayer_rgb24(
-        unsigned char *src_buffer, unsigned char *dest_buffer,
-        int width, int height, unsigned char pc,
-        unsigned int bpp, unsigned int shift)
+int32_t convert_bayer_rgb24(
+        uint8_t *src_buffer, uint8_t *dest_buffer,
+        int32_t width, int32_t height, uint8_t pc,
+        uint32_t bpp, uint32_t shift)
 {
-    int bayer_step    = width;
-    unsigned int i,width_end_watch;
+    int32_t bayer_step    = width;
+    uint32_t idx,width_end_watch;
     /*
      * pc = 0 = BGGR
      * pc = 1 = GBRG
      * pc = 2 = RGGB
      * pc = 3 = GRBG
      */
-    int pattern[4][3][2][2]= {
+    int32_t pattern[4][3][2][2]= {
         {
             /* B offset for BGGR */
             {    {0,        -1,},
@@ -894,28 +960,28 @@ int convert_bayer_rgb24(
 
     if (bpp == 8)
     {
-        unsigned char *s_buffer = src_buffer;
-        for(i = 0, width_end_watch = 0; i < width*(height-1); i++)
+        uint8_t *s_buffer = src_buffer;
+        for(idx = 0, width_end_watch = 0; idx < width*(height-1); idx++)
         {
-            dest_buffer[i*3+2] = s_buffer[pattern[pc][0][width_end_watch][i&1] +i];
-            dest_buffer[i*3+1] = s_buffer[pattern[pc][1][width_end_watch][i&1] +i];
-            dest_buffer[i*3+0] = s_buffer[pattern[pc][2][width_end_watch][i&1] +i];
+            dest_buffer[idx*3+2] = s_buffer[pattern[pc][0][width_end_watch][idx&1] +idx];
+            dest_buffer[idx*3+1] = s_buffer[pattern[pc][1][width_end_watch][idx&1] +idx];
+            dest_buffer[idx*3+0] = s_buffer[pattern[pc][2][width_end_watch][idx&1] +idx];
 
-            if((i%width) == 0)
+            if(((idx+1)%width) == 0)
             {
                 width_end_watch = width_end_watch?0:1;
             }
         }
     }else
     {
-        unsigned short *s_buffer = (unsigned short *)src_buffer;
-        for(i = 0, width_end_watch = 0; i < width*(height-1); i++)
+        uint16_t *s_buffer = (uint16_t *)src_buffer;
+        for(idx = 0, width_end_watch = 0; idx < width*(height-1); idx++)
         {
-            dest_buffer[i*3+2] = s_buffer[pattern[pc][0][width_end_watch][i&1] +i] >> shift;
-            dest_buffer[i*3+1] = s_buffer[pattern[pc][1][width_end_watch][i&1] +i] >> shift;
-            dest_buffer[i*3+0] = s_buffer[pattern[pc][2][width_end_watch][i&1] +i] >> shift;
+            dest_buffer[idx*3+2] = s_buffer[pattern[pc][0][width_end_watch][idx&1] +idx] >> shift;
+            dest_buffer[idx*3+1] = s_buffer[pattern[pc][1][width_end_watch][idx&1] +idx] >> shift;
+            dest_buffer[idx*3+0] = s_buffer[pattern[pc][2][width_end_watch][idx&1] +idx] >> shift;
 
-            if((i%width) == 0)
+            if(((idx+1)%width) == 0)
             {
                 width_end_watch = width_end_watch?0:1;
             }
@@ -925,7 +991,7 @@ int convert_bayer_rgb24(
     return 0;
 }
 
-int save_ir_asyuv(unsigned char *des_buffer, unsigned int width, unsigned int height)
+int32_t save_ir_asyuv(uint8_t *des_buffer, uint32_t width, uint32_t height)
 {
     /* Convert into YUV file and SAVE it */
     FILE *yuvptr = fopen("sample_ir.yuv", "wb");
@@ -934,7 +1000,7 @@ int save_ir_asyuv(unsigned char *des_buffer, unsigned int width, unsigned int he
     return 0;
 }
 
-int save_buffer(unsigned char *des_buffer, unsigned int size)
+int32_t save_buffer(uint8_t *des_buffer, uint32_t size)
 {
     /* Convert into YUV file and SAVE it */
     FILE *raw = fopen("sample.raw", "wb");
@@ -944,22 +1010,22 @@ int save_buffer(unsigned char *des_buffer, unsigned int size)
 }
 
 
-int save_asyuv(unsigned char *des_buffer, unsigned int width, unsigned int height)
+int32_t save_asyuv(uint8_t *des_buffer, uint32_t width, uint32_t height)
 {
     /* Convert into YUV file and SAVE it */
     FILE *yuvptr = fopen("sample.yuv", "wb");
-    unsigned char *yuvbuf = (unsigned char *)calloc(width * height*2, 1);
+    uint8_t *yuvbuf = (uint8_t *)calloc(width * height*2, 1);
 
-    unsigned int widthinc, heightinc;
-    unsigned int value;
+    uint32_t widthinc, heightinc;
+    uint32_t value;
     for (heightinc = 0; heightinc < height; heightinc++)
     {
         for(widthinc = 0; widthinc < width; widthinc+=2)
         {
-            unsigned char y1,u1,v1;
-            unsigned char y2,u2,v2;
-            unsigned char R1,G1,B1;
-            unsigned char R2,G2,B2;
+            uint8_t y1,u1,v1;
+            uint8_t y2,u2,v2;
+            uint8_t R1,G1,B1;
+            uint8_t R2,G2,B2;
             R1 = des_buffer[(heightinc*width*3)+ widthinc*3 + 0];
             G1 = des_buffer[(heightinc*width*3)+ widthinc*3 + 1];
             B1 = des_buffer[(heightinc*width*3)+ widthinc*3 + 2];
@@ -968,14 +1034,13 @@ int save_asyuv(unsigned char *des_buffer, unsigned int width, unsigned int heigh
             G2 = des_buffer[(heightinc*width*3)+ widthinc*3 + 4];
             B2 = des_buffer[(heightinc*width*3)+ widthinc*3 + 5];
 
-#define CLAMP(x) (x>255)?255:(x<0?0:x);
-            y1 = CLAMP((299*R1 +587*G1 +114*B1)/1000);
-            u1 = CLAMP(((-169*R1 -331*G1 +499*B1)/1000)+128);
-            v1 = CLAMP(((499*R1 -418*G1 -81*B1)/1000)+128);
+            y1 = CLIP((299*R1 +587*G1 +114*B1)/1000);
+            u1 = CLIP(((-169*R1 -331*G1 +499*B1)/1000)+128);
+            v1 = CLIP(((499*R1 -418*G1 -81*B1)/1000)+128);
 
-            y2 = CLAMP((299*R2 +587*G2 +114*B2)/1000);
-            u1 = CLAMP(((-169*R2 -331*G2 +499*B2)/1000)+128);
-            v1 = CLAMP(((499*R2 -418*G2 -81*B2)/1000)+128);
+            y2 = CLIP((299*R2 +587*G2 +114*B2)/1000);
+            u1 = CLIP(((-169*R2 -331*G2 +499*B2)/1000)+128);
+            v1 = CLIP(((499*R2 -418*G2 -81*B2)/1000)+128);
 
             yuvbuf[(heightinc*width*2) + widthinc*2 +0] = y1;
             yuvbuf[(heightinc*width*2) + widthinc*2 +1] = u1;
@@ -990,12 +1055,12 @@ int save_asyuv(unsigned char *des_buffer, unsigned int width, unsigned int heigh
     return 0;    
 }
 
-int extract_bayer10_packed_ir(unsigned char *src_buffer, unsigned char *dest_buffer, int width, int height)
+int32_t extract_bayer10_packed_ir(uint8_t *src_buffer, uint8_t *dest_buffer, int32_t width, int32_t height)
 {
-    unsigned int count=0;
-    unsigned int widthinc = (unsigned int)(width*1.25);
-    unsigned int widx = 0;
-    for (unsigned int hidx=1;hidx<height;hidx+=2)
+    uint32_t count=0;
+    uint32_t widthinc = (uint32_t)(width*1.25);
+    uint32_t widx = 0;
+    for (uint32_t hidx=1;hidx<height;hidx+=2)
     {
         for (widx=1;widx<widthinc;widx+=2)
         {
@@ -1010,15 +1075,15 @@ int extract_bayer10_packed_ir(unsigned char *src_buffer, unsigned char *dest_buf
     return 0;
 }
 
-int extract_RGBIR16_IR8(unsigned char *src_buffer, unsigned char *dest_buffer, int width, int height)
+int32_t extract_RGBIR16_IR8(uint8_t *src_buffer, uint8_t *dest_buffer, int32_t width, int32_t height)
 {
-    unsigned short* img;
-    unsigned int widthinc = (unsigned int)(width*2);
-    unsigned int count = 0;
-    for (unsigned int hidx=1;hidx<height;hidx+=2)
+    uint16_t* img;
+    uint32_t widthinc = (uint32_t)(width*2);
+    uint32_t count = 0;
+    for (uint32_t hidx=1;hidx<height;hidx+=2)
     {
-        img = (unsigned short*) &src_buffer[hidx * widthinc];
-        for (unsigned int widx=1;widx<(widthinc/2);widx+=2)
+        img = (uint16_t*) &src_buffer[hidx * widthinc];
+        for (uint32_t widx=1;widx<(widthinc/2);widx+=2)
         {
             dest_buffer[count++] = (img[widx])>>8;
         }
@@ -1026,16 +1091,16 @@ int extract_RGBIR16_IR8(unsigned char *src_buffer, unsigned char *dest_buffer, i
     return 0;
 }
 
-int convert_bit16_bit8(unsigned short *src_buffer, unsigned char *dest_buffer, int width, int height)
+int32_t convert_bit16_bit8(uint16_t *src_buffer, uint8_t *dest_buffer, int32_t width, int32_t height)
 {
-    for (unsigned int idx=0; idx<(width*height); idx++)
+    for (uint32_t idx=0; idx<(width*height); idx++)
     {
         dest_buffer[idx] = ((src_buffer[idx])) >>8;//htons
     }
     return 0;
 }
 
-int convert_RGBIR16_bayer8(unsigned char *src_buffer, unsigned char *dest_buffer, int width, int height)
+int32_t convert_RGBIR16_bayer8(uint8_t *src_buffer, uint8_t *dest_buffer, int32_t width, int32_t height)
 {
     /*
      * B G R G (padded bits)  B G R G (padded bits) ...
@@ -1043,32 +1108,32 @@ int convert_RGBIR16_bayer8(unsigned char *src_buffer, unsigned char *dest_buffer
      * R G B G (padded bits)  B G R G (padded bits) ...
      * G IR G IR (padded bits) G IR G IR (padded bits) ...
      */
-    unsigned int count = 0;
-    unsigned int srccount = 0;
+    uint32_t count = 0;
+    uint32_t srccount = 0;
 
-    unsigned int widthinc = (unsigned int)(width*2);
-    for (unsigned int hidx = 0; hidx < height; hidx++)
+    uint32_t widthinc = (uint32_t)(width*2);
+    for (uint32_t hidx = 0; hidx < height; hidx++)
     {
         srccount = 0;
-        unsigned int patternidx = hidx%4;
-        unsigned short* srcptr_even;
-        unsigned short* srcptr_odd;
+        uint32_t patternidx = hidx%4;
+        uint16_t* srcptr_even;
+        uint16_t* srcptr_odd;
 
         if ((hidx%2) == 0)
         {
-            srcptr_even = (unsigned short* )&src_buffer[hidx * widthinc];
-            srcptr_odd  = (unsigned short* )&src_buffer[(hidx+1) * widthinc];
+            srcptr_even = (uint16_t* )&src_buffer[hidx * widthinc];
+            srcptr_odd  = (uint16_t* )&src_buffer[(hidx+1) * widthinc];
         }
         else
         {
-            srcptr_even = (unsigned short* )&src_buffer[(hidx-1) * widthinc];
-            srcptr_odd  = (unsigned short* )&src_buffer[(hidx) * widthinc];
+            srcptr_even = (uint16_t* )&src_buffer[(hidx-1) * widthinc];
+            srcptr_odd  = (uint16_t* )&src_buffer[(hidx) * widthinc];
         }
 
         switch(patternidx)
         {
             case 2:
-                for (unsigned int widx = 0; widx < width; widx+=4)
+                for (uint32_t widx = 0; widx < width; widx+=4)
                 {
                     dest_buffer[count+ 0] = srcptr_even[srccount + 0]>>8;
                     dest_buffer[count+ 1] = srcptr_even[srccount + 1]>>8;
@@ -1080,7 +1145,7 @@ int convert_RGBIR16_bayer8(unsigned char *src_buffer, unsigned char *dest_buffer
                 break;
 
             case 3:
-                for (unsigned int widx = 0; widx < width; widx+=4)
+                for (uint32_t widx = 0; widx < width; widx+=4)
                 {
                     dest_buffer[count+ 0] =  srcptr_odd[srccount  +0]>>8;
                     dest_buffer[count+ 1] =  srcptr_even[srccount +2]>>8;
@@ -1092,7 +1157,7 @@ int convert_RGBIR16_bayer8(unsigned char *src_buffer, unsigned char *dest_buffer
                 break;
 
             case 0:
-                for (unsigned int widx = 0; widx < width; widx+=4)
+                for (uint32_t widx = 0; widx < width; widx+=4)
                 {
                     dest_buffer[count+ 0] = srcptr_even[srccount + 2]>>8;
                     dest_buffer[count+ 1] = srcptr_even[srccount + 1]>>8;
@@ -1104,7 +1169,7 @@ int convert_RGBIR16_bayer8(unsigned char *src_buffer, unsigned char *dest_buffer
                 break;
 
             case 1:
-                for (unsigned int widx = 0; widx < width; widx+=4)
+                for (uint32_t widx = 0; widx < width; widx+=4)
                 {
                     dest_buffer[count+ 0] =  srcptr_odd[srccount  +0]>>8;
                     dest_buffer[count+ 1] =  srcptr_even[srccount +0]>>8;
@@ -1120,7 +1185,7 @@ int convert_RGBIR16_bayer8(unsigned char *src_buffer, unsigned char *dest_buffer
     return 0;
 }
 
-int convert_bayer10_packed_rgbir(unsigned char *src_buffer, unsigned char *dest_buffer, int width, int height)
+int32_t convert_bayer10_packed_rgbir(uint8_t *src_buffer, uint8_t *dest_buffer, int32_t width, int32_t height)
 {
     /*
      * B G R G (padded bits)  B G R G (padded bits) ...
@@ -1128,16 +1193,16 @@ int convert_bayer10_packed_rgbir(unsigned char *src_buffer, unsigned char *dest_
      * R G B G (padded bits)  B G R G (padded bits) ...
      * G IR G IR (padded bits) G IR G IR (padded bits) ...
      */
-    unsigned int count = 0;
-    unsigned int srccount = 0;
+    uint32_t count = 0;
+    uint32_t srccount = 0;
 
-    unsigned int widthinc = (unsigned int)(width*1.25);
-    for (unsigned int hidx = 0; hidx < height; hidx++)
+    uint32_t widthinc = (uint32_t)(width*1.25);
+    for (uint32_t hidx = 0; hidx < height; hidx++)
     {
         srccount = 0;
-        unsigned int patternidx = hidx%4;
-        unsigned char* srcptr_even;
-        unsigned char* srcptr_odd;
+        uint32_t patternidx = hidx%4;
+        uint8_t* srcptr_even;
+        uint8_t* srcptr_odd;
 
         if ((hidx%2) == 0)
         {
@@ -1153,7 +1218,7 @@ int convert_bayer10_packed_rgbir(unsigned char *src_buffer, unsigned char *dest_
         switch(patternidx)
         {
             case 2:
-                for (unsigned int widx = 0; widx < width; widx+=4)
+                for (uint32_t widx = 0; widx < width; widx+=4)
                 {
                     dest_buffer[count+ 0] = srcptr_even[srccount + 0];
                     dest_buffer[count+ 1] = srcptr_even[srccount + 1];
@@ -1165,7 +1230,7 @@ int convert_bayer10_packed_rgbir(unsigned char *src_buffer, unsigned char *dest_
                 break;
 
             case 3:
-                for (unsigned int widx = 0; widx < width; widx+=4)
+                for (uint32_t widx = 0; widx < width; widx+=4)
                 {
                     dest_buffer[count+ 0] =  srcptr_odd[srccount  +0];
                     dest_buffer[count+ 1] =  srcptr_even[srccount +2];
@@ -1177,7 +1242,7 @@ int convert_bayer10_packed_rgbir(unsigned char *src_buffer, unsigned char *dest_
                 break;
 
             case 0:
-                for (unsigned int widx = 0; widx < width; widx+=4)
+                for (uint32_t widx = 0; widx < width; widx+=4)
                 {
                     dest_buffer[count+ 0] = srcptr_even[srccount + 2];
                     dest_buffer[count+ 1] = srcptr_even[srccount + 1];
@@ -1189,7 +1254,7 @@ int convert_bayer10_packed_rgbir(unsigned char *src_buffer, unsigned char *dest_
                 break;
 
             case 1:
-                for (unsigned int widx = 0; widx < width; widx+=4)
+                for (uint32_t widx = 0; widx < width; widx+=4)
                 {
                     dest_buffer[count+ 0] =  srcptr_odd[srccount  +0];
                     dest_buffer[count+ 1] =  srcptr_even[srccount +0];
@@ -1205,35 +1270,35 @@ int convert_bayer10_packed_rgbir(unsigned char *src_buffer, unsigned char *dest_
     return 0;
 }
 
-int convert_bmp_565_bmp_888(char *src_buffer, char *des_buffer, int width, int height)
+int32_t convert_bmp_565_bmp_888(int8_t *src_buffer, int8_t *des_buffer, int32_t width, int32_t height)
 {
-    int ret_val;
-    int r,g,b,rg,gb,i,j;
-    unsigned int time;
+    int32_t ret_val;
+    int32_t r,g,b,rg,gb,hidx,widx;
+    uint32_t time;
 
-    for(i = 0 ;i < height ;i++)
+    for(hidx = 0 ;hidx < height ;hidx++)
     {
-        for(j = 0 ;j < width ;j++)
+        for(widx = 0 ;widx < width ;widx++)
         {
-            gb    = src_buffer[(i*width*2)+j*2+0];
-            rg    = src_buffer[(i*width*2)+j*2+1];
+            gb    = src_buffer[(hidx*width*2)+widx*2+0];
+            rg    = src_buffer[(hidx*width*2)+widx*2+1];
             r    = (rg & 0xF8);
             g    = ((((rg & 0x7)<<3) | ((gb & 0xE0) >>5)) << 2);
             b    = ((gb & 0x1F) << 3);
 
-            des_buffer[(((height-1)-i)*width*3)+j*3+0]    =0xFF & b;
-            des_buffer[(((height-1)-i)*width*3)+j*3+1]    =0xFF & g;
-            des_buffer[(((height-1)-i)*width*3)+j*3+2]    =0xFF & r;
+            des_buffer[(((height-1)-hidx)*width*3)+widx*3+0]    =0xFF & b;
+            des_buffer[(((height-1)-hidx)*width*3)+widx*3+1]    =0xFF & g;
+            des_buffer[(((height-1)-hidx)*width*3)+widx*3+2]    =0xFF & r;
         }
     }
     return 0;
 }
 
-int convert_argb32_rgb(unsigned char *src_buffer, unsigned char *des_buffer, int width, int height)
+int32_t convert_argb32_rgb(uint8_t *src_buffer, uint8_t *des_buffer, int32_t width, int32_t height)
 {
-    int width_idx;
-    int height_idx;
-    int count = 0;
+    int32_t width_idx;
+    int32_t height_idx;
+    int32_t count = 0;
 
     for (height_idx = 0; height_idx < height; height_idx++)
         for (width_idx = 0;width_idx < width; width_idx++)
@@ -1246,18 +1311,18 @@ int convert_argb32_rgb(unsigned char *src_buffer, unsigned char *des_buffer, int
     return 0;
 }
 
-int convert_bayer_gen_rgb24(unsigned short *src_buffer, unsigned char *dest_buffer, int sx, int sy, int start_with, int shift)
+int32_t convert_bayer_gen_rgb24(uint16_t *src_buffer, uint8_t *dest_buffer, int32_t sx, int32_t sy, int32_t start_with, int32_t shift)
 {
-    unsigned short *bayer,*fbayer;
-    unsigned char *rgb;
-    int bayer_step = sx;
-    int rgbStep = 3 * sx;
-    int width = sx;
-    int height = sy;
-    int blue = -1;    //1;
-    int start_with_green = 1;
+    uint16_t *bayer,*fbayer;
+    uint8_t *rgb;
+    int32_t bayer_step = sx;
+    int32_t rgbStep = 3 * sx;
+    int32_t width = sx;
+    int32_t height = sy;
+    int32_t blue = -1;    //1;
+    int32_t start_with_green = 1;
 
-    int i, imax, iinc;
+    int32_t idx, imax, iinc;
 
     switch(start_with)
     {
@@ -1290,15 +1355,15 @@ int convert_bayer_gen_rgb24(unsigned short *src_buffer, unsigned char *dest_buff
     /* add black border */
     imax = sx * sy * 3;
 
-    for (i = sx * (sy - 1) * 3; i < imax; i++) {
-        rgb[i] = 0;
+    for (idx = sx * (sy - 1) * 3; idx < imax; idx++) {
+        rgb[idx] = 0;
     }
 
     iinc = (sx - 1) * 3;
-    for (i = (sx - 1) * 3; i < imax; i += iinc) {
-        rgb[i++] = 0;
-        rgb[i++] = 0;
-        rgb[i++] = 0;
+    for (idx = (sx - 1) * 3; idx < imax; idx += iinc) {
+        rgb[idx++] = 0;
+        rgb[idx++] = 0;
+        rgb[idx++] = 0;
     }
 
     rgb += 1;
@@ -1307,8 +1372,8 @@ int convert_bayer_gen_rgb24(unsigned short *src_buffer, unsigned char *dest_buff
 
 
     for (; height--; bayer += bayer_step, rgb += rgbStep) {
-        //int t0, t1;
-        const unsigned short *bayer_end = bayer + width;
+        //int32_t t0, t1;
+        const uint16_t *bayer_end = bayer + width;
 
         if (start_with_green) {
             rgb[-blue] = (bayer[1] >> shift);

@@ -2,7 +2,7 @@
 #define CONVERT_H
 
 #include <QMainWindow>
-
+#include <stdint.h>
 namespace Ui {
     class convert;
 }
@@ -54,6 +54,26 @@ enum pix_fmt
     BGGR16
 };
 
+struct __attribute__((packed)) __bmp_header
+{
+    uint8_t  signature[2];
+    uint32_t filesize;
+    uint32_t reserved;
+    uint32_t dataOffset;
+
+    uint32_t sizeofinfoheader;
+    uint32_t width;
+    uint32_t height;
+    uint16_t planes;
+    uint16_t bitsperpixel;
+    uint32_t compression;
+    uint32_t imagesize;
+    uint32_t xpixpermeter;
+    uint32_t ypixelpermeter;
+    uint32_t colorused;
+    uint32_t importantcolors;
+};
+
 class convert : public QMainWindow {
     Q_OBJECT
 public:
@@ -82,6 +102,7 @@ private slots:
     void on_Crop_clicked();
     void on_bpp_container_editingFinished();
     void on_bpp_shift_editingFinished();
+    void on_Save_clicked();
 };
 
 #define SUCCESS 1

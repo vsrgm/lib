@@ -14,9 +14,9 @@ struct
 {
     enum pix_fmt fmt;
     char fmt_name[20];
-    int bpp_container;
-    int bpp;
-    int bpp_shift;
+    int32_t bpp_container;
+    int32_t bpp;
+    int32_t bpp_shift;
 }img_pix_fmt[] = {
 { Y8, "Y8", 8, 8, 0},
 { Y16, "Y16", 16, 16, 0},
@@ -60,7 +60,7 @@ convert::convert(QWidget *parent) :
     des_buffer(NULL),
     ui(new Ui::convert)
 {
-    int i;
+    int32_t i;
     ui->setupUi(this);
     ui->pixel_fmt->clear();
     for(i = 0;i<(sizeof(img_pix_fmt)/sizeof(img_pix_fmt[0]));i++)
@@ -104,14 +104,14 @@ void convert::paintimage()
     pthread_mutex_lock(&lock); 
     /* Take image data from file */
     FILE *fp;
-    unsigned int file_length;
-    unsigned int rm_header  = 0;
+    int32_t file_length;
+    int32_t rm_header  = 0;
     char tmp_bufer[50];
-    unsigned int in_img_frame_count;
-    unsigned int malloc_length;
+    int32_t in_img_frame_count;
+    int32_t malloc_length;
 
     malloc_length = width * height * (bpp_container / 8.0f);    
-    src_buffer = (unsigned char*)calloc(malloc_length, 1);
+    src_buffer = (uint8_t*)calloc(malloc_length, 1);
     if (src_buffer == NULL)
     {
         printf("Source Buffer allocation failed of size = %d\n", malloc_length);
@@ -123,13 +123,13 @@ void convert::paintimage()
         des_buffer = NULL;
     }
 
-    des_buffer = (unsigned char*)calloc(width * height * 3, 1);
+    des_buffer = (uint8_t*)calloc(width * height * 3, 1);
     if (des_buffer == NULL)
     {
         printf("Destination Buffer allocation failed of size = %d\n", width * height * 3);
     }
 
-    fp = fopen((char*)(ui->file_path->text().toStdString().c_str()), "r+");
+    fp = fopen((const char*)(ui->file_path->text().toStdString().c_str()), "r+");
     if(fp == NULL)
     {
         QMessageBox msgBox;
@@ -149,14 +149,14 @@ void convert::paintimage()
         in_img_frame_count = file_length/frame_stride;
     }else if (file_length)
     {
-        in_img_frame_count = ((file_length-rm_header)/ (unsigned int)(height*width*(bpp_container/8.0f)) +
-                (((file_length-rm_header)%(unsigned int)(height*width*(bpp_container/8.0f)))?1:0));
+        in_img_frame_count = ((file_length-rm_header)/ (int32_t)(height*width*(bpp_container/8.0f)) +
+                (((file_length-rm_header)%(int32_t)(height*width*(bpp_container/8.0f)))?1:0));
     }
     sprintf(tmp_bufer, "%d", in_img_frame_count);
 
     ui->Source_img_integrity->setText(
             ((file_length-rm_header)%
-             (unsigned int)(height*width*(bpp_container/8.0f)))?"Fail":"Pass");
+             (int32_t)(height*width*(bpp_container/8.0f)))?"Fail":"Pass");
     ui->src_img_count->setMaximum(in_img_frame_count-1);
     ui->num_frames->setText(tmp_bufer);
 
@@ -177,7 +177,7 @@ void convert::paintimage()
 
         case Y16:
             {
-                convert_y16_rgb888((unsigned short *)src_buffer, des_buffer, width, height);
+                convert_y16_rgb888((uint16_t *)src_buffer, des_buffer, width, height);
             }break;
 
         case UYVY:
@@ -269,16 +269,17 @@ void convert::paintimage()
 
         case RCCG:
             {
-                convert_rccg_rgb24(src_buffer, des_buffer, width, height, 3, bpp_container, bpp_shift);
+                convert_rccg_rgb24(src_buffer, des_buffer, width, height, 0, bpp_container, bpp_shift);
             }break;
 
         case BMP24_BGR:
             {
-                memcpy(des_buffer, src_buffer, width * height * 3);
+                convert_bgr888_rgb888(src_buffer, des_buffer, width, height);
             }break;
 
         case BMP24_RGB:
             {
+                memcpy(des_buffer, src_buffer, width * height * 3);
             }break;
 
         case ABMP32_RGB:
@@ -288,7 +289,7 @@ void convert::paintimage()
 
         case BAYER10_PACKED:
             {
-                unsigned char *src_buffer1 = (unsigned char *)calloc(width * height, 1);
+                uint8_t *src_buffer1 = (uint8_t *)calloc(width * height, 1);
                 convert_bayer10_packed_rgbir(src_buffer, src_buffer1, width, height);
                 convert_bayer_rgb24(src_buffer1, des_buffer, width, height, 3, 8, 0);
                 //dc1394_bayer_decoding_8bit(src_buffer1, des_buffer,  width, height,
@@ -296,7 +297,7 @@ void convert::paintimage()
                 save_asyuv(des_buffer,width, height);
                 free(src_buffer1);
 
-                unsigned char *src_ir = (unsigned char *)calloc((width * height)/4, 1);
+                uint8_t *src_ir = (uint8_t *)calloc((width * height)/4, 1);
                 extract_bayer10_packed_ir(src_buffer, src_ir, width, height);
                 save_ir_asyuv(src_ir,width/2, height/2);
                 free(src_ir);
@@ -305,12 +306,12 @@ void convert::paintimage()
 
         case RGBIR16:
             {
-                unsigned char *src_buffer1 = (unsigned char *)calloc(width * height, 1);
+                uint8_t *src_buffer1 = (uint8_t *)calloc(width * height, 1);
                 convert_RGBIR16_bayer8(src_buffer, src_buffer1, width, height);
                 convert_bayer_rgb24(src_buffer1, des_buffer, width, height, 1, 8, 0);
                 perform_equalize_rgb24 (des_buffer, width, height);
                 save_asyuv(des_buffer,width, height);
-                unsigned char *src_ir = (unsigned char *)calloc((width * height)/4, 1);
+                uint8_t *src_ir = (uint8_t *)calloc((width * height)/4, 1);
                 extract_RGBIR16_IR8(src_buffer, src_ir, width, height);
                 save_ir_asyuv(src_ir,width/2, height/2);
                 free(src_buffer1);
@@ -318,11 +319,11 @@ void convert::paintimage()
             }
         case BGGR16:
             {
-                unsigned char *src_buffer1 = (unsigned char *)calloc(width * height, 1);
-                convert_bit16_bit8((unsigned short *)src_buffer, src_buffer1, width, height);
+                uint8_t *src_buffer1 = (uint8_t *)calloc(width * height, 1);
+                convert_bit16_bit8((uint16_t *)src_buffer, src_buffer1, width, height);
                 convert_bayer_rgb24(src_buffer1, des_buffer, width, height, 2, 8, 0);
                 save_asyuv(des_buffer,width, height);
-                unsigned char *src_ir = (unsigned char *)calloc((width * height)/4, 1);
+                uint8_t *src_ir = (uint8_t *)calloc((width * height)/4, 1);
                 extract_RGBIR16_IR8(src_buffer, src_ir, width, height);
                 save_ir_asyuv(src_ir,width/2, height/2);
                 free(src_buffer1);
@@ -340,7 +341,7 @@ exit:
     pthread_mutex_unlock(&lock); 
 }
 
-void convert::on_pixel_fmt_currentIndexChanged(int index)
+void convert::on_pixel_fmt_currentIndexChanged(int32_t index)
 {
     char tmp_buffer[50];
 
@@ -366,7 +367,7 @@ void convert::on_pixel_fmt_currentIndexChanged(int index)
     paintimage();
 }
 
-void convert::on_src_img_count_valueChanged(int)
+void convert::on_src_img_count_valueChanged(int32_t)
 {
     paintimage();
 }
@@ -378,11 +379,11 @@ void convert::on_height_lostFocus()
 
 void convert::on_equalize_clicked()
 {
-    unsigned int width = atoi(ui->width->text().toLocal8Bit().data());
-    unsigned int height = atoi(ui->height->text().toLocal8Bit().data());
+    int32_t width = atoi(ui->width->text().toLocal8Bit().data());
+    int32_t height = atoi(ui->height->text().toLocal8Bit().data());
     QImage *imageObject = new QImage(width, height, QImage::Format_RGB888);
 
-    unsigned char* modifed_buffer = (unsigned char*)calloc(width * height * 3, 1);
+    uint8_t* modifed_buffer = (uint8_t*)calloc(width * height * 3, 1);
     memcpy(modifed_buffer, des_buffer, width * height *3);
     if (modifed_buffer)
     {
@@ -415,30 +416,30 @@ void convert::on_bpp_container_editingFinished()
 
 void convert::on_Crop_clicked()
 {
-    unsigned int x = atoi(ui->crop_x->text().toLocal8Bit().data());
-    unsigned int y = atoi(ui->crop_y->text().toLocal8Bit().data());
-    unsigned int width = atoi(ui->crop_width->text().toLocal8Bit().data());
-    unsigned int render_width = width%4?(width-(width%4)):width;
-    unsigned int height = atoi(ui->crop_height->text().toLocal8Bit().data());
-    unsigned int srcwidth = atoi(ui->width->text().toLocal8Bit().data());
-    unsigned int srcheight = atoi(ui->height->text().toLocal8Bit().data());
-    unsigned int bpp = 3;
-    unsigned char*crop_buffer = (unsigned char*)malloc(width*height*bpp);
-    int ret = -1;
+    int32_t x = atoi(ui->crop_x->text().toLocal8Bit().data());
+    int32_t y = atoi(ui->crop_y->text().toLocal8Bit().data());
+    int32_t width = atoi(ui->crop_width->text().toLocal8Bit().data());
+    int32_t render_width = width%4?(width-(width%4)):width;
+    int32_t height = atoi(ui->crop_height->text().toLocal8Bit().data());
+    int32_t srcwidth = atoi(ui->width->text().toLocal8Bit().data());
+    int32_t srcheight = atoi(ui->height->text().toLocal8Bit().data());
+    int32_t bpp = 3;
+    uint8_t*crop_buffer = (uint8_t*)malloc(width*height*bpp);
+    int32_t ret = -1;
     
     QImage *srcimageObject = new QImage(srcwidth, srcheight, QImage::Format_RGB888);
     memcpy(srcimageObject->bits(), des_buffer, srcwidth * srcheight *3);
-    QPainter painter(srcimageObject);
+    QPainter paint32_ter(srcimageObject);
     QPen pen;
     pen.setWidth(1);
     pen.setColor(Qt::red);
     QRect rect;
 
-    painter.setPen(pen);
+    paint32_ter.setPen(pen);
     rect.setTopLeft(QPoint(x-(width/2),y-(height/2)));
     rect.setWidth(width);
     rect.setHeight(height);
-    painter.drawRect(rect);
+    paint32_ter.drawRect(rect);
     ui->draw_window->setPixmap(QPixmap::fromImage(*srcimageObject));
     ui->draw_window->update();
 
@@ -467,5 +468,42 @@ void convert::on_bpp_shift_editingFinished()
     bpp_container = atoi(ui->bpp_container->text().toLocal8Bit().data());
     bpp_shift = atoi(ui->bpp_shift->text().toLocal8Bit().data());
     paintimage();
+}
+
+
+void convert::on_Save_clicked()
+{
+    struct __attribute__((packed)) __bmp_header bmp;
+    int32_t width = atoi(ui->width->text().toLocal8Bit().data());
+    int32_t height = atoi(ui->height->text().toLocal8Bit().data());
+    uint8_t *bmp_fmt_buffer_bgr = (uint8_t *)malloc(width * height * 3);
+
+    bmp.signature[0]='B';
+    bmp.signature[1]='M';
+    bmp.filesize = width * height * 3 + sizeof(bmp);
+    bmp.dataOffset = 54;
+    bmp.sizeofinfoheader = 40;
+    bmp.width = width;
+    bmp.height = height;
+    bmp.planes = 1;
+    bmp.bitsperpixel = 24;
+    bmp.compression = 0;
+    bmp.imagesize=0;
+    bmp.xpixpermeter = width;
+    bmp.ypixelpermeter = height;
+    bmp.colorused = 256;
+    bmp.importantcolors = 0;
+
+    FILE *fp;
+    fp = fopen("Sample.bmp", "w");
+    if (fp == NULL)
+    {
+        printf("Fail creation failed \n");
+    }
+    fwrite (&bmp, 1, sizeof(bmp), fp);
+    convert_bgr888_rgb888(des_buffer, bmp_fmt_buffer_bgr, width, height);
+    fwrite (bmp_fmt_buffer_bgr, 1, width * height * 3, fp);
+    free(bmp_fmt_buffer_bgr);
+    fclose(fp);
 }
 

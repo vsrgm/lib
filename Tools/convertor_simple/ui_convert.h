@@ -80,23 +80,24 @@ public:
     QLabel *draw_window;
     QFrame *line_8;
     QGridLayout *gridLayout;
+    QFrame *line_15;
+    QFrame *line_13;
+    QPushButton *equalize;
     QLineEdit *crop_height;
+    QSpacerItem *verticalSpacer_2;
+    QLabel *label_13;
+    QLineEdit *crop_y;
+    QLabel *label_15;
+    QFrame *line_10;
+    QFrame *line_12;
+    QLineEdit *crop_width;
     QLineEdit *crop_x;
+    QFrame *line_11;
+    QFrame *line_14;
     QLabel *label_14;
     QPushButton *Crop;
-    QSpacerItem *verticalSpacer_2;
-    QLineEdit *crop_y;
-    QPushButton *equalize;
-    QLabel *label_15;
     QLabel *label_12;
-    QLineEdit *crop_width;
-    QLabel *label_13;
-    QFrame *line_13;
-    QFrame *line_10;
-    QFrame *line_11;
-    QFrame *line_12;
-    QFrame *line_14;
-    QFrame *line_15;
+    QPushButton *Save;
     QFrame *line_7;
     QLabel *modified_draw_window;
     QFrame *line_9;
@@ -108,7 +109,7 @@ public:
             convert->setObjectName(QString::fromUtf8("convert"));
         convert->setWindowModality(Qt::NonModal);
         convert->setEnabled(true);
-        convert->resize(1494, 653);
+        convert->resize(1531, 662);
         centralWidget = new QWidget(convert);
         centralWidget->setObjectName(QString::fromUtf8("centralWidget"));
         horizontalLayout_2 = new QHBoxLayout(centralWidget);
@@ -374,15 +375,86 @@ public:
         gridLayout->setSpacing(6);
         gridLayout->setObjectName(QString::fromUtf8("gridLayout"));
         gridLayout->setSizeConstraint(QLayout::SetFixedSize);
+        line_15 = new QFrame(centralWidget);
+        line_15->setObjectName(QString::fromUtf8("line_15"));
+        line_15->setFrameShape(QFrame::HLine);
+        line_15->setFrameShadow(QFrame::Sunken);
+
+        gridLayout->addWidget(line_15, 1, 2, 1, 1);
+
+        line_13 = new QFrame(centralWidget);
+        line_13->setObjectName(QString::fromUtf8("line_13"));
+        line_13->setFrameShape(QFrame::HLine);
+        line_13->setFrameShadow(QFrame::Sunken);
+
+        gridLayout->addWidget(line_13, 1, 1, 1, 1);
+
+        equalize = new QPushButton(centralWidget);
+        equalize->setObjectName(QString::fromUtf8("equalize"));
+
+        gridLayout->addWidget(equalize, 0, 0, 1, 1);
+
         crop_height = new QLineEdit(centralWidget);
         crop_height->setObjectName(QString::fromUtf8("crop_height"));
 
         gridLayout->addWidget(crop_height, 5, 2, 1, 1);
 
+        verticalSpacer_2 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+
+        gridLayout->addItem(verticalSpacer_2, 8, 0, 1, 1);
+
+        label_13 = new QLabel(centralWidget);
+        label_13->setObjectName(QString::fromUtf8("label_13"));
+
+        gridLayout->addWidget(label_13, 3, 1, 1, 1);
+
+        crop_y = new QLineEdit(centralWidget);
+        crop_y->setObjectName(QString::fromUtf8("crop_y"));
+
+        gridLayout->addWidget(crop_y, 3, 2, 1, 1);
+
+        label_15 = new QLabel(centralWidget);
+        label_15->setObjectName(QString::fromUtf8("label_15"));
+
+        gridLayout->addWidget(label_15, 5, 1, 1, 1);
+
+        line_10 = new QFrame(centralWidget);
+        line_10->setObjectName(QString::fromUtf8("line_10"));
+        line_10->setFrameShape(QFrame::HLine);
+        line_10->setFrameShadow(QFrame::Sunken);
+
+        gridLayout->addWidget(line_10, 6, 1, 1, 1);
+
+        line_12 = new QFrame(centralWidget);
+        line_12->setObjectName(QString::fromUtf8("line_12"));
+        line_12->setFrameShape(QFrame::HLine);
+        line_12->setFrameShadow(QFrame::Sunken);
+
+        gridLayout->addWidget(line_12, 6, 2, 1, 1);
+
+        crop_width = new QLineEdit(centralWidget);
+        crop_width->setObjectName(QString::fromUtf8("crop_width"));
+
+        gridLayout->addWidget(crop_width, 4, 2, 1, 1);
+
         crop_x = new QLineEdit(centralWidget);
         crop_x->setObjectName(QString::fromUtf8("crop_x"));
 
         gridLayout->addWidget(crop_x, 2, 2, 1, 1);
+
+        line_11 = new QFrame(centralWidget);
+        line_11->setObjectName(QString::fromUtf8("line_11"));
+        line_11->setFrameShape(QFrame::HLine);
+        line_11->setFrameShadow(QFrame::Sunken);
+
+        gridLayout->addWidget(line_11, 6, 0, 1, 1);
+
+        line_14 = new QFrame(centralWidget);
+        line_14->setObjectName(QString::fromUtf8("line_14"));
+        line_14->setFrameShape(QFrame::HLine);
+        line_14->setFrameShadow(QFrame::Sunken);
+
+        gridLayout->addWidget(line_14, 1, 0, 1, 1);
 
         label_14 = new QLabel(centralWidget);
         label_14->setObjectName(QString::fromUtf8("label_14"));
@@ -394,81 +466,15 @@ public:
 
         gridLayout->addWidget(Crop, 2, 0, 1, 1);
 
-        verticalSpacer_2 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
-
-        gridLayout->addItem(verticalSpacer_2, 7, 0, 1, 1);
-
-        crop_y = new QLineEdit(centralWidget);
-        crop_y->setObjectName(QString::fromUtf8("crop_y"));
-
-        gridLayout->addWidget(crop_y, 3, 2, 1, 1);
-
-        equalize = new QPushButton(centralWidget);
-        equalize->setObjectName(QString::fromUtf8("equalize"));
-
-        gridLayout->addWidget(equalize, 0, 0, 1, 1);
-
-        label_15 = new QLabel(centralWidget);
-        label_15->setObjectName(QString::fromUtf8("label_15"));
-
-        gridLayout->addWidget(label_15, 5, 1, 1, 1);
-
         label_12 = new QLabel(centralWidget);
         label_12->setObjectName(QString::fromUtf8("label_12"));
 
         gridLayout->addWidget(label_12, 2, 1, 1, 1);
 
-        crop_width = new QLineEdit(centralWidget);
-        crop_width->setObjectName(QString::fromUtf8("crop_width"));
+        Save = new QPushButton(centralWidget);
+        Save->setObjectName(QString::fromUtf8("Save"));
 
-        gridLayout->addWidget(crop_width, 4, 2, 1, 1);
-
-        label_13 = new QLabel(centralWidget);
-        label_13->setObjectName(QString::fromUtf8("label_13"));
-
-        gridLayout->addWidget(label_13, 3, 1, 1, 1);
-
-        line_13 = new QFrame(centralWidget);
-        line_13->setObjectName(QString::fromUtf8("line_13"));
-        line_13->setFrameShape(QFrame::HLine);
-        line_13->setFrameShadow(QFrame::Sunken);
-
-        gridLayout->addWidget(line_13, 1, 1, 1, 1);
-
-        line_10 = new QFrame(centralWidget);
-        line_10->setObjectName(QString::fromUtf8("line_10"));
-        line_10->setFrameShape(QFrame::HLine);
-        line_10->setFrameShadow(QFrame::Sunken);
-
-        gridLayout->addWidget(line_10, 6, 1, 1, 1);
-
-        line_11 = new QFrame(centralWidget);
-        line_11->setObjectName(QString::fromUtf8("line_11"));
-        line_11->setFrameShape(QFrame::HLine);
-        line_11->setFrameShadow(QFrame::Sunken);
-
-        gridLayout->addWidget(line_11, 6, 0, 1, 1);
-
-        line_12 = new QFrame(centralWidget);
-        line_12->setObjectName(QString::fromUtf8("line_12"));
-        line_12->setFrameShape(QFrame::HLine);
-        line_12->setFrameShadow(QFrame::Sunken);
-
-        gridLayout->addWidget(line_12, 6, 2, 1, 1);
-
-        line_14 = new QFrame(centralWidget);
-        line_14->setObjectName(QString::fromUtf8("line_14"));
-        line_14->setFrameShape(QFrame::HLine);
-        line_14->setFrameShadow(QFrame::Sunken);
-
-        gridLayout->addWidget(line_14, 1, 0, 1, 1);
-
-        line_15 = new QFrame(centralWidget);
-        line_15->setObjectName(QString::fromUtf8("line_15"));
-        line_15->setFrameShape(QFrame::HLine);
-        line_15->setFrameShadow(QFrame::Sunken);
-
-        gridLayout->addWidget(line_15, 1, 2, 1, 1);
+        gridLayout->addWidget(Save, 7, 0, 1, 3);
 
 
         horizontalLayout_5->addLayout(gridLayout);
@@ -535,12 +541,13 @@ public:
         label_9->setText(QCoreApplication::translate("convert", "Bpp container", nullptr));
         label_16->setText(QCoreApplication::translate("convert", "Shift", nullptr));
         draw_window->setText(QString());
+        equalize->setText(QCoreApplication::translate("convert", "Equalize", nullptr));
+        label_13->setText(QCoreApplication::translate("convert", "Y", nullptr));
+        label_15->setText(QCoreApplication::translate("convert", "Height", nullptr));
         label_14->setText(QCoreApplication::translate("convert", "Width", nullptr));
         Crop->setText(QCoreApplication::translate("convert", "Crop", nullptr));
-        equalize->setText(QCoreApplication::translate("convert", "Equalize", nullptr));
-        label_15->setText(QCoreApplication::translate("convert", "Height", nullptr));
         label_12->setText(QCoreApplication::translate("convert", "X", nullptr));
-        label_13->setText(QCoreApplication::translate("convert", "Y", nullptr));
+        Save->setText(QCoreApplication::translate("convert", "Save Images", nullptr));
         modified_draw_window->setText(QString());
     } // retranslateUi
 
