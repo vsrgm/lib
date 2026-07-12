@@ -1,0 +1,206 @@
+Document Version : 1.0.0
+Modification Appended
+Date              - Time    - Description                                        				    - Author
+18-07-2026        - 22:31	- 1.1.3.3 added - Port configuration requirement added				    - Ananth
+18-07-2026        - 18:24   - Toilet Assistance requirement added                					- Ananth
+
+0. Toilet Assistance - default ip address in settings menu should be (192.168.0.105 - MAC address should be XX:XX:XX:XX:XX:XX)
+	0.0. Requirement : Create a view in Smart Home monitor -> Toilet Assistance
+		NodeMcu
+		├── A0 (Analog)
+		│	└── LDR Light sensor (input).
+		├── D0 - Relay connected to Exhaust fan (output). 
+		├── D1 - PIR Sensor (input)
+		├── D2 - Emergency light (output)
+		├── D3 - DHT11 (input)
+		└── D4 - Buzzer (output)
+	0.1. System level expectations
+		0.1.0. NodeMcu should send live status via MQTT protocol on request from Mobile application (or) any change in event occured in the system state and preserve each status .csv format internally.
+			0.1.0.0. Date and Time (UTC + 5.30 corrected time)
+			0.1.0.1. Light state
+			0.1.0.2. Relay on/off state
+			0.1.0.3. PIR detection state
+			0.1.0.4. Emergency light on/off state
+			0.1.0.5. DT11 Temperature and Humidity
+		0.1.1. NodeMcu should expose http based firmware update support
+		0.1.2. When NodeMcu detects any movement via PIR sensor then Exhaust Fan should be Turn-on for 1 Min
+		0.1.3. When NodeMcu detects any movement via PIR sensor and Light sensor value is Low then Turn-on the emergency sensor for 1 Min
+		0.1.4. When NodeMcu not detects any movement for more than 5 mins and LDR sensor value is High then Buzzer need to turn on.
+		0.1.6. Android application
+			0.1.6.0. For all output sensor at android user interface have "Label - Enable/Disable slider button - Value"
+			0.1.6.1. For all input sensor at android user interface have "Label - Value"
+			0.1.6.2. Settings to select MQtt (or) Local ip based sync like in "Study Room monitor"
+	
+1. Study Room monitor - default ip address in settings menu should be (192.168.0.107 - MAC address should be DC:4F:22:75:7F:C4)
+	1.0. Requirement : Create a view in Smart Home monitor -> Study Room  monitor
+		NodeMcu
+		├── A0 (Analog)
+		│	└── LDR Light sensor (input)
+		├── D0 - Spare
+		├── D1 - Spare
+		├── D2 - Emergency light (output)
+		└── D3 - DHT11 (input)
+		Create a NodeMcu folder and furnish code relate to NodeMcu and also Android side code.
+
+	1.1. System level expectations
+		1.1.0. NodeMcu should send live status via MQTT protocol on request from Mobile application (or) any change in event occured in the system state and preserve each status .csv format internally.
+			1.1.0.0. Date and Time (UTC + 5.30 corrected time)
+			1.1.0.1. Manual override status ON/OFF
+			1.1.0.2. Light state
+			1.1.0.3. Emergency light on/off state
+			1.1.0.4. DT11 Temperature and Humidity
+			1.1.0.5. Free space information
+		1.1.1. NodeMcu should expose http based firmware update support
+		1.1.2. NodeMcu should turn on Emergency light when ldr detects low light (light < 500)then turn off the Emergency light when light is >= 500.
+		1.1.3. In Android application
+			1.1.3.0. For all output sensor at android user interface have "Label - Enable/Disable slider button - Value"
+			1.1.3.1. For all input sensor at android user interface have "Label - Value"
+			1.1.3.2. In Settings to select MQtt (or) Local ip based sync like in "Study Room monitor"
+				1.1.3.2.0. If local ip selected, then sync contents should view via local ip
+				1.1.3.2.1. If Mqtt based sync selected then event based update is expected over Mqtt (Based on bandwidht, even compramized in mjpeg resolution also fine)
+			1.1.3.3. In Mqtt by default "broker.hivemq.com" and in port field "1883, 8000, 8883, 8884".
+					 Mobile app can do try to establish connection each port, if not able to find targeted client then switch to other port mention in the list seperated by ",". 
+					 A scrollable status log area should be there and latest status log first basis need to display.
+		`	1.1.3.4. when manual override is on, then Android ui allow to enable/disable all the output buttons.
+		`	1.1.3.4. when manual override is off, then Android ui do not allow to enable/disable all the output buttons and all the sensor and button state reflect the hardware state.
+
+2. Security Main Door - default ip address in settings menu should be (192.168.0.105 - MAC address should be XX:XX:XX:XX:XX:XX)
+	2.0. Requirement : Create a view in Smart Home monitor -> Security Main Door.
+		ESP32-CAM (Main Door Security camera)
+		├── GPIO33 -> Spare
+		├── GPIO16 -> PCF8574 INT
+		├── I2C (GPIO1  -> SDA, GPIO3  -> SCL)
+		│	├── PCF8574
+		│	│	├── P0 -> PIR (input)
+		│	│	├── P1 -> Door Sensor (input)
+		│	│	├── P2 -> Calling bell (input)
+		│	│	├── P3 -> LDR Light sensor (input) (For Hardware Eng.: Fix with logic 0 and logic 1 based on needed light sensisity) 
+		│	│	├── P4 -> External Power On/OFF (input)
+		│	│	├── P5 -> Relay (output)
+		│	│	├── P6 -> Buzzer (output) 
+		│	│	└── P7 -> Spare
+		│	└── BMP280
+		├── SD Card
+		└── Camera
+
+		Create a ESP32 folder and furnish code relate to ESP32 and also Android side code.
+	2.1 System level expectations
+		2.1.0 ESP32 CAM should send live status via MQTT protocol on request from Mobile application (or) any change in event occured in the system state
+			2.1.0.0. Date and Time (UTC + 5.30 corrected time)					 
+			2.1.0.1. MJPEG Picture
+			2.1.0.2. PIR Status
+			2.1.0.3. Door Sensor status
+			2.1.0.4. Calling bell status
+			2.1.0.5. LDR Light sensor status
+			2.1.0.6. External Power On/OFF (input)
+			2.1.0.7. Relay ON/OFF status
+			2.1.0.8. Buzzer ON/OFF status
+			2.1.0.9. Temperature sensor, pressure sensor status
+		2.1.1 ESP32 CAM should record following activities in interfaced sdcard
+			2.1.1.0. Any change in of system state the status keep appending in format of .csv file in the internal sdcard (New event added in first row).
+			2.1.1.1. Capture a image when any change of event happened with date and time
+		2.1.2. At low light detected
+			2.1.2.0. ESP32 should turn on the Relay, which turns on the Door lamp
+			2.1.2.1. When Good light observed from LDR Relay should be turned off.
+			2.1.2.2. Manul turning on and off of Relay from Mobile application
+		2.1.3. At Mobile application
+			2.1.3.0. A view to display received .jpg images (Like in RC car imager viewer view)
+			2.1.3.1. A view to live and history of events (Like in Study room monitor based view)
+			2.1.3.2. Manaul turn on/off control support for all outputs interfaced with ESP-32CAM (like Buzzer, Relay, ..)
+		2.1.4. Settings to select MQtt (or) Local ip based sync like in "Study Room monitor"
+			2.1.4.0. If local ip selected, then live streaming of mjpeg contents should view via local ip and all the controls
+			2.1.4.1. If Mqtt based sync selected then event based update is expected over Mqtt (Based on bandwidht, even compramized in mjpeg resolution also fine)
+		2.1.5. Android application view specific
+			2.1.5.0. All the status view with enable/disable where ever applicable should be similar to "Study Room monitor" Label, enable/disable button, Value.
+	
+Implement both ESP32CAM side and Android side code
+
+3. Kitchen monitor - default ip address in settings menu should be (192.168.0.105 - MAC address should be XX:XX:XX:XX:XX:XX)
+	3.0. Requirement : Create a view in Smart Home monitor -> Kitchen Monitor.
+		ESP32-CAM (Kitchen Monitor)
+		├── GPIO33 -> Spare
+		├── GPIO16 -> PCF8574 INT
+		├── I2C (GPIO1  -> SDA, GPIO3  -> SCL)
+		│	├──PCF8574
+		│	│	├── P0 -> PIR (input)
+		│	│	├── P1 -> LDR Light sensor (input) (For Hardware Eng.: Fix with logic 0 and logic 1 based on needed light sensisity)
+		│	│	├── P2 -> External Power On/OFF (input)
+		│	│	├── P3 -> Relay (output)
+		│	│	├── P4 -> Buzzer (output)
+		│	│	├── P5 -> Spare
+		│	│	├── P6 -> Spare
+		│	│	└── P7 -> Spare
+		│	├── BMP280
+		│	└── ADS1115
+		│		  └── MQ135
+		├── SD Card
+		└── Camera
+	3.1. System level expectations
+		3.1.0. ESP32 CAM should send live status via MQTT protocol on request from Mobile application (or) any change in event occured in the system state
+			3.1.0.0. Date and Time (UTC + 5.30 corrected time)
+			3.1.0.1. MJPEG Picture
+			3.1.0.2. PIR Status
+			3.1.0.3. LDR Light sensor status
+			3.1.0.4. External Power On/OFF status
+			3.1.0.5. Relay ON/OFF status
+			3.1.0.6. Buzzer ON/OFF status
+			3.1.0.7. Temperature sensor, pressure sensor status
+			3.1.0.8. GAS Sensor Detection status
+		3.1.1. ESP32 CAM should record following activities in interfaced sdcard
+			3.1.1.0. Any change in of system state the status keep appending in format of .csv file in the internal sdcard (New event added in first row).
+			3.1.1.1. Capture a image when any change of event happened with date and time
+		3.1.2. At low light detected and PIT Motion detected then
+			3.1.2.0 ESP32 should turn on the Relay, which turns on the Kitchen lamp
+			3.1.2.1 When Good light observed from LDR Relay should be turned off.
+			3.1.2.2 Manul turning on and off of Relay from Mobile application
+			3.1.2.3 When Gas leak detected via MQ135 Buzzer should be turned on
+		3.1.3. At Mobile application
+			3.1.3.0. A view to display received .jpg images (Like in RC car imager viewer view)
+			3.1.3.1. A view to live and history of events (Like in Study room monitor based view)
+			3.1.3.2. Manaul turn on/off control support for all outputs interfaced with ESP-32CAM (like Buzzer, Relay, ..).
+		3.1.4. Settings to select MQtt (or) Local ip based sync like in "Study Room monitor"
+			3.1.4.0. If local ip selected, then live streaming of mjpeg contents should view via local ip and all the controls
+			3.1.4.1. If Mqtt based sync selected then event based update is expected over Mqtt (Based on bandwidht, even compramized in mjpeg resolution also fine)
+		3.1.5. Android application view specific
+			3.1.5.0. All the status view with enable/disable where ever applicable should be similar to "Study Room monitor" Label, enable/disable button, Value.
+		Implement both ESP32CAM side and Android side code
+
+4. RO Waste Water Pump
+	4.0. Requirement : Create a view in Smart Home monitor -> RO Waste Water Management
+	ESP8266
+	├── GPIO0 - Relay (output)
+	├── GPIO1 (Tx) - Spare
+	└── GPI03 (RX) - Repurpose this as a GPIO input and use to detect Water level from Float switch (input)
+	
+	4.1. System level expectations
+		4.1.0. ESP8266 should send live status via MQTT protocol on request from Mobile application (or) any change in event occured in the system state
+			4.1.0.0. Date and Time (UTC + 5.30 corrected time)
+			4.1.0.1. Relay ON/OFF status
+			4.1.0.2. Safe Water level Float status (Yes / No).
+		4.1.1. On Receiving command from Mqtt (or) from local network,  ESP8266 should turn on the Relay (via GPIO0) ensuring the Water Float status as Yes.
+		4.1.2. When Water level Float status is Low, ESP8266 should turn off the Relay.
+		4.1.3. Settings to select MQtt (or) Local ip based sync like in "Study Room monitor"
+			4.1.3.0. If local ip selected, then all the control live status should happen be reflected to mobile  
+			4.1.3.1. If Mqtt based sync selected then event based update is expected over Mqtt (Based on change in water level status and Relay ON/OFF state).
+		4.1.4. Android application view specific
+			4.1.4.0. All the interface status with ESP8266 should reflect lively in the application
+			4.1.4.1. If we have output pints then manual mode of enable/disable should be possible, where ever applicable should be similar to "Study Room monitor" Label, enable/disable button, Value.
+			
+New requirements appended in Automation requirement.txt compare with your implementation_status.md and implement missing
+
+Note : Create a .md file and preserve so far implementation context in that.
+       It will help you, if i change this requirement compare with your .md file and
+	   do the corrective changes and then update your .md file insync with the current implementation.
+	   
+Suggestions for Automation requirement.txt
+To further improve the robustness of the system, I suggest the following enhancements to the requirements:
+1. Define Sensor Thresholds: Instead of "Low" or "High" light, specify approximate ADC values (e.g., < 300 for dark, > 700 for bright) to ensure consistent behavior across different LDR hardware setups.
+2. Power Failure Recovery: Specify the "Fail-Safe" state for relays. For example, should the Exhaust Fan stay OFF or return to its previous state after a power outage?
+3. Background Notifications: For critical alerts (like the Gas Leak in the Kitchen or the "Buzzer Alert" in the Toilet), consider a requirement for Firebase Cloud Messaging (FCM) so the phone receives notifications even when the app is closed.
+4. Deep Sleep Support: If any of these NodeMcu units are to be battery-powered, requirements for Deep Sleep (waking up only on PIR interrupt or timer) should be added to extend battery life.
+5. Log Rotation/Management: Since NodeMcu has limited internal flash memory (LittleFS), a requirement for "Circular Logging" (deleting oldest entries when full) or an "Export to Email/Cloud" feature would be beneficial for long-term data preservation.
+6. Calibration Interface: Add a requirement for a "Calibration Mode" in the Android App settings to adjust sensor offsets (like DHT11 temperature correction) without reflashing the firmware.
+1. MQTT Image Compression: Since MJPEG over MQTT can be bandwidth-intensive, consider adding a requirement for the ESP32 to reduce JPEG quality (e.g., from 10 to 20) or frame size when using MQTT mode.
+2. Credential Management: Move WiFi and MQTT credentials into the SharedPreferences-backed configuration on the NodeMcu/ESP32 so they can be updated via the Android app without reflashing the devices.
+3. Heartbeat Monitoring: Add a "Last Seen" timestamp for each node in the intermediate SmartHomeActivity menu so the user can see which devices are offline at a glance.
+4. WebSocket vs TCP: Note that while the Android app supports WebSockets (ports 8000/8884), the standard ESP8266/ESP32 PubSubClient library uses TCP/SSL. For full failover to WebSocket ports on the hardware side, a different MQTT client library may be required.

@@ -1,0 +1,97 @@
+Date,Product Name,Model,HSN Code,Quantity,Price,Total
+19-07-2026,DRV8833 2 Channel DC Motor Driver Module,,,1,,63
+19-07-2026,Active Buzzer Module 5V,,,1,,27
+19-07-2026,MQ2 Gas Sensor Module,,,1,,88
+19-07-2026,BMP280 Pressure and Temperature Sensor Module (Barometer),,,2,,66
+19-07-2026,18650 Li-ion 2200mAh Rechargeable Battery Copy,,,4,,196
+19-07-2026,Smart Robot Car Chassis DIY Kit - 2WD Two Wheel Drive Kit,,,1,,268
+19-07-2026,USB 3.1 Female Socket Type-C Connector 4-Pin Breakout PCB Board,,,2,,46
+19-07-2026,18650 Li-ion 2200mAh Rechargeable Battery (Original),,,4,,352
+19-07-2026,CD4051 Single 8-Channel Analog Multiplexer/Demultiplexer IC - DIP-16 Package,,,2,,22
+19-07-2026,Single Cell 18650 Li-ion Battery Holder,,,4,,96
+19-07-2026,ESP32 CAM WiFi Module Bluetooth with OV2640 Camera Module 2MP For Face Recognization,EC-4974,,3,499,"1,497.00"
+19-07-2026,I2C ADS1115 16 Bit ADC 4 channel Module with Programmable Gain Amplifier,EC-6465,,1,145,145
+19-07-2026,ESP32-CAM-MB MICRO USB Download Module for ESP32 CAM Development Board,EC-24766,,1,84,84
+19-07-2026,TP4056 1A Li-Ion Battery Charging Board Type C Connector with Current Protection,EC-28052,,2,16,32
+19-07-2026,MT3608 2A Max DC-DC Step Up Power Module Booster Power Module,EC-4595,,3,34,102
+19-07-2026,PIR Motion Detector Sensor Module HC-SR501,EC-0142,,2,59,118
+19-07-2026,PCF8574T I2C I/O Extension Board Module,EC-6546,,3,59,177
+,LM7805 IC - 5V Positive Voltage Regulator IC,EC-0075,85423100,15,9,135
+,BC547 NPN General Purpose Transistor 45V 100mA TO-92 Package - 5 Pieces Pack,EC-0136,85412900,5,10,50
+,GL12 840 Points Solderless Breadboard,EC-0160,85340000,2,65,130
+,7 Segment Display - Common Anode - 0.56 inch - Standard Size,EC-0173,85312000,5,7,35
+,74LS47 BCD to 7-Segment Decoder/Driver IC (7447 IC) DIP-16 Package,EC-0409,85423100,2,43,86
+,DS18B20 Water Proof Temperature Sensor Probe,EC-1265,90312000,3,74,222
+,Single Strand Hookup Wire - 25AWG (Gauge) - Black - 5 metre,EC-2739,85441990,1,30,30
+,Single Strand Hookup Wire - 25AWG (Gauge) - Blue - 5 metre,EC-2740,85441990,1,30,30
+,Single Strand Hookup Wire - 25AWG (Gauge) - Green - 5 metre,EC-2741,85441990,1,30,30
+,Single Strand Hookup Wire - 25AWG (Gauge) - Red - 5 metre,EC-2742,85441990,1,30,30
+,Single Strand Hookup Wire - 25AWG (Gauge) - Yellow - 5 metre,EC-2743,85441990,1,30,30
+,Electrical PVC Insulating Tape - Black Color - 1 Piece Pack,EC-3004,59069910,1,20,20
+,L9110S Dual Channel H-Bridge Motor Driver Module,EC-3186,85381010,1,74,74
+,MC-38 Wired Door Window Sensor Magnetic Switch Home Alarm System,EC-5306,90312000,2,69,138
+,Quickfix Soldering Paste Flux 15gm,EC-0114,38101010,1,13,13
+,Push Button Switch 2 Pin - 5mm - 2 Pieces Pack,EC-0124,85366910,5,4,20
+,DC Power Jack (Female Adapter) - PCB Mount,EC-0188,85366990,5,8.5,42.5
+,74HC138 3-to-8 line Decoder/Demultiplexer IC (74138 IC) DIP-16 Package,EC-0378,85423100,5,17,85
+,LDR - 5mm,EC-0414,85332929,1,6,6
+,Solar Panel - 5V/2W,EC-0755,854140,1,190,190
+,Push Button SPST ON-OFF Switch,EC-1142,85366910,5,17,85
+,Micro USB Cable,EC-3020,85441990,5,55,275
+,HLK-10M05 Hi-Link 5V 10W AC to DC Power Supply Module,EC-4693,85049090,2,270,540
+,0.1uF - (104) Ceramic Capacitor - 5 Pieces pack,EC-0018,,1,3,3
+,LM324 Low Power Quad Op-Amp IC DIP-14 Package,EC-0068,,3,11,33
+,BC547 NPN General Purpose Transistor 45V 100mA TO-92 Package - 5 Pieces Pack,EC-0136,,1,10,10
+,12X12 inches Glass Epoxy Double Sided Plain Copper Clad Board (PCB),EC-0165,,1,375,375
+,2 Pin Screw Terminal - 2 Pieces pack,EC-0178,,5,12,60
+,0.8mm PCB Drill bit,EC-0285,,6,14,84
+,40 Pin Female Berg Strip - Break Away Header - Straight,EC-0291,,5,9,45
+,FRC Cable - 10 Pin (10 Wire) - 12 inch (Flat Ribbon Cable),EC-0665,,3,35,105
+,FRC Cable - 16 Pin (16 Wire) - 12 inch (Flat Ribbon Cable),EC-0667,,1,55,55
+,100uF 16V Electrolytic Capacitor - 3 Pieces Pack,EC-0771,,1,9.5,9.5
+,74HC151 8-Input Multiplexer IC (74151 IC) DIP-16 Package,EC-0933,,2,21,42
+,Metal Spacer - 20mm - Female to Female Spacer for PCB - 2 Pieces Pack,EC-0942,,4,18,72
+,Metal Spacer - 20mm - Male to Female Spacer for PCB - 2 Pieces Pack,EC-0943,,4,18,72
+,NODEMCU - ESP8266 Wifi Development Board,EC-1150,,1,218,218
+,7 Segment Display - Common Anode - 1 inch Size,EC-1448,,9,28,252
+,1mm PCB Drill bit,EC-1801,,4,15,60
+,1.5mm PCB Drill bit,EC-1802,,4,15,60
+,32 Pin Male Berg Strip - Break Away Header - Staright,EC-2068,,5,15,75
+,BC560 PNP General Purpose Transistor 45V 100mA TO-92 Package - 5 Pieces Pack,EC-2357,,1,60,60
+,HLK-PM01 Hi-link - 5V 3W - AC to DC Power Supply Module,EC-2609,,1,189,189
+,PT100-S Waterproof 1m 30mm Stainless Steel Pole Probe Temperature Sensor,EC-4734,,3,120,360
+,10k Ohm Variable Resistor (3362 Package) - Trimpot Trimmer Potentiometer,EC-4897,,1,14,14
+,0.8mm - PCB Drill bit,EC-0285,8207,2,14.75,29.5
+,40 Pin Female Berg Strip - Break Away Header - Straight,EC-0291,8536,10,9,90
+,Solder Wire -50 gm Pack,EC-0725,8311,1,60,60
+,NODEMCU - ESP8266 Wifi Development Board,EC-1150,8517,2,245,490
+,1.5mm - PCB Drill bit,EC-1802,8207,2,15.75,31.5
+,2mm - PCB Drill bit,EC-1803,8207,2,16.75,33.5
+,3mm - PCB Drill bit,EC-1805,8207,2,18.75,37.5
+,Water Level Sensor Float Switch - P43,EC-2979,9026,1,150,150
+,Micro USB Cable,EC-3020,8544,5,40,200
+,16x2 (1602) Character Green Backlight LCD Display,EC-0048,,1,105,105
+,Desoldering Pump,EC-0111,,1,85,85
+,Multimeter Leads,EC-0129,,1,80,80
+,Plain Copper Clad Board (PCB) - Phenolic - 12X12 inches - Single Sided,EC-0163,,2,175,350
+,IR Transmitter LED 5mm - 2 pieces pack,EC-0171,,1,9,9
+,PCB Etching Powder - FECL3 - Ferric-Ferrous Chloride - 50 gm pack,EC-0278,,1,65,65
+,40 Pin Female Berg Strip - Break Away Header - Straight,EC-0291,,6,9,54
+,TSOP1838 - Infrared Sensor,EC-0436,,2,23,46
+,DHT11 - Temprature and Humidity Sensor Module,EC-0442,,1,98,98
+,LM335 - Temperature Sensor,EC-0566,,1,37.5,37.5
+,9V Zinc Chloride Battery,EC-0615,,2,20,40
+,40x2 Pin Female Berg Strip - Break Away Header Straight,EC-0654,,1,13.5,13.5
+,IR Transmitter LED 3mm - 2 pieces pack,EC-0747,,1,9,9
+,2 x 3.7V 18650 Lithium Polymer (Lipo) Battery Holder,EC-0911,,1,65,65
+,32 Pin Male Berg Strip - Break Away Header - Staright,EC-2068,,1,15,15
+,I2C Module for 16x2 (1602) Character LCD,EC-2114,,1,59,59
+,20x2 Pin Male Berg Strip - Break Away Header Straight,EC-2193,,1,10,10
+,PL2303 - PL2303HX USB to TTL Serial UART Converter Module,EC-2974,,2,90,180
+,Water Level Sensor Float Switch - P43,EC-2979,,2,150,300
+,Micro USB Cable,EC-3020,,2,40,80
+,1602 (16x2) LCD Display with I2C/IIC interface - Blue Backlight,EC-3025,,1,185,185
+,4 Channel 5V Relay Module with Optocoupler,EC-0738,8529,2,155,310
+,NODEMCU - ESP8266 Wifi Development Board,EC-1150,8517,2,245,490
+,HLK-5M05 Hi-Link 5V 5W - AC to DC Power Supply Module,EC-3194,,2,240,480
+,1 Channel 5V Relay Module without Optocoupler,EC-4504,8529,4,68,272

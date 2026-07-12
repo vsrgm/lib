@@ -1,0 +1,42 @@
+{
+  "uuid": "02b666c65664ecbce8ef197a2ac76610",
+  "path": "Offline/Toilet%20assistance",
+  "name": "Toilet assistance",
+  "content": "",
+  "created_at": "2026-07-19 15:28:58",
+  "updated_at": "2026-07-19 15:28:59",
+  "stick": "",
+  "documents": [
+    {
+      "uuid": "b603b575565bfb59ce789f2f4ff8291f",
+      "title": "Sheet_1",
+      "description": "",
+      "docType": "1",
+      "master": "",
+      "thumb": "/images/thumb-default.png",
+      "components": {},
+      "BOM": [
+        [
+          "Value",
+          "Quantity",
+          "Package",
+          "Components",
+          "CustomPara"
+        ]
+      ],
+      "updateTime": 1784455139,
+      "createTime": 1784455139,
+      "histories": [],
+      "created_at": "2026-07-19 15:28:59",
+      "updated_at": "2026-07-19 15:28:59"
+    }
+  ],
+  "sort": [
+    "7a59e4d6de4f0b34a0cb03e6f61f8562",
+    "f8e262152ef8e3a51da503a9d1de84d4"
+  ],
+  "title": "Toilet assistance",
+  "foldername": "Toilet assistance",
+  "schfilename": "Toilet assistance.json",
+  "schfilemtime": 1784455139126
+}

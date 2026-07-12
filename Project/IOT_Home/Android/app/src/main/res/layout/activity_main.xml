@@ -1,0 +1,423 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?android:attr/colorBackground"
+    tools:context=".MainActivity">
+
+    <!-- Video Display Area -->
+    <SurfaceView
+        android:id="@+id/video_surface"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@+id/control_scroll_view"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_weight="0.8" />
+
+    <ImageButton
+        android:id="@+id/btn_back"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_margin="8dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@android:drawable/ic_menu_revert"
+        android:contentDescription="@string/content_desc_back"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="?android:attr/textColorPrimary" />
+
+    <ImageButton
+        android:id="@+id/btn_settings"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_margin="8dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@android:drawable/ic_menu_preferences"
+        android:contentDescription="@string/action_settings"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="?android:attr/textColorPrimary" />
+
+    <!-- Hidden PlayerView to satisfy any existing binding code, but we use SurfaceView -->
+    <androidx.media3.ui.PlayerView
+        android:id="@+id/player_view"
+        android:layout_width="1dp"
+        android:layout_height="1dp"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ScrollView
+        android:id="@+id/control_scroll_view"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/video_surface"
+        app:layout_constraintVertical_weight="1.2">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp">
+
+            <TextView
+                android:id="@+id/desc_text"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="@string/desc_controls"
+                android:textSize="12sp"
+                android:textColor="?android:attr/textColorSecondary"
+                android:paddingBottom="8dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/vertical_guideline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                app:layout_constraintGuide_percent="0.22" />
+
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/settings_guideline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                app:layout_constraintGuide_percent="0.65" />
+
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/settings_label_guideline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                app:layout_constraintGuide_percent="0.78" />
+
+            <!-- Row 1: Car IP & Format -->
+            <TextView
+                android:id="@+id/label_car_ip"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="@string/label_car_ip"
+                android:textStyle="bold"
+                android:textColor="?android:attr/textColorPrimary"
+                android:gravity="start"
+                app:layout_constraintBottom_toBottomOf="@+id/ip_address_input"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/vertical_guideline"
+                app:layout_constraintTop_toTopOf="@+id/ip_address_input" />
+
+            <EditText
+                android:id="@+id/ip_address_input"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:hint="@string/hint_car_ip"
+                android:inputType="text"
+                android:text="@string/default_car_ip"
+                android:textSize="14sp"
+                app:layout_constraintEnd_toStartOf="@+id/settings_guideline"
+                app:layout_constraintStart_toStartOf="@+id/vertical_guideline"
+                app:layout_constraintTop_toBottomOf="@+id/desc_text" />
+
+            <RadioGroup
+                android:id="@+id/format_group"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="@+id/settings_guideline"
+                app:layout_constraintTop_toTopOf="@+id/ip_address_input">
+
+                <RadioButton
+                    android:id="@+id/radio_mjpeg"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:minHeight="0dp"
+                    android:paddingTop="0dp"
+                    android:paddingBottom="0dp"
+                    android:text="@string/format_mjpeg"
+                    android:textSize="11sp" />
+
+                <RadioButton
+                    android:id="@+id/radio_h264"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/format_h264"
+                    android:paddingTop="0dp"
+                    android:paddingBottom="0dp"
+                    android:minHeight="0dp"
+                    android:textSize="11sp" />
+
+            </RadioGroup>
+
+            <androidx.constraintlayout.widget.Barrier
+                android:id="@+id/barrier_row1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:barrierDirection="bottom"
+                app:constraint_referenced_ids="ip_address_input,format_group" />
+
+            <!-- Row 2: Pi IP & FPS -->
+            <TextView
+                android:id="@+id/label_pi_ip"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="@string/label_pi_ip"
+                android:textStyle="bold"
+                android:gravity="start"
+                app:layout_constraintBottom_toBottomOf="@+id/pi_ip_input"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/vertical_guideline"
+                app:layout_constraintTop_toTopOf="@+id/pi_ip_input" />
+
+            <EditText
+                android:id="@+id/pi_ip_input"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:hint="@string/hint_pi_ip"
+                android:inputType="text"
+                android:text="@string/default_pi_ip"
+                android:textSize="14sp"
+                app:layout_constraintEnd_toStartOf="@+id/settings_guideline"
+                app:layout_constraintStart_toStartOf="@+id/vertical_guideline"
+                app:layout_constraintTop_toBottomOf="@+id/barrier_row1" />
+
+            <TextView
+                android:id="@+id/desc_fps"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="@string/label_fps"
+                android:textSize="11sp"
+                android:textColor="?android:attr/textColorSecondary"
+                android:textStyle="bold"
+                app:layout_constraintBottom_toBottomOf="@+id/pi_ip_input"
+                app:layout_constraintEnd_toStartOf="@+id/settings_label_guideline"
+                app:layout_constraintStart_toStartOf="@+id/settings_guideline"
+                app:layout_constraintTop_toTopOf="@+id/pi_ip_input" />
+
+            <EditText
+                android:id="@+id/video_fps_input"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:hint="@string/label_fps"
+                android:inputType="number"
+                android:text="20"
+                android:textSize="14sp"
+                app:layout_constraintBottom_toBottomOf="@+id/pi_ip_input"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="@+id/settings_label_guideline"
+                app:layout_constraintTop_toTopOf="@+id/pi_ip_input" />
+
+            <androidx.constraintlayout.widget.Barrier
+                android:id="@+id/barrier_row2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:barrierDirection="bottom"
+                app:constraint_referenced_ids="pi_ip_input,video_fps_input" />
+
+            <!-- Row 3: Width & Height -->
+            <TextView
+                android:id="@+id/label_width"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="@string/label_width"
+                android:textStyle="bold"
+                android:gravity="start"
+                app:layout_constraintBottom_toBottomOf="@+id/video_width_input"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/vertical_guideline"
+                app:layout_constraintTop_toTopOf="@+id/video_width_input" />
+
+            <EditText
+                android:id="@+id/video_width_input"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:hint="@string/label_width"
+                android:inputType="number"
+                android:text="@string/default_video_width"
+                android:textSize="14sp"
+                app:layout_constraintEnd_toStartOf="@+id/settings_guideline"
+                app:layout_constraintStart_toStartOf="@+id/vertical_guideline"
+                app:layout_constraintTop_toBottomOf="@+id/barrier_row2" />
+
+            <TextView
+                android:id="@+id/label_height"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="@string/label_height"
+                android:textSize="11sp"
+                android:textColor="#666666"
+                android:textStyle="bold"
+                app:layout_constraintBottom_toBottomOf="@+id/video_width_input"
+                app:layout_constraintEnd_toStartOf="@+id/settings_label_guideline"
+                app:layout_constraintStart_toStartOf="@+id/settings_guideline"
+                app:layout_constraintTop_toTopOf="@+id/video_width_input" />
+
+            <EditText
+                android:id="@+id/video_height_input"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:hint="@string/label_height"
+                android:inputType="number"
+                android:text="@string/default_video_height"
+                android:textSize="14sp"
+                app:layout_constraintBottom_toBottomOf="@+id/video_width_input"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="@+id/settings_label_guideline"
+                app:layout_constraintTop_toTopOf="@+id/video_width_input" />
+
+            <androidx.constraintlayout.widget.Barrier
+                android:id="@+id/barrier_row3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:barrierDirection="bottom"
+                app:constraint_referenced_ids="video_width_input,video_height_input" />
+
+            <!-- Row 4: Status & Connect -->
+            <Button
+                android:id="@+id/btn_connect"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/btn_connect"
+                android:textSize="12sp"
+                app:backgroundTint="@color/btn_connect_normal"
+                app:cornerRadius="8dp"
+                app:layout_constraintEnd_toStartOf="@+id/btn_gallery"
+                app:layout_constraintStart_toStartOf="@+id/settings_guideline"
+                app:layout_constraintTop_toBottomOf="@+id/barrier_row3" />
+
+            <Button
+                android:id="@+id/btn_gallery"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginStart="4dp"
+                android:text="Gallery"
+                android:textSize="12sp"
+                app:cornerRadius="8dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/btn_connect"
+                app:layout_constraintTop_toBottomOf="@+id/barrier_row3" />
+
+            <TextView
+                android:id="@+id/rc_connection_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/status_rc_not_connected"
+                android:textColor="#FF0000"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/barrier_row3" />
+
+            <TextView
+                android:id="@+id/camera_connection_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/status_camera_not_connected"
+                android:textColor="#FF0000"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/rc_connection_status" />
+
+            <TextView
+                android:id="@+id/receiver_info_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Receiver: 0.0.0.0:5000"
+                android:textColor="?android:attr/textColorSecondary"
+                android:textSize="10sp"
+                android:textStyle="italic"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/camera_connection_status" />
+
+            <TextView
+                android:id="@+id/stats_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Data: 0.0 MB | 0.0 kbps"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textSize="10sp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/receiver_info_text" />
+
+            <TextView
+                android:id="@+id/fps_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="FPS: 0.0"
+                android:textSize="10sp"
+                android:textColor="?android:attr/textColorPrimary"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/stats_text" />
+
+            <Button
+                android:id="@+id/btn_up"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:layout_marginTop="8dp"
+                android:text="↑"
+                android:textSize="28sp"
+                app:backgroundTint="@color/btn_control_selector"
+                app:cornerRadius="40dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/fps_text" />
+
+            <Button
+                android:id="@+id/btn_left"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:layout_marginEnd="4dp"
+                android:text="←"
+                android:textSize="28sp"
+                app:backgroundTint="@color/btn_control_selector"
+                app:cornerRadius="40dp"
+                app:layout_constraintEnd_toStartOf="@+id/btn_down"
+                app:layout_constraintTop_toTopOf="@+id/btn_down" />
+
+            <Button
+                android:id="@+id/btn_down"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="16dp"
+                android:text="↓"
+                android:textSize="28sp"
+                app:backgroundTint="@color/btn_control_selector"
+                app:cornerRadius="40dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/btn_up" />
+
+            <Button
+                android:id="@+id/btn_right"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:layout_marginStart="4dp"
+                android:text="→"
+                android:textSize="28sp"
+                app:backgroundTint="@color/btn_control_selector"
+                app:cornerRadius="40dp"
+                app:layout_constraintStart_toEndOf="@+id/btn_down"
+                app:layout_constraintTop_toTopOf="@+id/btn_down" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

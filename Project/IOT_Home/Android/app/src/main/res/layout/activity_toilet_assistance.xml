@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="?android:attr/colorBackground">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp">
+
+        <ImageButton
+            android:id="@+id/btn_back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_revert"
+            android:contentDescription="@string/content_desc_back"
+            app:tint="?android:attr/textColorPrimary" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="@string/title_toilet"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <ImageButton
+            android:id="@+id/btn_settings"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_alignParentEnd="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_preferences"
+            app:tint="?android:attr/textColorPrimary" />
+    </RelativeLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginBottom="12dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <include layout="@layout/item_status_row" android:id="@+id/row_pir" />
+            <include layout="@layout/item_status_row" android:id="@+id/row_ldr" />
+            <include layout="@layout/item_status_row" android:id="@+id/row_exhaust" />
+            <include layout="@layout/item_status_row" android:id="@+id/row_emergency_light" />
+            <include layout="@layout/item_status_row" android:id="@+id/row_temp" />
+            <include layout="@layout/item_status_row" android:id="@+id/row_hum" />
+            <include layout="@layout/item_status_row" android:id="@+id/row_buzzer" />
+        </LinearLayout>
+    </ScrollView>
+
+    <TextView android:id="@+id/sync_status" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:text="Connecting..." />
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:layout_marginTop="8dp"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="1dp">
+
+        <ScrollView
+            android:id="@+id/log_scroll_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#1E1E1E"
+            android:padding="8dp">
+
+            <TextView
+                android:id="@+id/tv_connection_logs"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:text="Logs will appear here..."
+                android:textColor="#00FF00"
+                android:textSize="10sp" />
+        </ScrollView>
+    </com.google.android.material.card.MaterialCardView>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="#000000">
+
+        <TableLayout
+            android:id="@+id/history_table"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp">
+
+            <TableRow android:background="#333333" android:padding="4dp">
+                <TextView android:text="Time" android:textColor="#FFFFFF" android:padding="8dp" android:textStyle="bold"/>
+                <TextView android:text="Event" android:textColor="#FFFFFF" android:padding="8dp" android:textStyle="bold"/>
+                <TextView android:text="Status" android:textColor="#FFFFFF" android:padding="8dp" android:textStyle="bold"/>
+            </TableRow>
+        </TableLayout>
+    </ScrollView>
+</LinearLayout>

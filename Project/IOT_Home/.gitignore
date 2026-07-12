@@ -1,0 +1,51 @@
+# Android
+**/build/
+**/.gradle/
+**/local.properties
+**/.idea/caches/
+**/.idea/libraries/
+**/.idea/modules.xml
+**/.idea/workspace.xml
+**/.idea/navEditor.xml
+**/.idea/assetWizardSettings.xml
+**/.idea/deploymentTargetSelector.xml
+**/.idea/deploymentTargetHistory.xml
+**/.idea/deviceManager.xml
+**/*.iml
+**/.cxx/
+**/.externalNativeBuild/
+Android/app/google-services.json
+
+# Python / Pi
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.pytest_cache/
+**/.venv/
+**/venv/
+**/env/
+
+# NodeMcu / Arduino
+**/*.hex
+**/*.elf
+**/*.o
+**/*.so
+**/*.a
+**/*.la
+**/*.lo
+NodeMcu/Rccar/credentials.h
+NodeMcu/StudyRoomMonitor/credentials.h
+NodeMcu/ToiletAssistance/credentials.h
+
+#ESP32
+ESP32/ESP32_CAM_Kitchen/credentials.h
+ESP32/ESP32_CAM_MainDoor/credentials.h
+ESP8266/RO_Waste_WaterPump/Source/credentials.h
+
+# General
+.DS_Store
+Thumbs.db
+*.bak
+*.swp
+*~
