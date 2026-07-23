@@ -180,11 +180,19 @@ public class StudyRoomActivity extends AppCompatActivity {
     }
 
     private void initFirebase() {
-        String url = prefs.getString("firebase_url", "https://gapsmarthome-default-rtdb.asia-southeast1.firebasedatabase.app/");
-        String room = "study"; 
+        String url = prefs.getString("firebase_url", AppDefaults.FIREBASE_URL);
+        String room = AppDefaults.NODE_STUDY; 
         
         addLog("Authenticating Firebase...");
-        FirebaseAuth.getInstance().signInWithEmailAndPassword("iot-device@gapsmarthome.com", "1q2w3e4r%T")
+        String email = prefs.getString("firebase_email", Credentials.FIREBASE_EMAIL);
+        String password = prefs.getString("firebase_password", Credentials.FIREBASE_PASSWORD);
+        
+        if (email.isEmpty() || password.isEmpty()) {
+            connectToFirebase(url, room);
+            return;
+        }
+
+        FirebaseAuth.getInstance().signInWithEmailAndPassword(email, password)
             .addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
                     addLog("Auth Success.");
@@ -252,7 +260,7 @@ public class StudyRoomActivity extends AppCompatActivity {
 
     private void loadSettings() {
         syncMode = prefs.getInt("sync_mode", 0); // 0: MQTT, 1: IP, 2: Firebase
-        String savedIp = prefs.getString("local_node_ip", getString(R.string.default_node_ip));
+        String savedIp = prefs.getString("local_node_ip", AppDefaults.DEFAULT_NODE_IP);
         String localEntryPrefix = "Local IP (";
 
         boolean changed = false;

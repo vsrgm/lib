@@ -67,81 +67,98 @@ public class SmartHomeSettingsActivity extends AppCompatActivity {
     }
 
     private void triggerOta() {
-        String url = binding.otaUrl.getText().toString().trim();
-        if (url.isEmpty()) {
-            Toast.makeText(this, "Please enter Firmware URL", Toast.LENGTH_SHORT).show();
+        String fullUrl = binding.otaUrl.getText().toString().trim();
+        String minimalUrl = binding.minimalOtaUrl.getText().toString().trim();
+        
+        if (fullUrl.isEmpty()) {
+            Toast.makeText(this, "Please enter Full Firmware URL", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Auto-fix Dropbox links
-        if (url.contains("dropbox.com") && url.endsWith("dl=0")) {
-            url = url.replace("dl=0", "dl=1");
-            binding.otaUrl.setText(url);
-            Toast.makeText(this, "Dropbox link auto-formatted for direct download", Toast.LENGTH_SHORT).show();
-        }
-
-        // Auto-fix GitHub links to raw content
-        if (url.contains("github.com") && !url.contains("raw.githubusercontent.com")) {
-            url = url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/");
-            binding.otaUrl.setText(url);
-            Toast.makeText(this, "GitHub link converted to Direct Raw URL", Toast.LENGTH_SHORT).show();
+        fullUrl = fixUrl(fullUrl);
+        binding.otaUrl.setText(fullUrl);
+        
+        if (!minimalUrl.isEmpty()) {
+            minimalUrl = fixUrl(minimalUrl);
+            binding.minimalOtaUrl.setText(minimalUrl);
         }
 
         String dbUrl = binding.firebaseUrl.getText().toString().trim();
-        String targetNode = "";
+        String targetNode = getTargetNode();
 
-        // Automatically decide node based on caller context
-        switch (callerContext) {
-            case "study":
-                targetNode = binding.firebaseStudyNode.getText().toString().trim();
-                if (targetNode.isEmpty() || "smart_home/study".equals(targetNode)) targetNode = "FrmMobile/study";
-                break;
-            case "kitchen":
-                targetNode = binding.firebaseNode.getText().toString().trim();
-                if (targetNode.isEmpty()) targetNode = "smart_home/kitchen";
-                break;
-            case "door":
-                targetNode = binding.firebaseDoorNode.getText().toString().trim();
-                if (targetNode.isEmpty()) targetNode = "smart_home/main_door";
-                break;
-            case "toilet":
-                targetNode = binding.firebaseToiletNode.getText().toString().trim();
-                if (targetNode.isEmpty()) targetNode = "smart_home/toilet";
-                break;
-            default:
-                targetNode = binding.firebaseStudyNode.getText().toString().trim();
-                if (targetNode.isEmpty() || "smart_home/study".equals(targetNode)) targetNode = "FrmMobile/study";
-                break;
-        }
-
-        final String finalTargetNode = targetNode;
         try {
             FirebaseDatabase database = dbUrl.isEmpty() ? FirebaseDatabase.getInstance() : FirebaseDatabase.getInstance(dbUrl);
-            DatabaseReference ref = database.getReference(finalTargetNode).child("command");
+            DatabaseReference ref = database.getReference(targetNode).child("command");
             
-            ref.setValue("OTA:" + url).addOnCompleteListener(task -> {
-                if (task.isSuccessful()) {
-                    Toast.makeText(this, "OTA Command Sent to " + finalTargetNode, Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(this, "Failed to send OTA command", Toast.LENGTH_SHORT).show();
-                }
-            });
+            if (!minimalUrl.isEmpty()) {
+                // Two-step update
+                String finalFullUrl = fullUrl;
+                String finalMinimalUrl = minimalUrl;
+                ref.setValue("OTA_FULL:" + finalFullUrl).addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        Toast.makeText(this, "Step 1: Full URL saved. Sending Bridge...", Toast.LENGTH_SHORT).show();
+                        binding.getRoot().postDelayed(() -> {
+                            ref.setValue("OTA:" + finalMinimalUrl);
+                        }, 2000);
+                    }
+                });
+            } else {
+                // Standard single-step update
+                ref.setValue("OTA:" + fullUrl).addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        Toast.makeText(this, "OTA Command Sent to " + targetNode, Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
         } catch (Exception e) {
             Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
+    private String fixUrl(String url) {
+        if (url.contains("dropbox.com") && url.endsWith("dl=0")) {
+            return url.replace("dl=0", "dl=1");
+        }
+        if (url.contains("github.com") && !url.contains("raw.githubusercontent.com")) {
+            return url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/");
+        }
+        return url;
+    }
+
+    private String getTargetNode() {
+        switch (callerContext) {
+            case "study": return binding.firebaseStudyNode.getText().toString().trim().isEmpty() ? prefs.getString("firebase_study_node", "") : binding.firebaseStudyNode.getText().toString().trim();
+            case "kitchen": return binding.firebaseNode.getText().toString().trim().isEmpty() ? prefs.getString("firebase_node", "") : binding.firebaseNode.getText().toString().trim();
+            case "door": return binding.firebaseDoorNode.getText().toString().trim().isEmpty() ? prefs.getString("firebase_door_node", "") : binding.firebaseDoorNode.getText().toString().trim();
+            case "toilet": return binding.firebaseToiletNode.getText().toString().trim().isEmpty() ? prefs.getString("firebase_toilet_node", "") : binding.firebaseToiletNode.getText().toString().trim();
+            case "ro_pump": return binding.firebaseRoPumpNode.getText().toString().trim().isEmpty() ? prefs.getString("firebase_ro_pump_node", "") : binding.firebaseRoPumpNode.getText().toString().trim();
+            case "kitchen_fan": return binding.firebaseKitchenFanNode.getText().toString().trim().isEmpty() ? prefs.getString("firebase_kitchen_fan_node", "") : binding.firebaseKitchenFanNode.getText().toString().trim();
+            case "pi_kitchen": return binding.firebasePiKitchenNode.getText().toString().trim().isEmpty() ? prefs.getString("firebase_pi_kitchen_node", "") : binding.firebasePiKitchenNode.getText().toString().trim();
+            default: return prefs.getString("firebase_study_node", "");
+        }
+    }
+
     private void syncSettingsToNode() {
-        String ip = prefs.getString("local_node_ip", "192.168.0.107");
+        boolean isPi = "pi_kitchen".equals(callerContext);
+        String ip = isPi ? prefs.getString("pi_kitchen_ip", "") : prefs.getString("local_node_ip", "");
+        if (ip.isEmpty()) {
+            Toast.makeText(this, "Device IP not set", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        final String finalIp = ip;
         String brokerInput = binding.mqttBroker.getText().toString().trim();
-        final String mBroker = brokerInput.isEmpty() ? getString(R.string.default_mqtt_broker) : brokerInput;
+        final String mBroker = brokerInput.isEmpty() ? prefs.getString("mqtt_broker", "") : brokerInput;
 
         String portInput = binding.mqttPort.getText().toString().trim();
-        final String mPorts = portInput.isEmpty() ? getString(R.string.default_mqtt_port) : portInput;
+        final String mPorts = portInput.isEmpty() ? prefs.getString("mqtt_ports", "") : portInput;
 
         executor.execute(() -> {
             try {
-                URL url = new URL("http://" + ip + "/config");
+                int syncMode = prefs.getInt("sync_mode", 0);
+                String fbUrl = binding.firebaseUrl.getText().toString().trim();
+
+                URL url = new URL("http://" + finalIp + (isPi ? ":5001" : "") + "/config");
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("POST");
                 conn.setRequestProperty("Content-Type", "application/json");
@@ -149,11 +166,27 @@ public class SmartHomeSettingsActivity extends AppCompatActivity {
 
                 JSONObject json = new JSONObject();
                 json.put("mqtt_broker", mBroker);
-                // For simplicity, we send the first port to the node if it expects an int,
-                // or we can adjust the node firmware to handle multiple ports if needed.
-                // Based on Automation requirement.txt 1.1.3.3, it's the Mobile app that tries multiple ports.
                 String firstPort = mPorts.split(",")[0].trim();
                 json.put("mqtt_port", Integer.parseInt(firstPort));
+                
+                if (isPi) {
+                    json.put("fb_url", fbUrl);
+                    json.put("fb_node", binding.firebasePiKitchenNode.getText().toString().trim());
+                    json.put("fb_secret", binding.firebaseSecret.getText().toString().trim());
+                    
+                    if (syncMode == 2) { // Firebase mode
+                        FirebaseDatabase database = fbUrl.isEmpty() ? FirebaseDatabase.getInstance() : FirebaseDatabase.getInstance(fbUrl);
+                        String node = binding.firebasePiKitchenNode.getText().toString().trim();
+                        
+                        java.util.Map<String, Object> configMap = new java.util.HashMap<>();
+                        configMap.put("mqtt_broker", mBroker);
+                        configMap.put("fb_url", fbUrl);
+                        configMap.put("fb_node", node);
+                        configMap.put("fb_secret", binding.firebaseSecret.getText().toString().trim());
+                        
+                        database.getReference("FrmMobile").child(node).child("config").setValue(configMap);
+                    }
+                }
 
                 try (OutputStream os = conn.getOutputStream()) {
                     os.write(json.toString().getBytes());
@@ -162,34 +195,79 @@ public class SmartHomeSettingsActivity extends AppCompatActivity {
                 int code = conn.getResponseCode();
                 runOnUiThread(() -> {
                     if (code == 200) {
-                        Toast.makeText(this, "Settings Synced to NodeMCU", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Settings Synced to " + (isPi ? "Pi" : "NodeMCU"), Toast.LENGTH_SHORT).show();
                         finish();
                     } else {
-                        Toast.makeText(this, "Sync to Node Failed: " + code, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Sync Failed: " + code, Toast.LENGTH_SHORT).show();
                     }
                 });
                 conn.disconnect();
             } catch (Exception e) {
                 Log.e("Settings", "Sync failed", e);
-                runOnUiThread(() -> Toast.makeText(this, "NodeMCU not reachable", Toast.LENGTH_SHORT).show());
+                runOnUiThread(() -> Toast.makeText(this, "Device not reachable at " + finalIp, Toast.LENGTH_SHORT).show());
             }
         });
     }
 
     private void loadSettings() {
-        binding.mqttBroker.setText(prefs.getString("mqtt_broker", "broker.hivemq.com"));
-        binding.mqttPort.setText(prefs.getString("mqtt_ports", "1883,8000"));
-        binding.localIp.setText(prefs.getString("local_node_ip", "192.168.0.107"));
+        binding.mqttBroker.setText(prefs.getString("mqtt_broker", AppDefaults.MQTT_BROKER));
+        binding.mqttPort.setText(prefs.getString("mqtt_ports", AppDefaults.MQTT_PORTS));
+        
+        boolean isPi = "pi_kitchen".equals(callerContext);
+        binding.localIp.setText(prefs.getString(isPi ? "pi_kitchen_ip" : "local_node_ip", isPi ? AppDefaults.DEFAULT_PI_IP : AppDefaults.DEFAULT_NODE_IP));
         
         binding.csvPath.setText(prefs.getString("csv_path", "IOT_HOME/StudyRoom/StudyRoomMonitor.csv"));
         binding.kitchenPath.setText(prefs.getString("kitchen_path", "IOT_HOME/Kitchen"));
         binding.doorPath.setText(prefs.getString("door_path", "IOT_HOME/MainDoor"));
         
-        binding.firebaseUrl.setText(prefs.getString("firebase_url", "https://gapsmarthome-default-rtdb.asia-southeast1.firebasedatabase.app/"));
-        binding.firebaseNode.setText(prefs.getString("firebase_node", "smart_home/kitchen"));
-        binding.firebaseStudyNode.setText(prefs.getString("firebase_study_node", "FrmMobile/study"));
-        binding.firebaseDoorNode.setText(prefs.getString("firebase_door_node", "smart_home/main_door"));
-        binding.firebaseToiletNode.setText(prefs.getString("firebase_toilet_node", "smart_home/toilet"));
+        binding.firebaseUrl.setText(prefs.getString("firebase_url", AppDefaults.FIREBASE_URL));
+        binding.firebaseSecret.setText(prefs.getString("firebase_secret", Credentials.FIREBASE_SECRET));
+        binding.firebaseEmail.setText(prefs.getString("firebase_email", Credentials.FIREBASE_EMAIL));
+        binding.firebasePassword.setText(prefs.getString("firebase_password", Credentials.FIREBASE_PASSWORD));
+        binding.firebaseNode.setText(prefs.getString("firebase_node", AppDefaults.NODE_KITCHEN));
+        binding.firebaseStudyNode.setText(prefs.getString("firebase_study_node", AppDefaults.NODE_STUDY));
+        binding.firebaseDoorNode.setText(prefs.getString("firebase_door_node", AppDefaults.NODE_DOOR));
+        binding.firebaseToiletNode.setText(prefs.getString("firebase_toilet_node", AppDefaults.NODE_TOILET));
+        binding.firebaseRoPumpNode.setText(prefs.getString("firebase_ro_pump_node", AppDefaults.NODE_RO_PUMP));
+        binding.firebaseKitchenFanNode.setText(prefs.getString("firebase_kitchen_fan_node", AppDefaults.NODE_KITCHEN_FAN));
+        binding.firebasePiKitchenNode.setText(prefs.getString("firebase_pi_kitchen_node", AppDefaults.NODE_PI_KITCHEN));
+        binding.videoWidth.setText(prefs.getString("video_width", AppDefaults.DEFAULT_WIDTH));
+        binding.videoHeight.setText(prefs.getString("video_height", AppDefaults.DEFAULT_HEIGHT));
+        binding.videoFps.setText(prefs.getString("video_fps", AppDefaults.DEFAULT_FPS));
+        binding.streamTargetIpEdit.setText(prefs.getString("stream_target_ip", ""));
+
+        // Context-aware Firebase Node visibility
+        binding.containerFirebaseNode.setVisibility(android.view.View.GONE);
+        binding.containerFirebaseStudyNode.setVisibility(android.view.View.GONE);
+        binding.containerFirebaseDoorNode.setVisibility(android.view.View.GONE);
+        binding.containerFirebaseToiletNode.setVisibility(android.view.View.GONE);
+        binding.containerFirebaseRoPumpNode.setVisibility(android.view.View.GONE);
+        binding.containerFirebaseKitchenFanNode.setVisibility(android.view.View.GONE);
+        binding.containerFirebasePiKitchenNode.setVisibility(android.view.View.GONE);
+
+        switch (callerContext) {
+            case "kitchen":
+                binding.containerFirebaseNode.setVisibility(android.view.View.VISIBLE);
+                break;
+            case "study":
+                binding.containerFirebaseStudyNode.setVisibility(android.view.View.VISIBLE);
+                break;
+            case "door":
+                binding.containerFirebaseDoorNode.setVisibility(android.view.View.VISIBLE);
+                break;
+            case "toilet":
+                binding.containerFirebaseToiletNode.setVisibility(android.view.View.VISIBLE);
+                break;
+            case "ro_pump":
+                binding.containerFirebaseRoPumpNode.setVisibility(android.view.View.VISIBLE);
+                break;
+            case "kitchen_fan":
+                binding.containerFirebaseKitchenFanNode.setVisibility(android.view.View.VISIBLE);
+                break;
+            case "pi_kitchen":
+                binding.containerFirebasePiKitchenNode.setVisibility(android.view.View.VISIBLE);
+                break;
+        }
 
         // Context-aware Storage Settings visibility
         binding.containerCsvPath.setVisibility(android.view.View.GONE);
@@ -202,8 +280,18 @@ public class SmartHomeSettingsActivity extends AppCompatActivity {
             binding.tvCsvPathInfo.setVisibility(android.view.View.VISIBLE);
         } else if ("kitchen".equals(callerContext)) {
             binding.containerKitchenPath.setVisibility(android.view.View.VISIBLE);
+            binding.containerVideoRes.setVisibility(android.view.View.VISIBLE);
+        } else if ("pi_kitchen".equals(callerContext)) {
+            binding.containerKitchenPath.setVisibility(android.view.View.VISIBLE);
+            binding.containerVideoRes.setVisibility(android.view.View.GONE);
+            binding.cardOtaSettings.setVisibility(android.view.View.GONE);
         } else if ("door".equals(callerContext)) {
             binding.containerDoorPath.setVisibility(android.view.View.VISIBLE);
+            binding.containerVideoRes.setVisibility(android.view.View.VISIBLE);
+        }
+
+        if (!"pi_kitchen".equals(callerContext)) {
+            binding.containerMinimalOta.setVisibility(android.view.View.VISIBLE);
         }
 
         binding.tvCsvPathInfo.setText("Path: [Downloads]/" + binding.csvPath.getText().toString());
@@ -221,6 +309,7 @@ public class SmartHomeSettingsActivity extends AppCompatActivity {
         binding.rgSyncMode.setOnCheckedChangeListener((group, checkedId) -> {
             binding.cardFirebaseSettings.setVisibility(checkedId == R.id.rb_mode_firebase ? android.view.View.VISIBLE : android.view.View.GONE);
         });
+        binding.minimalOtaUrl.setText(prefs.getString("minimal_ota_url", ""));
     }
 
     private void saveSettings() {
@@ -231,28 +320,63 @@ public class SmartHomeSettingsActivity extends AppCompatActivity {
         String kitchenPath = binding.kitchenPath.getText().toString().trim();
         String doorPath = binding.doorPath.getText().toString().trim();
         String fbUrl = binding.firebaseUrl.getText().toString().trim();
+        if (fbUrl.endsWith("/")) fbUrl = fbUrl.substring(0, fbUrl.length() - 1);
+        
+        String fbSecret = binding.firebaseSecret.getText().toString().trim();
+        String fbEmail = binding.firebaseEmail.getText().toString().trim();
+        String fbPassword = binding.firebasePassword.getText().toString().trim();
         String fbNode = binding.firebaseNode.getText().toString().trim();
         String fbStudyNode = binding.firebaseStudyNode.getText().toString().trim();
         String fbDoorNode = binding.firebaseDoorNode.getText().toString().trim();
         String fbToiletNode = binding.firebaseToiletNode.getText().toString().trim();
+        String fbRoPumpNode = binding.firebaseRoPumpNode.getText().toString().trim();
+        String fbKitchenFanNode = binding.firebaseKitchenFanNode.getText().toString().trim();
+        String fbPiKitchenNode = binding.firebasePiKitchenNode.getText().toString().trim();
+        
+        // Auto-fix Pi Kitchen node if it has the old prefix
+        if (fbPiKitchenNode.contains("/")) {
+            fbPiKitchenNode = fbPiKitchenNode.substring(fbPiKitchenNode.lastIndexOf("/") + 1);
+        }
+        String minOtaUrl = binding.minimalOtaUrl.getText().toString().trim();
+        String vWidth = binding.videoWidth.getText().toString().trim();
+        String vHeight = binding.videoHeight.getText().toString().trim();
+        String vFps = binding.videoFps.getText().toString().trim();
+        String targetIp = binding.streamTargetIpEdit.getText().toString().trim();
 
         int mode = 0;
         if (binding.rbModeIp.isChecked()) mode = 1;
         else if (binding.rbModeFirebase.isChecked()) mode = 2;
 
-        prefs.edit()
+        SharedPreferences.Editor editor = prefs.edit()
             .putString("mqtt_broker", mBroker)
             .putString("mqtt_ports", portStr)
-            .putString("local_node_ip", localIp)
             .putString("csv_path", csvPath)
             .putString("kitchen_path", kitchenPath)
             .putString("door_path", doorPath)
             .putString("firebase_url", fbUrl)
+            .putString("firebase_secret", fbSecret)
+            .putString("firebase_email", fbEmail)
+            .putString("firebase_password", fbPassword)
             .putString("firebase_node", fbNode)
             .putString("firebase_study_node", fbStudyNode)
             .putString("firebase_door_node", fbDoorNode)
             .putString("firebase_toilet_node", fbToiletNode)
-            .putInt("sync_mode", mode)
-            .apply();
+            .putString("firebase_ro_pump_node", fbRoPumpNode)
+            .putString("firebase_kitchen_fan_node", fbKitchenFanNode)
+            .putString("firebase_pi_kitchen_node", fbPiKitchenNode)
+            .putString("minimal_ota_url", minOtaUrl)
+            .putString("video_width", vWidth)
+            .putString("video_height", vHeight)
+            .putString("video_fps", vFps)
+            .putString("stream_target_ip", targetIp)
+            .putInt("sync_mode", mode);
+
+        if ("pi_kitchen".equals(callerContext)) {
+            editor.putString("pi_kitchen_ip", localIp);
+        } else {
+            editor.putString("local_node_ip", localIp);
+        }
+        
+        editor.apply();
     }
 }

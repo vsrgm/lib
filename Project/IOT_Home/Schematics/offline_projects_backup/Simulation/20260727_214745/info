@@ -1,0 +1,202 @@
+{
+  "uuid": "9c167d00cae5b47d6cf4d2e3db7f92c5",
+  "path": "Offline/Simulation",
+  "name": "Simulation",
+  "content": "",
+  "created_at": "2026-07-13 08:10:01",
+  "updated_at": "2026-07-27 21:47:45",
+  "stick": "",
+  "documents": [
+    {
+      "uuid": "694944a21aa53800dcd2dac8f6917d12",
+      "title": "Sheet_1",
+      "description": "",
+      "docType": "1",
+      "master": "eca3cc97017293bf7005987cd535fa45",
+      "thumb": "/images/thumb-default.png",
+      "components": {
+        "13fbe66358ac415f8f844f8a7a60755f": 5,
+        "b0248eb51e084227889f2cb84eab79c4": 7,
+        "f3cb94b59153475bb9ea760252bc4bf2": 3,
+        "211d7386991f4f8c82becf63dab5e7bc": 6,
+        "dbfa7da092bc44faa13a86aaa683160b": 2,
+        "da85efb77378462aaaa3d5ff7db1c1dd": 1
+      },
+      "BOM": [
+        [
+          "Value",
+          "Quantity",
+          "Package",
+          "Components",
+          "CustomPara"
+        ],
+        [
+          ".33u",
+          1,
+          "RAD-0.1",
+          "C1",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          ".1u",
+          1,
+          "RAD-0.1",
+          "C4",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "1N4007",
+          1,
+          "DO-41_BD2.4-L4.7-P8.70-D0.9-RD",
+          "D1",
+          {
+            "Manufacturer Part": "1N4007",
+            "Manufacturer": "SEMTECH",
+            "Supplier": "LCSC",
+            "Supplier Part": "C106903"
+          }
+        ],
+        [
+          "2N2222",
+          3,
+          "",
+          "Q1,Q2,Q3",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "10K",
+          3,
+          "R0603",
+          "R1,R3,R7",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "10k",
+          3,
+          "R0603",
+          "R2,R5,R6",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "1000k",
+          1,
+          "R0603",
+          "R4",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "0",
+          1,
+          "HDR1X2",
+          "V1",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "2",
+          1,
+          "HDR1X2",
+          "V2",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "5v",
+          1,
+          "HDR1X2",
+          "V3",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "3.3V",
+          1,
+          "HDR1X2",
+          "V4",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "10v",
+          1,
+          "HDR1X2",
+          "V5",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "Multimeter",
+          6,
+          "",
+          "XMM1,XMM2,XMM3,XMM4,XMM5,XMM6",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": ""
+          }
+        ]
+      ],
+      "updateTime": 1785169065,
+      "createTime": 1783910407,
+      "histories": [],
+      "created_at": "2026-07-13 08:10:07",
+      "updated_at": "2026-07-27 21:47:45"
+    }
+  ],
+  "sort": [],
+  "title": "Simulation",
+  "foldername": "Simulation",
+  "schfilename": "Simulation.json",
+  "schfilemtime": 1785169065985
+}

@@ -25,6 +25,13 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.json.JSONObject;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
@@ -43,10 +50,13 @@ public class RoWasteWaterActivity extends AppCompatActivity {
     private static final String TAG = "RoWasteWaterActivity";
     private ActivityRoWaterBinding binding;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private DatabaseReference firebaseRef;
+    private FirebaseDatabase firebaseDatabase;
+    private ValueEventListener firebaseListener;
     private boolean isHistoryExpanded = false;
     private android.content.SharedPreferences prefs;
     private MqttClient mqttClient;
-    private int syncMode = 0; // 0: MQTT, 1: IP
+    private int syncMode = 0; // 0: MQTT, 1: IP, 2: Firebase
     private final List<String> discoveredNodes = new ArrayList<>();
     private ArrayAdapter<String> nodeAdapter;
     private final List<String> mqttHistoryBuffer = new ArrayList<>();
@@ -98,11 +108,16 @@ public class RoWasteWaterActivity extends AppCompatActivity {
             public void onNothingSelected(android.widget.AdapterView<?> parent) {}
         });
 
-        initMqtt();
-        setupNetworkListener();
+        if (syncMode == 2) {
+            initFirebase();
+        } else {
+            initMqtt();
+            setupNetworkListener();
+        }
 
         binding.rowPumpStatus.label.setText(R.string.label_pump_status);
         binding.rowPumpStatus.sensorSwitch.setVisibility(android.view.View.VISIBLE);
+        binding.rowPumpStatus.sensorSwitch.setEnabled(false); // Disabled by default until sync
         
         binding.rowWaterLevel.label.setText(R.string.label_water_level);
         
@@ -130,9 +145,79 @@ public class RoWasteWaterActivity extends AppCompatActivity {
         });
     }
 
+    private void initFirebase() {
+        String url = prefs.getString("firebase_url", AppDefaults.FIREBASE_URL);
+        String room = AppDefaults.NODE_RO_PUMP; 
+        
+        addLog("Authenticating Firebase...");
+        String email = prefs.getString("firebase_email", Credentials.FIREBASE_EMAIL);
+        String password = prefs.getString("firebase_password", Credentials.FIREBASE_PASSWORD);
+        
+        if (email.isEmpty() || password.isEmpty()) {
+            connectToFirebase(url, room);
+            return;
+        }
+
+        FirebaseAuth.getInstance().signInWithEmailAndPassword(email, password)
+            .addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    addLog("Auth Success.");
+                    connectToFirebase(url, room);
+                } else {
+                    addLog("Auth Failed: " + (task.getException() != null ? task.getException().getMessage() : "Unknown"));
+                }
+            });
+    }
+
+    private void connectToFirebase(String url, String room) {
+        try {
+            firebaseDatabase = FirebaseDatabase.getInstance(url);
+            DatabaseReference outboxRef = firebaseDatabase.getReference("FrmNodeMcu").child(room);
+            
+            addLog("Listening to Firebase: FrmNodeMcu/" + room);
+            
+            firebaseListener = new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    if (dataSnapshot.exists()) {
+                        Object value = dataSnapshot.child("status").getValue();
+                        if (value != null) {
+                            handleMqttStatus("firebase/status", value.toString());
+                        }
+
+                        DataSnapshot historyNode = dataSnapshot.child("history");
+                        if (historyNode.exists()) {
+                            mqttHistoryBuffer.clear();
+                            for (DataSnapshot child : historyNode.getChildren()) {
+                                Object entry = child.getValue();
+                                if (entry != null) mqttHistoryBuffer.add(entry.toString());
+                            }
+                            updateHistoryTable(mqttHistoryBuffer);
+                        }
+                    }
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                    addLog("Firebase Error: " + databaseError.getMessage());
+                }
+            };
+            
+            firebaseRef = outboxRef;
+            outboxRef.addValueEventListener(firebaseListener);
+            
+            runOnUiThread(() -> {
+                binding.syncStatus.setText("Cloud Sync: Active");
+                binding.syncStatus.setTextColor(Color.parseColor("#4CAF50"));
+            });
+        } catch (Exception e) {
+            addLog("Firebase Init Failed: " + e.getMessage());
+        }
+    }
+
     private void loadSettings() {
         syncMode = prefs.getInt("sync_mode", 0);
-        String savedIp = prefs.getString("local_node_ip", getString(R.string.default_node_ip));
+        String savedIp = prefs.getString("local_node_ip", AppDefaults.DEFAULT_NODE_IP);
         String localEntryPrefix = "Local IP (";
 
         boolean changed = false;
@@ -160,6 +245,7 @@ public class RoWasteWaterActivity extends AppCompatActivity {
     }
 
     private void setupNetworkListener() {
+        if (syncMode == 2) return;
         connectivityManager = (ConnectivityManager) getSystemService(android.content.Context.CONNECTIVITY_SERVICE);
         networkCallback = new ConnectivityManager.NetworkCallback() {
             @Override
@@ -197,7 +283,8 @@ public class RoWasteWaterActivity extends AppCompatActivity {
             if (syncMode == 1 && !selectedNodeIp.isEmpty()) {
                 executor.execute(() -> {
                     try {
-                        URL url = new URL("http://" + selectedNodeIp + "/config");
+                        String ip = prefs.getString("local_node_ip", AppDefaults.DEFAULT_NODE_IP);
+                        URL url = new URL("http://" + ip + "/config");
                         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                         conn.setRequestMethod("POST");
                         conn.setDoOutput(true);
@@ -206,6 +293,11 @@ public class RoWasteWaterActivity extends AppCompatActivity {
                         conn.disconnect();
                     } catch (Exception ignored) {}
                 });
+            } else if (syncMode == 2) {
+                if (firebaseDatabase != null) {
+                    firebaseDatabase.getReference("FrmMobile").child("ro_pump").child("command")
+                        .setValue(payload);
+                }
             } else if (isMqttAvailable()) {
                 executor.execute(() -> {
                     try {
@@ -243,6 +335,11 @@ public class RoWasteWaterActivity extends AppCompatActivity {
                     conn.disconnect();
                 } catch (Exception ignored) {}
             });
+        } else if (syncMode == 2) {
+            if (firebaseDatabase != null) {
+                firebaseDatabase.getReference("FrmMobile").child("ro_pump").child("command")
+                    .setValue("HISTORY");
+            }
         } else if (isMqttAvailable()) {
             executor.execute(() -> {
                 try {
@@ -263,6 +360,11 @@ public class RoWasteWaterActivity extends AppCompatActivity {
                     conn.disconnect();
                 } catch (Exception ignored) {}
             });
+        } else if (syncMode == 2) {
+            if (firebaseDatabase != null) {
+                firebaseDatabase.getReference("FrmMobile").child("ro_pump").child("command")
+                    .setValue("CLEAR");
+            }
         } else if (isMqttAvailable()) {
             executor.execute(() -> {
                 try {
@@ -379,14 +481,36 @@ public class RoWasteWaterActivity extends AppCompatActivity {
     }
 
     private void handleMqttStatus(String topic, String payload) {
-        if (!selectedNodeId.isEmpty() && !topic.contains(selectedNodeId)) return;
+        if (!"firebase/status".equals(topic) && !selectedNodeId.isEmpty() && !topic.contains(selectedNodeId)) return;
         if (System.currentTimeMillis() - lastInteractionTime < 4000) return;
 
         runOnUiThread(() -> {
             try {
-                JSONObject json = new JSONObject(payload);
+                // If payload is from Firebase, it might be a Map.toString() format {key=value}
+                String jsonStr = payload;
+                if (jsonStr.contains("=") && !jsonStr.contains("\":")) {
+                    jsonStr = jsonStr.replace("=", "\":\"")
+                                   .replace("{", "{\"")
+                                   .replace(", ", "\", \"")
+                                   .replace("}", "\"}");
+                }
+
+                JSONObject json = new JSONObject(jsonStr);
                 if (json.has("pump")) {
                     isSyncing = true;
+
+                    // Update IP and ID info if available (crucial for Discovery)
+                    if (json.has("ip")) {
+                        String ip = json.getString("ip");
+                        String id = json.optString("id", "Node");
+                        binding.availableNodesInfo.setText(" (" + ip + ")");
+                        String entry = id + " (" + ip + ")";
+                        if (!discoveredNodes.contains(entry)) {
+                            discoveredNodes.add(entry);
+                            nodeAdapter.notifyDataSetChanged();
+                        }
+                    }
+
                     String pumpState = json.getString("pump");
                     binding.rowPumpStatus.value.setText(pumpState);
                     binding.rowPumpStatus.sensorSwitch.setChecked("ON".equals(pumpState));
@@ -397,11 +521,16 @@ public class RoWasteWaterActivity extends AppCompatActivity {
                     String manualState = json.getString("manual");
                     binding.rowManual.value.setText(manualState);
                     binding.rowManual.sensorSwitch.setChecked("ON".equals(manualState));
+
+                    // Enforcement: Only allow pump control if manual mode is ON
+                    boolean isManual = "ON".equals(manualState);
+                    binding.rowPumpStatus.sensorSwitch.setEnabled(isManual);
                     
                     binding.syncStatus.setText("Last Update: " + new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date()));
                     isSyncing = false;
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                Log.e(TAG, "Status Parse Error: " + e.getMessage());
                 isSyncing = false;
             }
         });
@@ -468,6 +597,11 @@ public class RoWasteWaterActivity extends AppCompatActivity {
                     conn.disconnect();
                 } catch (Exception ignored) {}
             });
+        } else if (syncMode == 2) {
+            if (firebaseDatabase != null) {
+                firebaseDatabase.getReference("FrmMobile").child("ro_pump").child("command")
+                    .setValue("SYNC");
+            }
         } else if (isMqttAvailable()) {
             executor.execute(() -> {
                 try {
@@ -492,6 +626,9 @@ public class RoWasteWaterActivity extends AppCompatActivity {
         super.onDestroy();
         if (connectivityManager != null && networkCallback != null) {
             try { connectivityManager.unregisterNetworkCallback(networkCallback); } catch (Exception ignored) {}
+        }
+        if (firebaseRef != null && firebaseListener != null) {
+            firebaseRef.removeEventListener(firebaseListener);
         }
         executor.shutdown();
         closeMqtt();

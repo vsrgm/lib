@@ -160,11 +160,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initFirebase() {
-        FirebaseAuth.getInstance().signInWithEmailAndPassword("iot-device@gapsmarthome.com", "1q2w3e4r%T")
+        android.content.SharedPreferences smartPrefs = getSharedPreferences("SmartHomePrefs", MODE_PRIVATE);
+        String email = smartPrefs.getString("firebase_email", "");
+        String password = smartPrefs.getString("firebase_password", "");
+        String url = smartPrefs.getString("firebase_url", "");
+
+        if (email.isEmpty() || password.isEmpty()) {
+            if (!url.isEmpty()) {
+                firebaseRef = FirebaseDatabase.getInstance(url).getReference("smart_home/rccar");
+            }
+            return;
+        }
+
+        FirebaseAuth.getInstance().signInWithEmailAndPassword(email, password)
             .addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
-                    String url = "https://gapsmarthome-default-rtdb.asia-southeast1.firebasedatabase.app/";
-                    firebaseRef = FirebaseDatabase.getInstance(url).getReference("smart_home/rccar");
+                    if (!url.isEmpty()) {
+                        firebaseRef = FirebaseDatabase.getInstance(url).getReference("smart_home/rccar");
+                    }
                 }
             });
     }

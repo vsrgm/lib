@@ -4,7 +4,7 @@
   "name": "StudyRoom",
   "content": "",
   "created_at": "2026-07-12 18:24:21",
-  "updated_at": "2026-07-19 15:26:10",
+  "updated_at": "2026-08-03 19:38:57",
   "stick": "",
   "documents": [
     {
@@ -166,16 +166,19 @@
       "master": "",
       "thumb": "/images/thumb-default.png",
       "components": {
+        "da85efb77378462aaaa3d5ff7db1c1dd": 1,
+        "dbfa7da092bc44faa13a86aaa683160b": 4,
+        "a1a68e8402b9461199345d2cae776c3f": 22,
+        "a68dc5e6a9944c46b7604648a43dcd65": 7,
+        "796f27a2f95c4070916899a0a14f2e24": 1,
         "6b183ead02164764b4179944bf03b053": 2,
         "d3153b8c50f14118a4d74ab7f58e8c5c": 1,
-        "3ec77201bbcd4ecd8722658d581a4e60": 5,
+        "3ec77201bbcd4ecd8722658d581a4e60": 4,
         "404aa9221ff94de597b8734806e7c74f": 6,
         "a9aa2b14f188405792fa87ac344499a4": 2,
         "12910f25495140cc86e38e6bb42be5dc": 3,
-        "a1a68e8402b9461199345d2cae776c3f": 15,
         "3721972c581d4f99b226effb1db7a790": 10,
-        "5f16b9b751a14851a47b57ff30ad47c9": 1,
-        "a68dc5e6a9944c46b7604648a43dcd65": 1
+        "5f16b9b751a14851a47b57ff30ad47c9": 1
       },
       "BOM": [
         [
@@ -184,6 +187,54 @@
           "Package",
           "Components",
           "CustomPara"
+        ],
+        [
+          ".33u",
+          1,
+          "RAD-0.1",
+          "C1",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          ".1u",
+          1,
+          "RAD-0.1",
+          "C4",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "100nf",
+          2,
+          "RAD-0.1",
+          "C5,C8",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "1N4007",
+          1,
+          "DO-41_BD2.4-L4.7-P8.70-D0.9-RD",
+          "D1",
+          {
+            "Manufacturer Part": "1N4007",
+            "Manufacturer": "SEMTECH",
+            "Supplier": "LCSC",
+            "Supplier Part": "C106903"
+          }
         ],
         [
           "Relay 1",
@@ -199,9 +250,9 @@
         ],
         [
           "Battery",
-          3,
+          2,
           "HDR-F-2.54_1X2",
-          "H3,H4,H5",
+          "H3,H4",
           {
             "Manufacturer Part": "",
             "Manufacturer": "",
@@ -237,7 +288,7 @@
           "NodeMcuL",
           2,
           "HDR-M-2.54_1X15",
-          "J1,J3",
+          "J1,J4",
           {
             "Manufacturer Part": "",
             "Manufacturer": "",
@@ -249,7 +300,7 @@
           "NodeMcuR",
           2,
           "HDR-M-2.54_1X15",
-          "J2,J4",
+          "J2,J5",
           {
             "Manufacturer Part": "",
             "Manufacturer": "",
@@ -258,15 +309,15 @@
           }
         ],
         [
-          "MT3608 VIN+",
+          "R2IN",
           1,
-          "HDR-M-2.54_1X1",
-          "J5",
+          "HDR-M-2.54_1X3",
+          "J3",
           {
             "Manufacturer Part": "",
             "Manufacturer": "",
             "Supplier": "LCSC",
-            "Supplier Part": "C81276"
+            "Supplier Part": "C180248"
           }
         ],
         [
@@ -306,7 +357,7 @@
           }
         ],
         [
-          "MT3608 VIN-",
+          "MT3608 VIN+",
           1,
           "HDR-M-2.54_1X1",
           "J10",
@@ -318,7 +369,7 @@
           }
         ],
         [
-          "MT3608 VOUT+",
+          "MT3608 VIN-",
           1,
           "HDR-M-2.54_1X1",
           "J11",
@@ -330,7 +381,7 @@
           }
         ],
         [
-          "MT3608 VOUT-",
+          "MT3608 VOUT+",
           1,
           "HDR-M-2.54_1X1",
           "J12",
@@ -342,10 +393,46 @@
           }
         ],
         [
+          "MT3608 VOUT-",
+          1,
+          "HDR-M-2.54_1X1",
+          "J13",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "R3IN",
+          1,
+          "HDR-M-2.54_1X3",
+          "J14",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
+          "R4IN",
+          1,
+          "HDR-M-2.54_1X3",
+          "J15",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
           "DHT11",
           1,
           "HDR-M-2.54_1X3",
-          "J13",
+          "J16",
           {
             "Manufacturer Part": "",
             "Manufacturer": "",
@@ -391,9 +478,9 @@
         ],
         [
           "10k",
-          11,
+          18,
           "R_AXIAL-0.3",
-          "R1,R2,R3,R4,R5,R6,R7,R8,R9,R11,R31",
+          "R1,R2,R3,R4,R5,R6,R7,R8,R9,R11,R18,R19,R20,R21,R22,R23,R24,R37",
           {
             "Manufacturer Part": "",
             "Manufacturer": "",
@@ -429,7 +516,7 @@
           "100",
           10,
           "R_AXIAL-0.3",
-          "R18,R19,R20,R21,R22,R23,R24,R25,R26,R27",
+          "R25,R26,R27,R28,R29,R30,R31,R32,R33,R34",
           {
             "Manufacturer Part": "",
             "Manufacturer": "",
@@ -441,7 +528,7 @@
           "1k",
           2,
           "R_AXIAL-0.3",
-          "R28,R29",
+          "R35,R36",
           {
             "Manufacturer Part": "",
             "Manufacturer": "",
@@ -453,12 +540,24 @@
           "02-LDR2",
           1,
           "RES-TH_L5.0-W4.3-P3.40-D0.5",
-          "R32",
+          "R38",
           {
             "Manufacturer Part": "02-LDR2",
             "Manufacturer": "NTE Electronics",
             "Supplier": "LCSC",
             "Supplier Part": "C17271554"
+          }
+        ],
+        [
+          "Relay1",
+          3,
+          "HDR-M-2.54_1X3",
+          "RELAY2,RELAY3,RELAY4",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
           }
         ],
         [
@@ -486,10 +585,22 @@
           }
         ],
         [
+          "LM7805T",
+          1,
+          "TO-220-3_L10.0-W4.5-P2.54-L",
+          "U3",
+          {
+            "Manufacturer Part": "LM7805T",
+            "Manufacturer": "HGC(华冠)",
+            "Supplier": "LCSC",
+            "Supplier Part": "C507145"
+          }
+        ],
+        [
           "CD4051BF",
           1,
           "PDIP-16_L19.3-W6.4-P2.54-LS7.94-BL",
-          "U3",
+          "U4",
           {
             "Manufacturer Part": "CD4051BF",
             "Manufacturer": "TI(德州仪器)",
@@ -498,11 +609,11 @@
           }
         ]
       ],
-      "updateTime": 1784454970,
+      "updateTime": 1785766137,
       "createTime": 1784449577,
       "histories": [],
       "created_at": "2026-07-19 13:56:17",
-      "updated_at": "2026-07-19 15:26:10"
+      "updated_at": "2026-08-03 19:38:57"
     }
   ],
   "sort": [
@@ -512,5 +623,5 @@
   "title": "StudyRoom",
   "foldername": "StudyRoom",
   "schfilename": "SmartHome.json",
-  "schfilemtime": 1784454970123
+  "schfilemtime": 1785766137695
 }

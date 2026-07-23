@@ -1,0 +1,209 @@
+{
+  "uuid": "c7e0a2e30397e3c31338def54b72e989",
+  "path": "Offline/LedBoard",
+  "name": "LedBoard",
+  "content": "",
+  "created_at": "2026-08-08 18:05:52",
+  "updated_at": "2026-08-18 09:24:08",
+  "stick": "",
+  "documents": [
+    {
+      "uuid": "87b5b50348d938b47744fcf8d53d2646",
+      "title": "Led board",
+      "description": "",
+      "docType": "1",
+      "master": "",
+      "thumb": "/images/thumb-default.png",
+      "components": {
+        "a1a68e8402b9461199345d2cae776c3f": 14,
+        "12910f25495140cc86e38e6bb42be5dc": 2,
+        "a68dc5e6a9944c46b7604648a43dcd65": 1,
+        "8850ffcdb9d242a1b431d4a3e2209db1": 10
+      },
+      "BOM": [
+        [
+          "Value",
+          "Quantity",
+          "Package",
+          "Components",
+          "CustomPara"
+        ],
+        [
+          "HDR-M-2.54_1x3",
+          1,
+          "HDR-M-2.54_1X3",
+          "J1",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
+          "LED-TH-5mm_R",
+          10,
+          "LED-TH_BD5.0_RED",
+          "LED1,LED2,LED3,LED4,LED5,LED6,LED7,LED8,LED9,LED10",
+          {
+            "Manufacturer Part": "333-2SURD/S530-A3",
+            "Manufacturer": "EVERLIGHT(台湾亿光)",
+            "Supplier": "LCSC",
+            "Supplier Part": "C87271"
+          }
+        ],
+        [
+          "BC547",
+          2,
+          "TO-92-3_L4.5-W3.5-P1.27-L",
+          "Q7,Q8",
+          {
+            "Manufacturer Part": "BC547(RANGE:420-800)",
+            "Manufacturer": "CJ(江苏长电/长晶)",
+            "Supplier": "LCSC",
+            "Supplier Part": "C2910381"
+          }
+        ],
+        [
+          "10k",
+          2,
+          "R_AXIAL-0.3",
+          "R6,R7",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "300",
+          10,
+          "R_AXIAL-0.3",
+          "R18,R19,R20,R21,R22,R23,R24,R25,R26,R27",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "1k",
+          2,
+          "R_AXIAL-0.3",
+          "R28,R29",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ]
+      ],
+      "updateTime": 1786985066,
+      "createTime": 1786160538,
+      "histories": [],
+      "created_at": "2026-08-08 09:12:18",
+      "updated_at": "2026-08-17 22:14:26"
+    },
+    {
+      "uuid": "2401fe2fab22ab71062483725bc7c4aa",
+      "puuid": "c7e0a2e30397e3c31338def54b72e989",
+      "title": "PCB_LedBoard",
+      "filename": "PCB_LedBoard.json",
+      "description": "",
+      "docType": "3",
+      "master": "",
+      "thumb": "/images/thumb-default.png",
+      "components": {
+        "ce0ed154d45b41508e0debca8473ba07": 10,
+        "560158fdc69b488f8a3fe99daed4a070": 2,
+        "3eb1249f3ebb4284ae221b0379016582": 14,
+        "9f77654394344f25b3de138e0fe05ff6": 1
+      },
+      "BOM": [
+        [
+          "Value",
+          "Quantity",
+          "Package",
+          "Components",
+          "CustomPara"
+        ],
+        [
+          "LED-TH-3mm_R",
+          10,
+          "LED-TH_BD3.0_RED",
+          "LED1,LED2,LED3,LED4,LED5,LED6,LED7,LED8,LED9,LED10",
+          {
+            "Manufacturer Part": "204-10SDRD/S530-A3-L",
+            "Manufacturer": "EVERLIGHT(台湾亿光)",
+            "Supplier": "LCSC",
+            "Supplier Part": "C84774"
+          }
+        ],
+        [
+          "BC547",
+          2,
+          "TO-92-3_L4.5-W3.5-P1.27-L",
+          "Q7,Q8",
+          {
+            "Manufacturer Part": "BC547(RANGE:420-800)",
+            "Manufacturer": "CJ(江苏长电/长晶)",
+            "Supplier": "LCSC",
+            "Supplier Part": "C2910381"
+          }
+        ],
+        [
+          "10k",
+          2,
+          "R_AXIAL-0.3",
+          "R6,R7",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "300",
+          10,
+          "R_AXIAL-0.3",
+          "R18,R19,R20,R21,R22,R23,R24,R25,R26,R27",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "1k",
+          2,
+          "R_AXIAL-0.3",
+          "R28,R29",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ]
+      ],
+      "updateTime": 1787025248,
+      "createTime": 1786192786,
+      "histories": [],
+      "created_at": "2026-08-08 18:09:46",
+      "updated_at": "2026-08-18 09:24:08"
+    }
+  ],
+  "sort": [
+    "cfc24f31444bf2d048b0c770a22b1551",
+    "87b5b50348d938b47744fcf8d53d2646"
+  ],
+  "title": "LedBoard",
+  "foldername": "LedBoard",
+  "schfilename": "LedBoard.json",
+  "schfilemtime": 1786985066583
+}

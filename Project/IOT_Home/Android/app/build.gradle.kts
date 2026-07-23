@@ -11,8 +11,8 @@ android {
         applicationId = "com.smarthome.iot"
         minSdk = 24
         targetSdk = 33
-        versionCode = 159
-        versionName = "1.0.159"
+        versionCode = 304
+        versionName = "1.0.304"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -39,8 +39,18 @@ tasks.register("autoUpdateVersion") {
     doLast {
         val isMinor = project.hasProperty("minorUpdate")
         val gradleFile = file("build.gradle.kts")
-        val javaFile = file("src/main/java/com/example/sample/SmartHomeActivity.java")
-        val studyInoFile = file("../../NodeMcu/StudyRoomMonitor/StudyRoomMonitor.ino")
+        val inoFiles = listOf(
+            file("../../NodeMcu/StudyRoomMonitor/StudyRoomMonitor.ino"),
+            file("../../NodeMcu/RO_Waste_WaterPump/RO_Waste_WaterPump.ino"),
+            file("../../NodeMcu/ToiletAssistance/ToiletAssistance.ino"),
+            file("../../NodeMcu/Kitchen_Exhaust_Fan/Kitchen_Exhaust_Fan.ino"),
+            file("../../ESP32/ESP32_CAM_Kitchen/ESP32_CAM_Kitchen.ino"),
+            file("../../ESP32/ESP32_CAM_MainDoor/ESP32_CAM_MainDoor.ino")
+        )
+        val cFiles = listOf(
+            file("../../pi/pikitchenMonitor/server.c"),
+            file("../../pi/rccar/server.c")
+        )
 
         var content = gradleFile.readText()
         val versionMatch = Regex("versionName = \"(.*?)\"").find(content)
@@ -71,23 +81,36 @@ tasks.register("autoUpdateVersion") {
             }
             gradleFile.writeText(newContent)
 
-            // Update Java
-            if (javaFile.exists()) {
-                val javaContent = javaFile.readText()
-                val newJava = javaContent.replace(Regex("private static final String APP_VERSION = \".*?\";"), 
-                                                "private static final String APP_VERSION = \"$newVersion\";")
-                javaFile.writeText(newJava)
+            // Update all INO files
+            inoFiles.forEach { inoFile ->
+                if (inoFile.exists()) {
+                    val inoContent = inoFile.readText()
+                    val newIno = inoContent.replace(Regex("const String SW_VERSION = \".*?\";"), 
+                                                  "const String SW_VERSION = \"$newVersion\";")
+                    inoFile.writeText(newIno)
+                    println("Updated ${inoFile.name} to version $newVersion")
+                }
             }
 
-            // Update INO
-            if (studyInoFile.exists()) {
-                val inoContent = studyInoFile.readText()
-                val newIno = inoContent.replace(Regex("const String SW_VERSION = \".*?\";"), 
-                                              "const String SW_VERSION = \"$newVersion\";")
-                studyInoFile.writeText(newIno)
+            // Update all C files
+            cFiles.forEach { cFile ->
+                if (cFile.exists()) {
+                    val cContent = cFile.readText()
+                    val newC = if (cContent.contains("#define SW_VERSION")) {
+                        cContent.replace(Regex("#define SW_VERSION \".*?\""), 
+                                       "#define SW_VERSION \"$newVersion\"")
+                    } else {
+                        // If it doesn't have it, add it after includes
+                        val includesEnd = cContent.lastIndexOf("#include")
+                        val nextLine = cContent.indexOf("\n", includesEnd) + 1
+                        cContent.substring(0, nextLine) + "\n#define SW_VERSION \"$newVersion\"\n" + cContent.substring(nextLine)
+                    }
+                    cFile.writeText(newC)
+                    println("Updated ${cFile.name} to version $newVersion")
+                }
             }
             
-            println("Version automatically updated to $newVersion")
+            println("Project version automatically updated to $newVersion")
         }
     }
 }

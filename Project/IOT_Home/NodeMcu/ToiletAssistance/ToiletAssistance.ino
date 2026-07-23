@@ -47,7 +47,7 @@ String baseTopic = "smart_home/toilet/";
 String statusTopic = baseTopic + "status";
 String cmdTopic = baseTopic + "commands";
 
-const String SW_VERSION = "1.0.1";
+const String SW_VERSION = "1.0.304";
 
 // System State
 float temperature = 0.0;

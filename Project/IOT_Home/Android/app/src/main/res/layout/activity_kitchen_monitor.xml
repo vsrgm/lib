@@ -40,95 +40,167 @@
             app:tint="?android:attr/textColorPrimary" />
     </RelativeLayout>
 
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="match_parent"
-        android:layout_height="240dp"
-        app:cardCornerRadius="12dp"
-        android:layout_marginBottom="12dp">
-
-        <WebView
-            android:id="@+id/video_stream"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="#000000" />
-    </com.google.android.material.card.MaterialCardView>
-
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:layout_marginBottom="12dp">
+        android:fillViewport="true">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <include layout="@layout/item_status_row" android:id="@+id/row_pir" />
-            <include layout="@layout/item_status_row" android:id="@+id/row_ldr" />
-            <include layout="@layout/item_status_row" android:id="@+id/row_relay" />
-            <include layout="@layout/item_status_row" android:id="@+id/row_buzzer" />
-            <include layout="@layout/item_status_row" android:id="@+id/row_gas" />
-            <include layout="@layout/item_status_row" android:id="@+id/row_temp" />
-            <include layout="@layout/item_status_row" android:id="@+id/row_pres" />
-        </LinearLayout>
-    </ScrollView>
+            <!-- Camera / Captured Image View -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="300dp"
+                app:cardCornerRadius="12dp"
+                android:layout_marginBottom="16dp">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:layout_marginBottom="12dp">
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
 
-        <Button android:id="@+id/btn_capture" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Capture" android:layout_marginEnd="8dp" />
-        <Button android:id="@+id/btn_gallery" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Gallery" />
-    </LinearLayout>
+                    <WebView
+                        android:id="@+id/video_stream"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="#000000" />
 
-    <TextView android:id="@+id/sync_status" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:text="Connecting..." />
-
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="match_parent"
-        android:layout_height="100dp"
-        android:layout_marginTop="8dp"
-        app:cardCornerRadius="8dp"
-        app:cardElevation="1dp">
-
-        <ScrollView
-            android:id="@+id/log_scroll_view"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="#1E1E1E"
-            android:padding="8dp">
+                    <ImageView
+                        android:id="@+id/iv_captured_image"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="fitCenter"
+                        android:background="#000000"
+                        android:visibility="gone" />
+                </FrameLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <TextView
-                android:id="@+id/tv_connection_logs"
+                android:id="@+id/sync_status"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:fontFamily="monospace"
-                android:text="Logs will appear here..."
-                android:textColor="#00FF00"
-                android:textSize="10sp" />
-        </ScrollView>
-    </com.google.android.material.card.MaterialCardView>
+                android:gravity="center"
+                android:text="Connecting..."
+                android:textSize="14sp"
+                android:textColor="?android:attr/textColorSecondary"
+                android:layout_marginBottom="16dp" />
 
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:background="#000000">
+            <!-- Sensor Rows - Enlarged via layout margins and specific item styling -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
 
-        <TableLayout
-            android:id="@+id/history_table"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="8dp">
+                <include layout="@layout/item_status_row" android:id="@+id/row_pir" />
+                <include layout="@layout/item_status_row" android:id="@+id/row_ldr" />
+                <include layout="@layout/item_status_row" android:id="@+id/row_power" />
+                <include layout="@layout/item_status_row" android:id="@+id/row_relay" />
+                <include layout="@layout/item_status_row" android:id="@+id/row_buzzer" />
+                <include layout="@layout/item_status_row" android:id="@+id/row_manual_override" />
+                <include layout="@layout/item_status_row" android:id="@+id/row_gas_digital" />
+                <include layout="@layout/item_status_row" android:id="@+id/row_gas_analog" />
+                <include layout="@layout/item_status_row" android:id="@+id/row_temp_lm358" />
+                <include layout="@layout/item_status_row" android:id="@+id/row_temp_bmp" />
+                <include layout="@layout/item_status_row" android:id="@+id/row_pres" />
+            </LinearLayout>
 
-            <TableRow android:background="#333333" android:padding="4dp">
-                <TextView android:text="Time" android:textColor="#FFFFFF" android:padding="8dp" android:textStyle="bold"/>
-                <TextView android:text="Event" android:textColor="#FFFFFF" android:padding="8dp" android:textStyle="bold"/>
-                <TextView android:text="Gas" android:textColor="#FFFFFF" android:padding="8dp" android:textStyle="bold"/>
-            </TableRow>
-        </TableLayout>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="System Connection Logs"
+                android:textStyle="bold"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp"/>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="120dp"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="1dp">
+
+                <!-- Inner scrollview for logs is OK as it has fixed height -->
+                <ScrollView
+                    android:id="@+id/log_scroll_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#1E1E1E"
+                    android:padding="8dp">
+
+                    <TextView
+                        android:id="@+id/tv_connection_logs"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="monospace"
+                        android:text="Logs will appear here..."
+                        android:textColor="#00FF00"
+                        android:textSize="11sp" />
+                </ScrollView>
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="State History"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"/>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="1dp">
+
+                <TableLayout
+                    android:id="@+id/history_table"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="8dp"
+                    android:background="#000000">
+
+                    <TableRow android:background="#333333" android:padding="4dp">
+                        <TextView android:text="Time" android:textColor="#FFFFFF" android:padding="8dp" android:textStyle="bold"/>
+                        <TextView android:text="Event" android:textColor="#FFFFFF" android:padding="8dp" android:textStyle="bold"/>
+                        <TextView android:text="Gas" android:textColor="#FFFFFF" android:padding="8dp" android:textStyle="bold"/>
+                    </TableRow>
+                </TableLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Buttons at the bottom of the scroll view -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="40dp">
+
+                <Button
+                    android:id="@+id/btn_capture"
+                    android:layout_width="0dp"
+                    android:layout_height="64dp"
+                    android:layout_weight="1"
+                    android:text="Capture"
+                    android:layout_marginEnd="12dp"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    style="@style/Widget.MaterialComponents.Button" />
+
+                <Button
+                    android:id="@+id/btn_gallery"
+                    android:layout_width="0dp"
+                    android:layout_height="64dp"
+                    android:layout_weight="1"
+                    android:text="Gallery"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+            </LinearLayout>
+
+        </LinearLayout>
     </ScrollView>
 </LinearLayout>

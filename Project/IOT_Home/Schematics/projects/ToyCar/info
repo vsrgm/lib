@@ -1,0 +1,158 @@
+{
+  "uuid": "2985709661ce3bb76ce2f799bb22bbff",
+  "path": "Offline/ToyCar",
+  "name": "ToyCar",
+  "content": "",
+  "created_at": "2026-07-24 08:22:18",
+  "updated_at": "2026-08-14 15:57:52",
+  "stick": "",
+  "documents": [
+    {
+      "uuid": "289a6f62ae2584cdac48df6a32edec35",
+      "title": "Main board",
+      "description": "",
+      "docType": "1",
+      "master": "",
+      "thumb": "/images/thumb-default.png",
+      "components": {
+        "a68dc5e6a9944c46b7604648a43dcd65": 2,
+        "5f16b9b751a14851a47b57ff30ad47c9": 1,
+        "a1a68e8402b9461199345d2cae776c3f": 6,
+        "d3153b8c50f14118a4d74ab7f58e8c5c": 1,
+        "6b183ead02164764b4179944bf03b053": 2,
+        "dbfa7da092bc44faa13a86aaa683160b": 2,
+        "a052559478a14ee2b9e3514bee4ff72d": 2
+      },
+      "BOM": [
+        [
+          "Value",
+          "Quantity",
+          "Package",
+          "Components",
+          "CustomPara"
+        ],
+        [
+          "100nf",
+          2,
+          "RAD-0.1",
+          "C5,C8",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "LED Board",
+          1,
+          "HDR-M-2.54_1X3",
+          "J1",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
+          "HDR-F-2.54_1x5",
+          2,
+          "HDR-M-2.54_1X5",
+          "J2,J5",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C358687"
+          }
+        ],
+        [
+          "NodeMcuL",
+          1,
+          "HDR-M-2.54_1X15",
+          "J3",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C124373"
+          }
+        ],
+        [
+          "NodeMcuR",
+          1,
+          "HDR-M-2.54_1X15",
+          "J4",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C124373"
+          }
+        ],
+        [
+          "DHT11",
+          1,
+          "HDR-M-2.54_1X3",
+          "J13",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
+          "10k",
+          6,
+          "R_AXIAL-0.3",
+          "R1,R4,R5,R9,R10,R31",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "02-LDR2",
+          1,
+          "RES-TH_L5.0-W4.3-P3.40-D0.5",
+          "R32",
+          {
+            "Manufacturer Part": "02-LDR2",
+            "Manufacturer": "NTE Electronics",
+            "Supplier": "LCSC",
+            "Supplier Part": "C17271554"
+          }
+        ],
+        [
+          "CD4051BF",
+          1,
+          "PDIP-16_L19.3-W6.4-P2.54-LS7.94-BL",
+          "U3",
+          {
+            "Manufacturer Part": "CD4051BF",
+            "Manufacturer": "TI(德州仪器)",
+            "Supplier": "LCSC",
+            "Supplier Part": "C3657417"
+          }
+        ]
+      ],
+      "updateTime": 1786703272,
+      "createTime": 1784861539,
+      "histories": [],
+      "created_at": "2026-07-24 08:22:19",
+      "updated_at": "2026-08-14 15:57:52"
+    }
+  ],
+  "sort": [
+    "289a6f62ae2584cdac48df6a32edec35",
+    "8e348e2c99086b59d850379899a3dd34"
+  ],
+  "title": "ToyCar",
+  "foldername": "ToyCar",
+  "schfilename": "ToyCar.json",
+  "schfilemtime": 1786703272565
+}

@@ -1,0 +1,425 @@
+{
+  "uuid": "2985709661ce3bb76ce2f799bb22bbff",
+  "path": "Offline/ToyCar",
+  "name": "ToyCar",
+  "content": "",
+  "created_at": "2026-07-24 08:22:18",
+  "updated_at": "2026-07-24 17:58:03",
+  "stick": "",
+  "documents": [
+    {
+      "uuid": "289a6f62ae2584cdac48df6a32edec35",
+      "title": "Sheet_1",
+      "description": "",
+      "docType": "1",
+      "master": "cc12db5c162c4482c9e882996132f5bf",
+      "thumb": "/images/thumb-default.png",
+      "components": {
+        "a68dc5e6a9944c46b7604648a43dcd65": 9,
+        "5f16b9b751a14851a47b57ff30ad47c9": 1,
+        "a1a68e8402b9461199345d2cae776c3f": 22,
+        "12910f25495140cc86e38e6bb42be5dc": 3,
+        "3721972c581d4f99b226effb1db7a790": 10,
+        "404aa9221ff94de597b8734806e7c74f": 6,
+        "a9aa2b14f188405792fa87ac344499a4": 2,
+        "3ec77201bbcd4ecd8722658d581a4e60": 4,
+        "d3153b8c50f14118a4d74ab7f58e8c5c": 1,
+        "6b183ead02164764b4179944bf03b053": 2,
+        "796f27a2f95c4070916899a0a14f2e24": 1,
+        "dbfa7da092bc44faa13a86aaa683160b": 2,
+        "a7a0e276dadd4f8097422d2afc2e1b9c": 2
+      },
+      "BOM": [
+        [
+          "Value",
+          "Quantity",
+          "Package",
+          "Components",
+          "CustomPara"
+        ],
+        [
+          ".33u",
+          1,
+          "RAD-0.1",
+          "C1",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "4700u",
+          1,
+          "CASE-A_3216",
+          "C2",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "470u",
+          1,
+          "CASE-A_3216",
+          "C3",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          ".1u",
+          1,
+          "RAD-0.1",
+          "C4",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "Battery",
+          2,
+          "HDR-F-2.54_1X2",
+          "H3,H4",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C49661"
+          }
+        ],
+        [
+          "Power",
+          1,
+          "HDR-F-2.54_1X2",
+          "H6",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C49661"
+          }
+        ],
+        [
+          "HDR-F-2.54_1x2",
+          1,
+          "HDR-F-2.54_1X2",
+          "H7",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C49661"
+          }
+        ],
+        [
+          "R1IN",
+          1,
+          "HDR-M-2.54_1X3",
+          "J1",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
+          "R2IN",
+          1,
+          "HDR-M-2.54_1X3",
+          "J2",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
+          "NodeMcuL",
+          1,
+          "HDR-M-2.54_1X15",
+          "J3",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C124373"
+          }
+        ],
+        [
+          "NodeMcuR",
+          1,
+          "HDR-M-2.54_1X15",
+          "J4",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C124373"
+          }
+        ],
+        [
+          "MT3608 VIN+",
+          1,
+          "HDR-M-2.54_1X1",
+          "J5",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "+5V",
+          1,
+          "HDR-M-2.54_1X1",
+          "J6",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "GND",
+          1,
+          "HDR-M-2.54_1X1",
+          "J7",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "HDR-M-2.54_1x2",
+          2,
+          "HDR-M-2.54_1X2",
+          "J8,J9",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C124375"
+          }
+        ],
+        [
+          "MT3608 VIN-",
+          1,
+          "HDR-M-2.54_1X1",
+          "J10",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "MT3608 VOUT+",
+          1,
+          "HDR-M-2.54_1X1",
+          "J11",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "MT3608 VOUT-",
+          1,
+          "HDR-M-2.54_1X1",
+          "J12",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "DHT11",
+          1,
+          "HDR-M-2.54_1X3",
+          "J13",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
+          "R3IN",
+          1,
+          "HDR-M-2.54_1X3",
+          "J14",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
+          "R4IN",
+          1,
+          "HDR-M-2.54_1X3",
+          "J15",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
+          "LED-TH-3mm_R",
+          10,
+          "LED-TH_BD3.0_RED",
+          "LED1,LED2,LED3,LED4,LED5,LED6,LED7,LED8,LED9,LED10",
+          {
+            "Manufacturer Part": "204-10SDRD/S530-A3-L",
+            "Manufacturer": "EVERLIGHT(台湾亿光)",
+            "Supplier": "LCSC",
+            "Supplier Part": "C84774"
+          }
+        ],
+        [
+          "BC547",
+          3,
+          "TO-92-3_L4.5-W3.5-P1.27-L",
+          "Q6,Q7,Q8",
+          {
+            "Manufacturer Part": "BC547(RANGE:420-800)",
+            "Manufacturer": "CJ(江苏长电/长晶)",
+            "Supplier": "LCSC",
+            "Supplier Part": "C2910381"
+          }
+        ],
+        [
+          "20k",
+          4,
+          "R_AXIAL-0.3",
+          "R1,R4,R5,R10",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "10k",
+          6,
+          "R_AXIAL-0.3",
+          "R3,R6,R7,R8,R9,R31",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "100",
+          10,
+          "R_AXIAL-0.3",
+          "R18,R19,R20,R21,R22,R23,R24,R25,R26,R27",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "1k",
+          2,
+          "R_AXIAL-0.3",
+          "R28,R29",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "02-LDR2",
+          1,
+          "RES-TH_L5.0-W4.3-P3.40-D0.5",
+          "R32",
+          {
+            "Manufacturer Part": "02-LDR2",
+            "Manufacturer": "NTE Electronics",
+            "Supplier": "LCSC",
+            "Supplier Part": "C17271554"
+          }
+        ],
+        [
+          "Relay1",
+          4,
+          "HDR-M-2.54_1X3",
+          "RELAY1,RELAY2,RELAY3,RELAY4",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
+          "LM7805T",
+          1,
+          "TO-220-3_L10.0-W4.5-P2.54-L",
+          "U1",
+          {
+            "Manufacturer Part": "LM7805T",
+            "Manufacturer": "HGC(华冠)",
+            "Supplier": "LCSC",
+            "Supplier Part": "C507145"
+          }
+        ],
+        [
+          "CD4051BF",
+          1,
+          "PDIP-16_L19.3-W6.4-P2.54-LS7.94-BL",
+          "U3",
+          {
+            "Manufacturer Part": "CD4051BF",
+            "Manufacturer": "TI(德州仪器)",
+            "Supplier": "LCSC",
+            "Supplier Part": "C3657417"
+          }
+        ]
+      ],
+      "updateTime": 1784896083,
+      "createTime": 1784861539,
+      "histories": [],
+      "created_at": "2026-07-24 08:22:19",
+      "updated_at": "2026-07-24 17:58:03"
+    }
+  ],
+  "sort": [],
+  "title": "ToyCar",
+  "foldername": "ToyCar",
+  "schfilename": "ToyCar.json",
+  "schfilemtime": 1784896083065
+}

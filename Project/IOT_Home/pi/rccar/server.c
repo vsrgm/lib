@@ -14,6 +14,8 @@
 #include <sys/mman.h>
 #include <linux/videodev2.h>
 
+#define SW_VERSION "1.0.304"
+
 #define PORT 5001
 #define VIDEO_CHUNK_SIZE 1400
 #define LOG_FILE "/tmp/server.log"

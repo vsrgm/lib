@@ -1,9 +1,25 @@
 {
+  "ab761e053da6b21eca815b4ba91b6b7d": "BatteryPowerModule_Relay",
+  "2325a83344c08de981dcdada9e06abf9": "BatteryPowerModule_Relay\\BatteryPowerModule_Relay.json?Sheet_1",
+  "4a7a8f072caf3f3e1c71afa3fd1336df": "BatteryPowerModule_Stepup",
+  "9c25a94dc15adfd0ad4ced8b1134e668": "BatteryPowerModule_Stepup\\BatteryPowerModule_Stepup.json?Sheet_1",
+  "31c91f433974101ff62e3cb43461ca3c": "BatteryPowerModule_Stepup\\PCB_BatteryPowerModule_Stepup.json",
+  "dd7c7da03eb923048d5c86c3fdb44ff8": "KitchenExhaustFan",
+  "f23bbcec79a77d8b0b33d89a8cecab23": "KitchenExhaustFan\\KitchenExhaustFan.json?Sheet_1",
+  "779f404bb9c8a6c92e19100e96bb7c71": "KitchenExhaustFan\\PCB_KitchenExhaustFan.json",
+  "c7e0a2e30397e3c31338def54b72e989": "LedBoard",
+  "87b5b50348d938b47744fcf8d53d2646": "LedBoard\\LedBoard.json?Led board",
+  "2401fe2fab22ab71062483725bc7c4aa": "LedBoard\\PCB_LedBoard.json",
+  "9e53ab33fdd7cc3b814511be3a2a1460": "RoWasteWaterPump",
+  "d504947951283f198761d11fa6137fd2": "RoWasteWaterPump\\RoWasteWaterPump.json?Sheet_1",
+  "ba3ec839ea7ad7b2815a377c496cffa3": "RoWasteWaterPump\\PCB_RoWasteWaterPump.json",
   "9c167d00cae5b47d6cf4d2e3db7f92c5": "Simulation",
   "694944a21aa53800dcd2dac8f6917d12": "Simulation\\Simulation.json?Sheet_1",
   "00030d669be6405da4beb374c14ec802": "StudyRoom",
   "7a59e4d6de4f0b34a0cb03e6f61f8562": "StudyRoom\\SmartHome.json?StudyRoom_AllAnalog",
   "f8e262152ef8e3a51da503a9d1de84d4": "StudyRoom\\SmartHome.json?StudyRoom",
   "02b666c65664ecbce8ef197a2ac76610": "Toilet assistance",
-  "b603b575565bfb59ce789f2f4ff8291f": "Toilet assistance\\Toilet assistance.json?Sheet_1"
+  "b603b575565bfb59ce789f2f4ff8291f": "Toilet assistance\\Toilet assistance.json?Sheet_1",
+  "2985709661ce3bb76ce2f799bb22bbff": "ToyCar",
+  "289a6f62ae2584cdac48df6a32edec35": "ToyCar\\ToyCar.json?Main board"
 }

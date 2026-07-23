@@ -121,11 +121,19 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
     }
 
     private void initFirebase() {
-        String url = prefs.getString("firebase_url", "https://gapsmarthome-default-rtdb.asia-southeast1.firebasedatabase.app/");
-        String node = prefs.getString("firebase_door_node", "smart_home/main_door");
+        String url = prefs.getString("firebase_url", AppDefaults.FIREBASE_URL);
+        String node = prefs.getString("firebase_door_node", AppDefaults.NODE_DOOR);
         
         addLog("Authenticating Firebase...");
-        FirebaseAuth.getInstance().signInWithEmailAndPassword("iot-device@gapsmarthome.com", "1q2w3e4r%T")
+        String email = prefs.getString("firebase_email", Credentials.FIREBASE_EMAIL);
+        String password = prefs.getString("firebase_password", Credentials.FIREBASE_PASSWORD);
+        
+        if (email.isEmpty() || password.isEmpty()) {
+            connectToFirebase(url, node);
+            return;
+        }
+
+        FirebaseAuth.getInstance().signInWithEmailAndPassword(email, password)
             .addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
                     addLog("Auth Success. Connecting to Database...");
@@ -205,7 +213,7 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
         binding.videoStream.setWebViewClient(new WebViewClient());
         
         if (syncMode == 1) {
-            String ip = prefs.getString("local_node_ip", "192.168.0.107");
+            String ip = prefs.getString("local_node_ip", AppDefaults.DEFAULT_NODE_IP);
             binding.videoStream.loadUrl("http://" + ip + "/stream");
         } else {
             // MJPEG over MQTT not directly supported in WebView. 
@@ -218,7 +226,7 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
         executor.execute(() -> {
             while (!isFinishing()) {
                 try {
-                    String ip = prefs.getString("local_node_ip", "192.168.0.107");
+                    String ip = prefs.getString("local_node_ip", AppDefaults.DEFAULT_NODE_IP);
                     URL url = new URL("http://" + ip + "/status");
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setConnectTimeout(2000);
@@ -415,7 +423,7 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
         if (syncMode == 1) {
             executor.execute(() -> {
                 try {
-                    String ip = prefs.getString("local_node_ip", "192.168.0.107");
+                    String ip = prefs.getString("local_node_ip", AppDefaults.DEFAULT_NODE_IP);
                     URL url = new URL("http://" + ip + "/control?cmd=" + cmd);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.getResponseCode();

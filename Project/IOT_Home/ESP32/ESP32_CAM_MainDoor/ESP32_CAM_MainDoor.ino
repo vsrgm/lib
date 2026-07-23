@@ -67,6 +67,8 @@ String cmdTopic = baseTopic + "commands";
 String historyTopic = baseTopic + "history";
 String imageTopic = baseTopic + "image";
 
+const String SW_VERSION = "1.0.304";
+
 bool lastPIR = false;
 bool lastDoor = false;
 bool lastBell = false;
@@ -198,8 +200,11 @@ void publishStatus() {
   doc["bell"] = lastBell;
   doc["ldr"] = lastLDR;
   doc["pwr"] = lastPower;
-  doc["relay"] = relayState;
-  doc["buzzer"] = buzzerState;
+    doc["relay"] = relayState;
+    doc["buzzer"] = buzzerState;
+    doc["ver"] = SW_VERSION;
+    doc["ip"] = WiFi.localIP().toString();
+    doc["id"] = clientId;
 
   float temp = bmp.readTemperature();
   float pres = bmp.readPressure() / 100.0F;
@@ -231,8 +236,11 @@ void handleStatusReq() {
   doc["bell"] = lastBell;
   doc["ldr"] = lastLDR;
   doc["pwr"] = lastPower;
-  doc["relay"] = relayState;
-  doc["buzzer"] = buzzerState;
+    doc["relay"] = relayState;
+    doc["buzzer"] = buzzerState;
+    doc["ver"] = SW_VERSION;
+    doc["ip"] = WiFi.localIP().toString();
+    doc["id"] = clientId;
   doc["temp"] = bmp.readTemperature();
   doc["pres"] = bmp.readPressure() / 100.0F;
   String json;

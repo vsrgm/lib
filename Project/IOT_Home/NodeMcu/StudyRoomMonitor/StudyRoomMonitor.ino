@@ -46,7 +46,7 @@ String globalCmdTopic = baseTopic + "all/commands";
 String discoveryTopic = baseTopic + "nodes/discovery";
 String historyTopic = baseTopic + mqttClientId + "/history";
 
-const String SW_VERSION = "1.0.178";
+const String SW_VERSION = "1.0.304";
 
 int currentMqttPortIndex = 0;
 const int mqttPorts[] = {1883, 8000, 8883, 8884};
@@ -214,18 +214,28 @@ void handleRemoteOTA(String url) {
 }
 
 void runPendingOTA() {
-  if (!LittleFS.exists("/ota.txt")) return;
+  String url = "";
+  bool isFull = false;
 
-  File f = LittleFS.open("/ota.txt", "r");
-  String url = f.readString();
-  f.close();
-  LittleFS.remove("/ota.txt");
+  if (LittleFS.exists("/ota.txt")) {
+    File f = LittleFS.open("/ota.txt", "r");
+    url = f.readString();
+    f.close();
+    LittleFS.remove("/ota.txt");
+  } else if (LittleFS.exists("/full_ota.txt")) {
+    File f = LittleFS.open("/full_ota.txt", "r");
+    url = f.readString();
+    f.close();
+    LittleFS.remove("/full_ota.txt");
+    isFull = true;
+  }
+
   url.trim();
-
   if (url.length() < 10) return;
 
-  Serial.println("Starting Fresh OTA: " + url);
-  addWebLog("Boot-OTA Attempt: " + url);
+  Serial.println("Starting OTA: " + url);
+  addWebLog(isFull ? "Stage 2 OTA: " : "Stage 1 OTA: ");
+  addWebLog(url);
 
   // CRITICAL: Wait for network to be fully stable
   delay(5000);
@@ -238,18 +248,12 @@ void runPendingOTA() {
   // 16384 (16KB) is the absolute max SSL fragment size.
   sClient.setBufferSizes(16384, 1024);
 
-  HTTPClient http;
-  http.begin(sClient, url);
-  http.setUserAgent("Mozilla/5.0 (ESP8266)");
-  http.setTimeout(180000);
-
   ESPhttpUpdate.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
   ESPhttpUpdate.rebootOnUpdate(true); // Standard mode: reboot immediately on success
 
-  t_httpUpdate_return ret = ESPhttpUpdate.update(http);
+  t_httpUpdate_return ret = ESPhttpUpdate.update(sClient, url);
 
   // If we reach here, update failed (otherwise it would have rebooted)
-  http.end();
   system_update_cpu_freq(80);
 
   String err = "OTA Fail: " + ESPhttpUpdate.getLastErrorString();
@@ -264,11 +268,23 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     publishStatus();
   } else if (msg.startsWith("OTA:")) {
     handleRemoteOTA(msg.substring(4));
+  } else if (msg.startsWith("OTA_FULL:")) {
+    String url = msg.substring(9);
+    File f = LittleFS.open("/full_ota.txt", "w");
+    if (f) {
+      f.print(url);
+      f.close();
+      addWebLog("Full OTA URL Saved");
+    }
   } else if (msg == "DISCOVER") {
     String discoveryMsg = "{\"ip\":\"" + WiFi.localIP().toString() + "\", \"id\":\"" + mqttClientId + "\", \"ver\":\"" + SW_VERSION + "\"}";
     mqttClient.publish(discoveryTopic.c_str(), discoveryMsg.c_str());
-  } else if (msg == "CLEAR") {
+  } else if (msg == "CLEAR" || msg == "clearHistory") {
     LittleFS.remove(logFile);
+    addWebLog("History Cleared");
+    if (Firebase.ready()) {
+      Firebase.RTDB.deleteNode(&fbdo, String(FB_OUTBOX) + "/history");
+    }
   } else if (msg.startsWith("CONFIG:")) {
     String jsonStr = msg.substring(7);
     StaticJsonDocument<128> doc; // Reduced from 256
@@ -508,6 +524,14 @@ void setup() {
     File f = LittleFS.open(logFile, "r");
     server.streamFile(f, "text/csv");
     f.close();
+  });
+  server.on("/clear", []() {
+    LittleFS.remove(logFile);
+    addWebLog("History Cleared via IP");
+    if (Firebase.ready()) {
+      Firebase.RTDB.deleteNode(&fbdo, String(FB_OUTBOX) + "/history");
+    }
+    server.send(200, "text/plain", "History Cleared");
   });
   server.on("/config", HTTP_POST, []() {
     if (server.hasArg("plain")) {

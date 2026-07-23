@@ -111,6 +111,16 @@
         </activity>
 
         <activity
+            android:name=".KitchenExhaustFanActivity"
+            android:exported="false"
+            android:label="@string/title_kitchen_exhaust"
+            android:parentActivityName=".SmartHomeActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".SmartHomeActivity" />
+        </activity>
+
+        <activity
             android:name=".SmartHomeSettingsActivity"
             android:exported="false"
             android:label="Smart Home Settings"
@@ -138,6 +148,16 @@
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".MenuActivity" />
+        </activity>
+
+        <activity
+            android:name=".PiKitchenMonitorActivity"
+            android:exported="false"
+            android:label="Pi Kitchen Monitor"
+            android:parentActivityName=".SmartHomeActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".SmartHomeActivity" />
         </activity>
     </application>
 

@@ -1,0 +1,254 @@
+{
+  "uuid": "ab761e053da6b21eca815b4ba91b6b7d",
+  "path": "Offline/BatteryPowerModule_Relay",
+  "name": "BatteryPowerModule_Relay",
+  "content": "",
+  "created_at": "2026-08-14 11:32:03",
+  "updated_at": "2026-08-14 16:37:56",
+  "stick": "",
+  "documents": [
+    {
+      "uuid": "2325a83344c08de981dcdada9e06abf9",
+      "title": "Sheet_1",
+      "description": "",
+      "docType": "1",
+      "master": "",
+      "thumb": "/images/thumb-default.png",
+      "components": {
+        "3ec77201bbcd4ecd8722658d581a4e60": 4,
+        "da85efb77378462aaaa3d5ff7db1c1dd": 1,
+        "dbfa7da092bc44faa13a86aaa683160b": 2,
+        "a68dc5e6a9944c46b7604648a43dcd65": 6,
+        "a1a68e8402b9461199345d2cae776c3f": 2,
+        "796f27a2f95c4070916899a0a14f2e24": 1,
+        "404aa9221ff94de597b8734806e7c74f": 2,
+        "a9aa2b14f188405792fa87ac344499a4": 2,
+        "12910f25495140cc86e38e6bb42be5dc": 1,
+        "a052559478a14ee2b9e3514bee4ff72d": 2
+      },
+      "BOM": [
+        [
+          "Value",
+          "Quantity",
+          "Package",
+          "Components",
+          "CustomPara"
+        ],
+        [
+          ".33u",
+          1,
+          "RAD-0.1",
+          "C1",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          ".1u",
+          1,
+          "RAD-0.1",
+          "C4",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "1N4007",
+          1,
+          "DO-41_BD2.4-L4.7-P8.70-D0.9-RD",
+          "D1",
+          {
+            "Manufacturer Part": "1N4007",
+            "Manufacturer": "SEMTECH",
+            "Supplier": "LCSC",
+            "Supplier Part": "C106903"
+          }
+        ],
+        [
+          "Battery",
+          2,
+          "HDR-F-2.54_1X2",
+          "H3,H4",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C49661"
+          }
+        ],
+        [
+          "Power",
+          1,
+          "HDR-F-2.54_1X2",
+          "H6",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C49661"
+          }
+        ],
+        [
+          "HDR-F-2.54_1x2",
+          1,
+          "HDR-F-2.54_1X2",
+          "H7",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C49661"
+          }
+        ],
+        [
+          "HDR-M-2.54_1x5",
+          2,
+          "HDR-M-2.54_1X5",
+          "J1,J3",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C358687"
+          }
+        ],
+        [
+          "R2IN",
+          1,
+          "HDR-M-2.54_1X3",
+          "J2",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
+          "+5V",
+          1,
+          "HDR-M-2.54_1X1",
+          "J6",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "GND",
+          1,
+          "HDR-M-2.54_1X1",
+          "J7",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "HDR-M-2.54_1x2",
+          2,
+          "HDR-M-2.54_1X2",
+          "J8,J9",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C124375"
+          }
+        ],
+        [
+          "R3IN",
+          1,
+          "HDR-M-2.54_1X3",
+          "J14",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
+          "R4IN",
+          1,
+          "HDR-M-2.54_1X3",
+          "J15",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
+          "BC547",
+          1,
+          "TO-92-3_L4.5-W3.5-P1.27-L",
+          "Q6",
+          {
+            "Manufacturer Part": "BC547(RANGE:420-800)",
+            "Manufacturer": "CJ(江苏长电/长晶)",
+            "Supplier": "LCSC",
+            "Supplier Part": "C2910381"
+          }
+        ],
+        [
+          "10k",
+          2,
+          "R_AXIAL-0.3",
+          "R3,R8",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "Relay1",
+          3,
+          "HDR-M-2.54_1X3",
+          "RELAY2,RELAY3,RELAY4",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
+          "LM7805T",
+          1,
+          "TO-220-3_L10.0-W4.5-P2.54-L",
+          "U1",
+          {
+            "Manufacturer Part": "LM7805T",
+            "Manufacturer": "HGC(华冠)",
+            "Supplier": "LCSC",
+            "Supplier Part": "C507145"
+          }
+        ]
+      ],
+      "updateTime": 1786705676,
+      "createTime": 1786687323,
+      "histories": [],
+      "created_at": "2026-08-14 11:32:03",
+      "updated_at": "2026-08-14 16:37:56"
+    }
+  ],
+  "sort": [],
+  "title": "BatteryPowerModule_Relay",
+  "foldername": "BatteryPowerModule_Relay",
+  "schfilename": "BatteryPowerModule_Relay.json",
+  "schfilemtime": 1786705676165
+}
