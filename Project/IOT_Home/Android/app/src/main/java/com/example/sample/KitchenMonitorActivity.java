@@ -54,9 +54,15 @@ public class KitchenMonitorActivity extends AppCompatActivity {
     private DatabaseReference firebaseRef;
     private ValueEventListener firebaseListener;
     private final ExecutorService executor = Executors.newFixedThreadPool(2);
-    private final String baseTopic = "smart_home/kitchen/";
+    private final String statusTopic = "FrmEsp32/kitchen/status";
+    private final String cmdTopic = "FrmMobile/esp32cam/kitchen/command";
+    private final String imageTopic = "FrmEsp32/kitchen/image";
     private SharedPreferences prefs;
     private int syncMode = 0; // 0: MQTT, 1: IP, 2: Firebase
+    private final java.util.List<String> discoveredNodes = new java.util.ArrayList<>();
+    private android.widget.ArrayAdapter<String> nodeAdapter;
+    private String selectedNodeId = "";
+    private String selectedNodeIp = "";
     private final StringBuilder logBuilder = new StringBuilder();
     private int[] mqttPorts = {};
     private int currentPortIndex = 0;
@@ -84,29 +90,58 @@ public class KitchenMonitorActivity extends AppCompatActivity {
             startActivity(new android.content.Intent(this, ImageViewerActivity.class));
         });
 
+        // Connected Nodes Setup
+        nodeAdapter = new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_item, discoveredNodes);
+        nodeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        binding.nodeSelector.setAdapter(nodeAdapter);
+        binding.nodeSelector.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(android.widget.AdapterView<?> parent, android.view.View view, int position, long id) {
+                String selected = discoveredNodes.get(position);
+                if (selected.contains("(") && selected.endsWith(")")) {
+                    selectedNodeId = selected.substring(0, selected.indexOf(" (")).trim();
+                    selectedNodeIp = selected.substring(selected.lastIndexOf("(") + 1, selected.length() - 1);
+                }
+            }
+            @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+        });
+
         // Initialize labels and switches
         binding.rowPir.label.setText("PIR Motion");
-        binding.rowLdr.label.setText("Light Sensor");
+        binding.rowLdr.label.setText("Light Sensor (LDR)");
+        binding.rowPower.label.setText("External Power");
         
-        binding.rowRelay.label.setText("Kitchen Lamp");
+        binding.rowRelay.label.setText("Kitchen Lamp (Relay)");
         binding.rowRelay.sensorSwitch.setVisibility(View.VISIBLE);
+        binding.rowRelay.sensorSwitch.setEnabled(false); // Locked until manual override
         binding.rowRelay.sensorSwitch.setOnClickListener(v -> {
-            boolean isChecked = binding.rowRelay.sensorSwitch.isChecked();
-            sendCommand(isChecked ? "RELAY_ON" : "RELAY_OFF");
+            sendCommand(binding.rowRelay.sensorSwitch.isChecked() ? "RELAY_ON" : "RELAY_OFF");
         });
 
         binding.rowBuzzer.label.setText("Alarm (Buzzer)");
         binding.rowBuzzer.sensorSwitch.setVisibility(View.VISIBLE);
+        binding.rowBuzzer.sensorSwitch.setEnabled(false); // Locked until manual override
         binding.rowBuzzer.sensorSwitch.setOnClickListener(v -> {
-            boolean isChecked = binding.rowBuzzer.sensorSwitch.isChecked();
-            sendCommand(isChecked ? "BUZZER_ON" : "BUZZER_OFF");
+            sendCommand(binding.rowBuzzer.sensorSwitch.isChecked() ? "BUZZER_ON" : "BUZZER_OFF");
         });
 
-        binding.rowGas.label.setText("Gas Level");
-        binding.rowTemp.label.setText("Temperature");
-        binding.rowPres.label.setText("Pressure");
+        binding.rowManualOverride.label.setText("Manual Override");
+        binding.rowManualOverride.sensorSwitch.setVisibility(View.VISIBLE);
+        binding.rowManualOverride.sensorSwitch.setOnClickListener(v -> {
+            boolean isChecked = binding.rowManualOverride.sensorSwitch.isChecked();
+            binding.rowRelay.sensorSwitch.setEnabled(isChecked);
+            binding.rowBuzzer.sensorSwitch.setEnabled(isChecked);
+            sendCommand(isChecked ? "OVERRIDE_ON" : "OVERRIDE_OFF");
+        });
+
+        binding.rowGasDigital.label.setText("Gas Leak (Digital)");
+        binding.rowGasAnalog.label.setText("Gas Level (Analog)");
+        binding.rowTempLm358.label.setText("Temp (LM358)");
+        binding.rowTempBmp.label.setText("Temp (BMP280)");
+        binding.rowPres.label.setText("Pressure (BMP280)");
 
         setupWebView();
+        syncResolution();
 
         if (syncMode == 1) {
             startIpSync();
@@ -119,11 +154,19 @@ public class KitchenMonitorActivity extends AppCompatActivity {
     }
 
     private void initFirebase() {
-        String url = prefs.getString("firebase_url", "https://gapsmarthome-default-rtdb.asia-southeast1.firebasedatabase.app/");
-        String node = prefs.getString("firebase_node", "smart_home/kitchen");
+        String url = prefs.getString("firebase_url", AppDefaults.FIREBASE_URL);
+        String node = prefs.getString("firebase_node", AppDefaults.NODE_KITCHEN);
         
         addLog("Authenticating Firebase...");
-        FirebaseAuth.getInstance().signInWithEmailAndPassword("iot-device@gapsmarthome.com", "1q2w3e4r%T")
+        String email = prefs.getString("firebase_email", Credentials.FIREBASE_EMAIL);
+        String password = prefs.getString("firebase_password", Credentials.FIREBASE_PASSWORD);
+        
+        if (email.isEmpty() || password.isEmpty()) {
+            connectToFirebase(url, node);
+            return;
+        }
+
+        FirebaseAuth.getInstance().signInWithEmailAndPassword(email, password)
             .addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
                     addLog("Auth Success. Connecting to Database...");
@@ -195,6 +238,20 @@ public class KitchenMonitorActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        syncMode = prefs.getInt("sync_mode", 0);
+        setupWebView();
+        syncResolution();
+    }
+
+    private void syncResolution() {
+        String width = prefs.getString("video_width", "640");
+        String height = prefs.getString("video_height", "480");
+        sendCommand("RES:" + width + "," + height);
+    }
+
     private void setupWebView() {
         WebSettings webSettings = binding.videoStream.getSettings();
         webSettings.setJavaScriptEnabled(true);
@@ -203,10 +260,16 @@ public class KitchenMonitorActivity extends AppCompatActivity {
         binding.videoStream.setWebViewClient(new WebViewClient());
         
         if (syncMode == 1) {
-            String ip = prefs.getString("local_node_ip", "192.168.0.107");
+            // Local IP: Show MJPEG Stream
+            binding.videoStream.setVisibility(View.VISIBLE);
+            binding.ivCapturedImage.setVisibility(View.GONE);
+            String ip = prefs.getString("local_node_ip", AppDefaults.DEFAULT_NODE_IP);
             binding.videoStream.loadUrl("http://" + ip + "/stream");
         } else {
-            binding.videoStream.loadData("<html><body style='background:black;color:white;display:flex;justify-content:center;align-items:center;'>MJPEG via MQTT not implemented in WebView</body></html>", "text/html", "UTF-8");
+            // MQTT/Firebase: Show static images
+            binding.videoStream.setVisibility(View.GONE);
+            binding.ivCapturedImage.setVisibility(View.VISIBLE);
+            binding.ivCapturedImage.setImageResource(android.R.drawable.ic_menu_camera);
         }
     }
 
@@ -214,7 +277,7 @@ public class KitchenMonitorActivity extends AppCompatActivity {
         executor.execute(() -> {
             while (!isFinishing()) {
                 try {
-                    String ip = prefs.getString("local_node_ip", "192.168.0.107");
+                    String ip = prefs.getString("local_node_ip", AppDefaults.DEFAULT_NODE_IP);
                     URL url = new URL("http://" + ip + "/status");
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setConnectTimeout(2000);
@@ -300,10 +363,10 @@ public class KitchenMonitorActivity extends AppCompatActivity {
                         addLog("Connection Lost: " + (cause != null ? cause.getMessage() : "Unknown"));
                     }
                     @Override public void messageArrived(String topic, MqttMessage message) {
-                        if (topic.equals(baseTopic + "status")) {
+                        if (topic.equals(statusTopic)) {
                             String payload = new String(message.getPayload());
                             handleStatus(payload);
-                        } else if (topic.equals(baseTopic + "image")) {
+                        } else if (topic.equals(imageTopic)) {
                             saveMqttImage(message.getPayload());
                         }
                     }
@@ -311,8 +374,8 @@ public class KitchenMonitorActivity extends AppCompatActivity {
                 });
 
                 mqttClient.connect(options);
-                mqttClient.subscribe(baseTopic + "status");
-                mqttClient.subscribe(baseTopic + "image");
+                mqttClient.subscribe(statusTopic);
+                mqttClient.subscribe(imageTopic);
 
                 runOnUiThread(() -> {
                     binding.syncStatus.setText("Connected (Port " + port + ")");
@@ -342,6 +405,12 @@ public class KitchenMonitorActivity extends AppCompatActivity {
     private void saveMqttImage(byte[] data) {
         executor.execute(() -> {
             try {
+                // Update UI first
+                android.graphics.Bitmap bitmap = android.graphics.BitmapFactory.decodeByteArray(data, 0, data.length);
+                if (bitmap != null) {
+                    runOnUiThread(() -> binding.ivCapturedImage.setImageBitmap(bitmap));
+                }
+
                 String subDir = prefs.getString("kitchen_path", getString(R.string.default_kitchen_path));
                 File directory = StorageUtils.getWorkDir(subDir);
                 String fileName = "IMG_KITCHEN_" + System.currentTimeMillis() + ".jpg";
@@ -360,9 +429,32 @@ public class KitchenMonitorActivity extends AppCompatActivity {
         runOnUiThread(() -> {
             try {
                 JSONObject json = new JSONObject(payload);
-                binding.rowPir.value.setText(json.getBoolean("pir") ? "Motion" : "Clear");
-                binding.rowLdr.value.setText(json.getBoolean("ldr") ? "Low" : "Good");
+
+                // Update Node Info
+                if (json.has("ip")) {
+                    String ip = json.getString("ip");
+                    String id = json.optString("id", "Node");
+                    if (!binding.availableNodesInfo.getText().toString().contains(ip)) {
+                        binding.availableNodesInfo.setText(" (" + ip + ")");
+                    }
+                    String entry = id + " (" + ip + ")";
+                    if (!discoveredNodes.contains(entry)) {
+                        discoveredNodes.add(entry);
+                        nodeAdapter.notifyDataSetChanged();
+                    }
+                }
+
+                binding.rowPir.value.setText(json.optBoolean("pir", false) ? "Motion" : "Clear");
+                binding.rowLdr.value.setText(String.valueOf(json.optInt("ldr", 0)));
+                binding.rowPower.value.setText(json.optBoolean("pwr", false) ? "ON" : "OFF");
                 
+                boolean manual = json.optBoolean("manual_override", false);
+                binding.rowManualOverride.value.setText(manual ? "ON" : "OFF");
+                binding.rowManualOverride.sensorSwitch.setChecked(manual);
+                
+                binding.rowRelay.sensorSwitch.setEnabled(manual);
+                binding.rowBuzzer.sensorSwitch.setEnabled(manual);
+
                 boolean relay = json.getBoolean("relay");
                 binding.rowRelay.value.setText(relay ? "ON" : "OFF");
                 binding.rowRelay.sensorSwitch.setChecked(relay);
@@ -371,20 +463,26 @@ public class KitchenMonitorActivity extends AppCompatActivity {
                 binding.rowBuzzer.value.setText(buzzer ? "ON" : "OFF");
                 binding.rowBuzzer.sensorSwitch.setChecked(buzzer);
 
-                int gas = json.getInt("gas");
-                binding.rowGas.value.setText(String.valueOf(gas));
+                binding.rowGasDigital.value.setText(json.optBoolean("gas_d", false) ? "LEAK!" : "Normal");
+                int gasA = json.optInt("gas_a", 0);
+                binding.rowGasAnalog.value.setText(String.valueOf(gasA));
                 
-                binding.rowTemp.value.setText(String.format("%.1f °C", json.getDouble("temp")));
-                binding.rowPres.value.setText(String.format("%.1f hPa", json.getDouble("pres")));
+                binding.rowTempLm358.value.setText(String.format("%.1f °C", json.optDouble("temp_lm358", 0.0)));
+                binding.rowTempBmp.value.setText(String.format("%.1f °C", json.optDouble("temp_bmp", 0.0)));
+                binding.rowPres.value.setText(String.format("%.1f hPa", json.optDouble("pres", 0.0)));
                 
-                String time = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
-                binding.syncStatus.setText("Last Update: " + time);
+                String nodeTs = json.optString("ts", "N/A");
+                String appTs = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
+                binding.syncStatus.setText("Node: " + nodeTs + " | App: " + appTs);
+                binding.syncStatus.setTextColor(Color.parseColor("#4CAF50"));
 
-                if (gas > 1500) {
-                    binding.rowGas.value.setTextColor(Color.RED);
+                if (gasA > 20000 || json.optBoolean("gas_d", false)) {
+                    binding.rowGasDigital.value.setTextColor(Color.RED);
+                    binding.rowGasAnalog.value.setTextColor(Color.RED);
                     Toast.makeText(this, "GAS LEAK DETECTED!", Toast.LENGTH_SHORT).show();
                 } else {
-                    binding.rowGas.value.setTextColor(getResources().getColor(R.color.purple_500, getTheme()));
+                    binding.rowGasDigital.value.setTextColor(Color.GRAY);
+                    binding.rowGasAnalog.value.setTextColor(Color.GRAY);
                 }
                 
                 addHistoryRow(json);
@@ -397,9 +495,9 @@ public class KitchenMonitorActivity extends AppCompatActivity {
             TableRow row = new TableRow(this);
             String time = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
             String event = json.getBoolean("pir") ? "Motion" : "Periodic";
-            if (json.getInt("gas") > 1500) event = "GAS ALERT";
+            if (json.optInt("gas_a", 0) > 20000 || json.optBoolean("gas_d", false)) event = "GAS ALERT";
 
-            String[] cols = {time, event, String.valueOf(json.getInt("gas"))};
+            String[] cols = {time, event, String.valueOf(json.optInt("gas_a", 0))};
             for (String col : cols) {
                 TextView tv = new TextView(this);
                 tv.setText(col);
@@ -415,8 +513,7 @@ public class KitchenMonitorActivity extends AppCompatActivity {
         if (syncMode == 1) {
             executor.execute(() -> {
                 try {
-                    String ip = prefs.getString("local_node_ip", "192.168.0.107");
-                    // Assuming a simple endpoint for kitchen controls via IP
+                    String ip = prefs.getString("local_node_ip", AppDefaults.DEFAULT_NODE_IP);
                     URL url = new URL("http://" + ip + "/control?cmd=" + cmd);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.getResponseCode();
@@ -424,14 +521,13 @@ public class KitchenMonitorActivity extends AppCompatActivity {
                 } catch (Exception e) {}
             });
         } else if (syncMode == 2) {
-            if (firebaseRef != null) {
-                firebaseRef.child("command").setValue(cmd);
-            }
+            String commandNode = "FrmMobile/esp32cam/kitchen";
+            FirebaseDatabase.getInstance().getReference(commandNode).child("command").setValue(cmd);
         } else {
             executor.execute(() -> {
                 try {
                     if (mqttClient != null && mqttClient.isConnected()) {
-                        mqttClient.publish(baseTopic + "commands", new MqttMessage(cmd.getBytes()));
+                        mqttClient.publish(cmdTopic, new MqttMessage(cmd.getBytes()));
                     }
                 } catch (Exception e) {}
             });

@@ -47,6 +47,8 @@
     <string name="desc_toilet">Motion and Exhaust Fan Control</string>
     <string name="title_ro_pump">RO Waste Water Pump</string>
     <string name="desc_ro_pump">Manage RO Waste Water Recycling</string>
+    <string name="title_kitchen_exhaust">Kitchen Exhaust Fan</string>
+    <string name="desc_kitchen_exhaust">ESP-01 Exhaust Fan Control</string>
     <string name="label_pump_status">Pump Status</string>
     <string name="label_water_level">Water Level (Float)</string>
     <string name="label_manual_control">Manual Control</string>

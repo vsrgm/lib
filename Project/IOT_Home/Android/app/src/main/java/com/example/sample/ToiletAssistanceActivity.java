@@ -50,7 +50,8 @@ public class ToiletAssistanceActivity extends AppCompatActivity {
     private DatabaseReference firebaseRef;
     private ValueEventListener firebaseListener;
     private final ExecutorService executor = Executors.newFixedThreadPool(2);
-    private final String baseTopic = "smart_home/toilet/";
+    private final String statusTopic = "frmesp32/toilet/status";
+    private final String cmdTopic = "frmmobile/toilet/command";
     private SharedPreferences prefs;
     private int syncMode = 0; // 0: MQTT, 1: IP, 2: Firebase
     private final StringBuilder logBuilder = new StringBuilder();
@@ -107,18 +108,28 @@ public class ToiletAssistanceActivity extends AppCompatActivity {
             startIpSync();
         } else if (syncMode == 2) {
             initFirebase();
-        } else {
+        } else if (AppDefaults.ENABLE_MQTT) {
             initMqtt();
+            setupNetworkListener();
+        } else {
             setupNetworkListener();
         }
     }
 
     private void initFirebase() {
-        String url = prefs.getString("firebase_url", "https://gapsmarthome-default-rtdb.asia-southeast1.firebasedatabase.app/");
-        String node = prefs.getString("firebase_toilet_node", "smart_home/toilet");
+        String url = prefs.getString("firebase_url", AppDefaults.FIREBASE_URL);
+        String node = prefs.getString("firebase_toilet_node", AppDefaults.NODE_TOILET);
         
         addLog("Authenticating Firebase...");
-        FirebaseAuth.getInstance().signInWithEmailAndPassword("iot-device@gapsmarthome.com", "1q2w3e4r%T")
+        String email = prefs.getString("firebase_email", Credentials.FIREBASE_EMAIL);
+        String password = prefs.getString("firebase_password", Credentials.FIREBASE_PASSWORD);
+        
+        if (email.isEmpty() || password.isEmpty()) {
+            connectToFirebase(url, node);
+            return;
+        }
+
+        FirebaseAuth.getInstance().signInWithEmailAndPassword(email, password)
             .addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
                     addLog("Auth Success. Connecting to Database...");
@@ -194,7 +205,7 @@ public class ToiletAssistanceActivity extends AppCompatActivity {
         executor.execute(() -> {
             while (!isFinishing()) {
                 try {
-                    String ip = prefs.getString("local_node_ip", "192.168.0.107");
+                    String ip = prefs.getString("local_node_ip", AppDefaults.DEFAULT_NODE_IP);
                     URL url = new URL("http://" + ip + "/status");
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setConnectTimeout(2000);
@@ -215,7 +226,9 @@ public class ToiletAssistanceActivity extends AppCompatActivity {
     }
 
     private void initMqtt() {
-        closeMqtt();
+        if (!AppDefaults.ENABLE_MQTT) return;
+        executor.execute(this::closeMqtt);
+        
         String portsStr = prefs.getString("mqtt_ports", getString(R.string.default_mqtt_port));
         String[] portStrings = portsStr.split(",");
         mqttPorts = new int[portStrings.length];
@@ -281,13 +294,13 @@ public class ToiletAssistanceActivity extends AppCompatActivity {
                     }
                     @Override public void messageArrived(String topic, MqttMessage message) {
                         String payload = new String(message.getPayload());
-                        if (topic.equals(baseTopic + "status")) handleStatus(payload);
+                        if (topic.equals(statusTopic)) handleStatus(payload);
                     }
                     @Override public void deliveryComplete(IMqttDeliveryToken token) {}
                 });
 
                 mqttClient.connect(options);
-                mqttClient.subscribe(baseTopic + "status");
+                mqttClient.subscribe(statusTopic);
 
                 runOnUiThread(() -> {
                     binding.syncStatus.setText("Connected (Port " + port + ")");
@@ -305,12 +318,13 @@ public class ToiletAssistanceActivity extends AppCompatActivity {
     }
 
     private void closeMqtt() {
-        if (mqttClient != null) {
-            try {
-                if (mqttClient.isConnected()) mqttClient.disconnect();
-                mqttClient.close();
-            } catch (Exception ignored) {}
+        final MqttClient clientToClose = mqttClient;
+        if (clientToClose != null) {
             mqttClient = null;
+            try {
+                if (clientToClose.isConnected()) clientToClose.disconnect(500);
+                clientToClose.close();
+            } catch (Exception ignored) {}
         }
     }
 
@@ -366,7 +380,7 @@ public class ToiletAssistanceActivity extends AppCompatActivity {
         if (syncMode == 1) {
             executor.execute(() -> {
                 try {
-                    String ip = prefs.getString("local_node_ip", "192.168.0.107");
+                    String ip = prefs.getString("local_node_ip", AppDefaults.DEFAULT_NODE_IP);
                     URL url = new URL("http://" + ip + "/control?cmd=" + cmd);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.getResponseCode();
@@ -374,14 +388,13 @@ public class ToiletAssistanceActivity extends AppCompatActivity {
                 } catch (Exception e) {}
             });
         } else if (syncMode == 2) {
-            if (firebaseRef != null) {
-                firebaseRef.child("command").setValue(cmd);
-            }
-        } else {
+            String commandNode = "frmmobile/toilet";
+            FirebaseDatabase.getInstance().getReference(commandNode).child("command").setValue(cmd);
+        } else if (AppDefaults.ENABLE_MQTT) {
             executor.execute(() -> {
                 try {
                     if (mqttClient != null && mqttClient.isConnected()) {
-                        mqttClient.publish(baseTopic + "commands", new MqttMessage(cmd.getBytes()));
+                        mqttClient.publish(cmdTopic, new MqttMessage(cmd.getBytes()));
                     }
                 } catch (Exception e) {}
             });

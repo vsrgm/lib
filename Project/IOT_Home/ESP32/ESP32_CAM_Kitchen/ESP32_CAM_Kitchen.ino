@@ -49,6 +49,7 @@ WebServer server(80);
 
 // Firebase Data objects
 FirebaseData fbdo;
+FirebaseData fbdoPush;
 FirebaseAuth fbAuth;
 FirebaseConfig fbConfig;
 
@@ -61,17 +62,27 @@ const int mqttPorts[] = {1883, 8000, 8883, 8884};
 const int numMqttPorts = 4;
 
 String clientId = "ESP32_Kitchen_" + String((uint32_t)ESP.getEfuseMac(), HEX);
-String baseTopic = "smart_home/kitchen/";
-String statusTopic = baseTopic + "status";
-String cmdTopic = baseTopic + "commands";
-String imageTopic = baseTopic + "image";
+String statusTopic = "FrmEsp32/kitchen/status";
+String cmdTopic = "FrmMobile/esp32cam/kitchen/command";
+String imageTopic = "FrmEsp32/kitchen/image";
 
+const String SW_VERSION = "1.0.328";
+
+// State Variables
 bool lastPIR = false;
-bool lastLDR = false;
 bool lastPower = false;
+bool lastGasDigital = false;
 bool relayState = false;
 bool buzzerState = false;
-int gasValue = 0;
+bool manualOverride = false;
+int gasAnalog = 0;
+int ldrAnalog = 0;
+float lm358Temp = 0.0;
+float bmpTemp = 0.0;
+float bmpPres = 0.0;
+
+int configWidth = 640;
+int configHeight = 480;
 
 unsigned long lastStatusMillis = 0;
 const long statusInterval = 30000;
@@ -80,23 +91,12 @@ void reconnectMqtt() {
   static unsigned long lastReconnectAttempt = 0;
   if (millis() - lastReconnectAttempt > 5000) {
     lastReconnectAttempt = millis();
-
     mqttPort = mqttPorts[currentMqttPortIndex];
     currentMqttPortIndex = (currentMqttPortIndex + 1) % numMqttPorts;
-
-    Serial.print("Attempting MQTT connection on port ");
-    Serial.print(mqttPort);
-    Serial.print("... ");
-
     mqttClient.setServer(mqttBroker.c_str(), mqttPort);
-
     if (mqttClient.connect(clientId.c_str())) {
-      Serial.println("connected");
       mqttClient.subscribe(cmdTopic.c_str());
       publishStatus();
-    } else {
-      Serial.print("failed, rc=");
-      Serial.println(mqttClient.state());
     }
   }
 }
@@ -123,7 +123,6 @@ void setupCamera() {
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
-
   if(psramFound()){
     config.frame_size = FRAMESIZE_UXGA;
     config.jpeg_quality = 10;
@@ -140,7 +139,8 @@ void logToSD(String event) {
   File file = SD_MMC.open("/log.csv", FILE_APPEND);
   if(!file) return;
   time_t now = time(nullptr);
-  file.printf("%ld,%s,%d,%d,%d,%d,%d\n", now, event.c_str(), lastPIR, lastLDR, relayState, gasValue, buzzerState);
+  file.printf("%ld,%s,PIR:%d,PWR:%d,REL:%d,GAS_D:%d,GAS_A:%d,LM358:%.1f,BMP_T:%.1f,LDR:%d,MAN:%d\n",
+              now, event.c_str(), lastPIR, lastPower, relayState, lastGasDigital, gasAnalog, lm358Temp, bmpTemp, ldrAnalog, manualOverride);
   file.close();
 }
 
@@ -166,39 +166,63 @@ void publishImage() {
 }
 
 void publishStatus() {
-  StaticJsonDocument<512> doc;
+  StaticJsonDocument<1024> doc;
   doc["pir"] = lastPIR;
-  doc["ldr"] = lastLDR;
+  doc["ldr"] = ldrAnalog;
   doc["pwr"] = lastPower;
   doc["relay"] = relayState;
   doc["buzzer"] = buzzerState;
-  doc["gas"] = gasValue;
-  doc["temp"] = bmp.readTemperature();
-  doc["pres"] = bmp.readPressure() / 100.0F;
+  doc["gas_d"] = lastGasDigital;
+  doc["gas_a"] = gasAnalog;
+  doc["temp_lm358"] = lm358Temp;
+  doc["temp_bmp"] = bmpTemp;
+  doc["pres"] = bmpPres;
+  doc["manual_override"] = manualOverride;
+  doc["v_w"] = configWidth;
+  doc["v_h"] = configHeight;
+  doc["ver"] = SW_VERSION;
+  doc["ip"] = WiFi.localIP().toString();
+  doc["id"] = clientId;
 
-  char buffer[512];
+  time_t now = time(nullptr);
+  struct tm timeinfo;
+  localtime_r(&now, &timeinfo);
+  char timeStr[25];
+  strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", &timeinfo);
+  doc["ts"] = timeStr;
+
+  char buffer[1024];
   serializeJson(doc, buffer);
+  if (mqttClient.connected()) mqttClient.publish(statusTopic.c_str(), buffer);
 
-  if (mqttClient.connected()) {
-    mqttClient.publish(statusTopic.c_str(), buffer);
-  }
-
-  // Parallel Push to Firebase
   if (Firebase.ready()) {
-    Firebase.RTDB.setString(&fbdo, FIREBASE_NODE "/status", buffer);
+    if (Firebase.RTDB.setString(&fbdoPush, "FrmEsp32/kitchen/status", buffer)) {
+      Serial.println("Firebase status updated");
+    } else {
+      Serial.print("Firebase update failed: ");
+      Serial.println(fbdoPush.errorReason());
+    }
+  } else {
+    Serial.println("Firebase not ready");
   }
 }
 
 void handleStatusReq() {
-  StaticJsonDocument<512> doc;
+  StaticJsonDocument<1024> doc;
   doc["pir"] = lastPIR;
-  doc["ldr"] = lastLDR;
+  doc["ldr"] = ldrAnalog;
   doc["pwr"] = lastPower;
   doc["relay"] = relayState;
   doc["buzzer"] = buzzerState;
-  doc["gas"] = gasValue;
-  doc["temp"] = bmp.readTemperature();
-  doc["pres"] = bmp.readPressure() / 100.0F;
+  doc["gas_d"] = lastGasDigital;
+  doc["gas_a"] = gasAnalog;
+  doc["temp_lm358"] = lm358Temp;
+  doc["temp_bmp"] = bmpTemp;
+  doc["pres"] = bmpPres;
+  doc["manual_override"] = manualOverride;
+  doc["ver"] = SW_VERSION;
+  doc["ip"] = WiFi.localIP().toString();
+  doc["id"] = clientId;
   String json;
   serializeJson(doc, json);
   server.send(200, "application/json", json);
@@ -206,147 +230,179 @@ void handleStatusReq() {
 
 void handleStream() {
   WiFiClient client = server.client();
-  String response = "HTTP/1.1 200 OK\r\n";
-  response += "Content-Type: " + String(_STREAM_CONTENT_TYPE) + "\r\n";
-  response += "\r\n";
+  String response = "HTTP/1.1 200 OK\r\nContent-Type: " + String(_STREAM_CONTENT_TYPE) + "\r\n\r\n";
   server.sendContent(response);
-
   while (true) {
     if (!client.connected()) break;
     camera_fb_t * fb = esp_camera_fb_get();
     if (!fb) continue;
-
-    size_t hlen = snprintf(NULL, 0, _STREAM_PART, fb->len);
-    char * hbuf = (char *)malloc(hlen + 1);
-    snprintf(hbuf, hlen + 1, _STREAM_PART, fb->len);
-
     server.sendContent(_STREAM_BOUNDARY);
-    server.sendContent(hbuf, hlen);
+    String header = "Content-Type: image/jpeg\r\nContent-Length: " + String(fb->len) + "\r\n\r\n";
+    server.sendContent(header);
     server.sendContent((char *)fb->buf, fb->len);
-
-    free(hbuf);
     esp_camera_fb_return(fb);
     delay(1);
   }
 }
 
+void setRelay(bool on) { relayState = on; pcf.write(2, on ? HIGH : LOW); }
+void setBuzzer(bool on) { buzzerState = on; pcf.write(3, on ? HIGH : LOW); }
+
+void applyResolution() {
+  sensor_t * s = esp_camera_sensor_get();
+  if (!s) return;
+
+  framesize_t fs = FRAMESIZE_VGA; // Default
+  if (configWidth <= 160) fs = FRAMESIZE_QQVGA;
+  else if (configWidth <= 320) fs = FRAMESIZE_QVGA;
+  else if (configWidth <= 640) fs = FRAMESIZE_VGA;
+  else if (configWidth <= 800) fs = FRAMESIZE_SVGA;
+  else if (configWidth <= 1024) fs = FRAMESIZE_XGA;
+  else if (configWidth <= 1280) fs = FRAMESIZE_SXGA;
+  else fs = FRAMESIZE_UXGA;
+
+  s->set_framesize(s, fs);
+  Serial.printf("Resolution updated to %d x %d (FS:%d)\n", configWidth, configHeight, fs);
+}
+
 void handleCommand(char* topic, byte* payload, unsigned int length) {
   String msg = "";
   for (int i = 0; i < length; i++) msg += (char)payload[i];
-  if (msg == "RELAY_ON") { pcf.write(3, HIGH); relayState = true; }
-  else if (msg == "RELAY_OFF") { pcf.write(3, LOW); relayState = false; }
-  else if (msg == "BUZZER_ON") { pcf.write(4, HIGH); buzzerState = true; }
-  else if (msg == "BUZZER_OFF") { pcf.write(4, LOW); buzzerState = false; }
+  if (msg == "RELAY_ON") setRelay(true);
+  else if (msg == "RELAY_OFF") setRelay(false);
+  else if (msg == "BUZZER_ON") setBuzzer(true);
+  else if (msg == "BUZZER_OFF") setBuzzer(false);
+  else if (msg == "OVERRIDE_ON") manualOverride = true;
+  else if (msg == "OVERRIDE_OFF") manualOverride = false;
+  else if (msg == "CAPTURE") { captureImage(); publishImage(); }
+  else if (msg.startsWith("RES:")) {
+      int comma = msg.indexOf(',');
+      if (comma != -1) {
+          configWidth = msg.substring(4, comma).toInt();
+          configHeight = msg.substring(comma + 1).toInt();
+          applyResolution();
+      }
+  }
   publishStatus();
 }
 
 void handleFirebaseStream(FirebaseStream data) {
   if (data.dataPath() == "/command") {
-    String msg = data.stringData();
-    Serial.println("Firebase Command Received: " + msg);
-
-    // Convert String to byte* for handleCommand
-    handleCommand((char*)cmdTopic.c_str(), (byte*)msg.c_str(), msg.length());
+    handleCommand((char*)cmdTopic.c_str(), (byte*)data.stringData().c_str(), data.stringData().length());
   }
 }
 
 void setupFirebase() {
-  fbConfig.host = FIREBASE_HOST;
+  String host = FIREBASE_HOST;
+  if (!host.startsWith("http")) host = "https://" + host;
+  fbConfig.database_url = host;
   fbConfig.api_key = FIREBASE_API_KEY;
   fbAuth.user.email = FIREBASE_USER_EMAIL;
   fbAuth.user.password = FIREBASE_USER_PASSWORD;
-
   Firebase.begin(&fbConfig, &fbAuth);
   Firebase.reconnectWiFi(true);
 
-  if (!Firebase.RTDB.beginStream(&fbdo, FIREBASE_NODE)) {
+  if (!Firebase.RTDB.beginStream(&fbdo, "FrmMobile/esp32cam/kitchen")) {
     Serial.printf("Firebase Stream begin error, %s\n\n", fbdo.errorReason().c_str());
   }
-  Firebase.RTDB.setStreamCallback(&fbdo, handleFirebaseStream, [](bool timeout) {
+  Firebase.RTDB.setStreamCallback(&fbdo, handleFirebaseStream, [](bool timeout){
     if (timeout) Serial.println("Firebase Stream timeout, resuming...");
   });
 }
 
 void setup() {
-  Serial.begin(115200);
+  // Fix for corrupted Serial: Move Serial pins to avoid conflict with I2C on GPIO 1/3
+  Serial.begin(115200, SERIAL_8N1, 13, 12);
   Wire.begin(I2C_SDA, I2C_SCL);
   pcf.begin();
-  for(int i=0; i<3; i++) pcf.pinMode(i, INPUT);
-  pcf.pinMode(3, OUTPUT);
-  pcf.pinMode(4, OUTPUT);
+  // Initialize inputs high for quasi-bidirectional reading
+  pcf.write(0, HIGH); // PIR
+  pcf.write(1, HIGH); // PWR
+  pcf.write(4, HIGH); // GAS DIGITAL
+  // Relay and Buzzer pins (2, 3) will be written by setRelay/setBuzzer
 
   bmp.begin(0x76);
   ads.begin();
   setupCamera();
   SD_MMC.begin();
-
   WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) delay(500);
-  configTime(0, 0, "pool.ntp.org");
+  Serial.print("Connecting to WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nWiFi connected");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
 
+  configTime(5.5 * 3600, 0, "pool.ntp.org");
   mqttClient.setServer(mqttBroker.c_str(), mqttPort);
   mqttClient.setCallback(handleCommand);
 
   setupFirebase();
+  Serial.println("Firebase setup initiated");
 
+  server.on("/", []() {
+    String html = "<html><head><title>ESP32-CAM Kitchen</title>";
+    html += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
+    html += "<style>body{font-family:Arial;text-align:center;padding:20px;} a{display:inline-block;margin:10px;padding:10px 20px;background:#007bff;color:white;text-decoration:none;border-radius:5px;}</style></head>";
+    html += "<body><h1>ESP32-CAM Kitchen</h1>";
+    html += "<p>Software Version: " + SW_VERSION + "</p>";
+    html += "<p>Device ID: " + clientId + "</p>";
+    html += "<hr>";
+    html += "<a href='/status'>Device Status</a>";
+    html += "<a href='/stream'>Live Stream</a>";
+    html += "</body></html>";
+    server.send(200, "text/html", html);
+  });
   server.on("/stream", handleStream);
   server.on("/status", handleStatusReq);
   server.on("/control", []() {
-    String cmd = server.arg("cmd");
-    if (cmd == "RELAY_ON") { pcf.write(3, HIGH); relayState = true; }
-    else if (cmd == "RELAY_OFF") { pcf.write(3, LOW); relayState = false; }
-    else if (cmd == "BUZZER_ON") { pcf.write(4, HIGH); buzzerState = true; }
-    else if (cmd == "BUZZER_OFF") { pcf.write(4, LOW); buzzerState = false; }
+    handleCommand((char*)"", (byte*)server.arg("cmd").c_str(), server.arg("cmd").length());
     server.send(200, "text/plain", "OK");
-    publishStatus();
-  });
-  server.on("/config", HTTP_POST, []() {
-    if (server.hasArg("plain")) {
-      StaticJsonDocument<256> doc;
-      deserializeJson(doc, server.arg("plain"));
-      if (doc.containsKey("mqtt_broker")) mqttBroker = doc["mqtt_broker"].as<String>();
-      if (doc.containsKey("mqtt_port")) mqttPort = doc["mqtt_port"].as<int>();
-      mqttClient.setServer(mqttBroker.c_str(), mqttPort);
-      server.send(200, "text/plain", "Config Updated");
-    }
   });
   server.begin();
 }
 
 void loop() {
   server.handleClient();
-  if (WiFi.status() == WL_CONNECTED) {
-    if (!mqttClient.connected()) {
-      reconnectMqtt();
-    }
-  }
+  if (WiFi.status() == WL_CONNECTED && !mqttClient.connected()) reconnectMqtt();
   mqttClient.loop();
 
   bool currentPIR = pcf.read(0);
-  bool currentLDR = pcf.read(1);
-  bool currentPower = pcf.read(2);
-  gasValue = ads.readADC_SingleEnded(0);
+  bool currentPower = pcf.read(1);
+  bool currentGasDigital = pcf.read(4);
 
-  bool changed = false;
-  if (currentPIR != lastPIR) { lastPIR = currentPIR; changed = true; if(lastPIR) captureImage(); }
-  if (currentLDR != lastLDR) { lastLDR = currentLDR; changed = true; }
-  if (currentPower != lastPower) { lastPower = currentPower; changed = true; }
+  ldrAnalog = ads.readADC_SingleEnded(0);
+  lm358Temp = ads.readADC_SingleEnded(1) * 0.125; // Simple calibration for LM358
+  gasAnalog = ads.readADC_SingleEnded(2);
+  bmpTemp = bmp.readTemperature();
+  bmpPres = bmp.readPressure() / 100.0F;
 
-  if (lastPIR && lastLDR) {
-    pcf.write(3, HIGH); relayState = true;
-  } else if (!lastPIR || !lastLDR) {
-    pcf.write(3, LOW); relayState = false;
-  }
+  bool changed = (currentPIR != lastPIR || currentPower != lastPower || currentGasDigital != lastGasDigital);
+  if (currentPIR && !lastPIR) { captureImage(); logToSD("Motion Detected"); }
 
-  if (gasValue > 1500) {
-    pcf.write(4, HIGH); buzzerState = true;
-  } else {
-    pcf.write(4, LOW); buzzerState = false;
+  lastPIR = currentPIR;
+  lastPower = currentPower;
+  lastGasDigital = currentGasDigital;
+
+  if (!manualOverride) {
+    // Logic: Low light (LDR high value) and PIR Motion -> Kitchen lamp ON
+    if (lastPIR && ldrAnalog > 15000) { if(!relayState) { setRelay(true); logToSD("Auto Lamp ON"); changed = true; } }
+    else if (ldrAnalog < 10000) { if(relayState) { setRelay(false); logToSD("Auto Lamp OFF"); changed = true; } }
+
+    // Gas leak logic
+    if (lastGasDigital || gasAnalog > 20000) { if(!buzzerState) { setBuzzer(true); logToSD("Gas Alarm ON"); changed = true; } }
+    else { if(buzzerState) { setBuzzer(false); logToSD("Gas Alarm OFF"); changed = true; } }
   }
 
   if (changed || millis() - lastStatusMillis > statusInterval) {
     publishStatus();
-    if (changed) publishImage();
+    // Requirements: Capture image at every system state change for MQTT/Firebase update
+    if (changed) {
+        captureImage();
+        publishImage();
+    }
     lastStatusMillis = millis();
   }
   delay(10);

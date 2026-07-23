@@ -1,0 +1,43 @@
+{
+  "path": "Offline/Audrino_7seg",
+  "foldername": "Audrino_7seg",
+  "name": "Audrino_7seg",
+  "title": "Audrino_7seg",
+  "uuid": "22ef85011b85d6608191f6d43ced9883",
+  "created_at": "2026-09-07 13:56:42",
+  "updated_at": "2026-09-07 13:56:42",
+  "documents": [
+    {
+      "uuid": "3cb90597cb49d9300c072bd8913ac72d",
+      "title": "Sheet_2",
+      "description": "",
+      "docType": "1",
+      "master": "",
+      "thumb": "/images/thumb-default.png",
+      "updateTime": 1788748913,
+      "createTime": 1788748913,
+      "histories": [],
+      "created_at": "2026-09-07 08:11:53",
+      "updated_at": "2026-09-07 08:11:53"
+    },
+    {
+      "uuid": "d38a3cb035c6161bb8ebf525cc96e754",
+      "title": "PCB_PCB_2020-07-16_15-07-16_2026-09-07",
+      "filename": "PCB_PCB_2020-07-16_15-07-16_2026-09-07.json",
+      "description": "",
+      "docType": "3",
+      "master": "",
+      "thumb": "/images/thumb-default.png",
+      "updateTime": 1788748910,
+      "createTime": 1788748910,
+      "histories": [],
+      "created_at": "2026-09-07 08:11:50",
+      "updated_at": "2026-09-07 08:11:50"
+    }
+  ],
+  "content": "",
+  "stick": "",
+  "sort": [],
+  "schfilename": "SCH_Audrino_7Seg_2026-09-07.json",
+  "schfilemtime": 1788748913967.09
+}

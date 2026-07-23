@@ -1,0 +1,43 @@
+{
+  "path": "Offline/AcFanControl",
+  "foldername": "AcFanControl",
+  "name": "AcFanControl",
+  "title": "AcFanControl",
+  "uuid": "0477e3388409ffd7c97a5ef466833074",
+  "created_at": "2026-09-07 13:56:42",
+  "updated_at": "2026-09-07 13:56:42",
+  "documents": [
+    {
+      "uuid": "34e0d54bb5cb69335fc4bbf81cb51492",
+      "title": "Sheet_1",
+      "description": "",
+      "docType": "1",
+      "master": "",
+      "thumb": "/images/thumb-default.png",
+      "updateTime": 1788748860,
+      "createTime": 1788748860,
+      "histories": [],
+      "created_at": "2026-09-07 08:11:00",
+      "updated_at": "2026-09-07 08:11:00"
+    },
+    {
+      "uuid": "0d0ad8e68c0962eb44b411d409bf8e33",
+      "title": "PCB_PCB_2020-08-03_20-42-38_2026-09-07",
+      "filename": "PCB_PCB_2020-08-03_20-42-38_2026-09-07.json",
+      "description": "",
+      "docType": "3",
+      "master": "",
+      "thumb": "/images/thumb-default.png",
+      "updateTime": 1788748874,
+      "createTime": 1788748874,
+      "histories": [],
+      "created_at": "2026-09-07 08:11:14",
+      "updated_at": "2026-09-07 08:11:14"
+    }
+  ],
+  "content": "",
+  "stick": "",
+  "sort": [],
+  "schfilename": "SCH_AcFanControl_2026-09-07.json",
+  "schfilemtime": 1788748860965.4353
+}

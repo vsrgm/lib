@@ -44,5 +44,13 @@ public class SmartHomeActivity extends AppCompatActivity {
         binding.cardRoPump.setOnClickListener(v -> {
             startActivity(new Intent(this, RoWasteWaterActivity.class));
         });
+
+        binding.cardKitchenExhaust.setOnClickListener(v -> {
+            startActivity(new Intent(this, KitchenExhaustFanActivity.class));
+        });
+
+        binding.cardPiKitchen.setOnClickListener(v -> {
+            startActivity(new Intent(this, PiKitchenMonitorActivity.class));
+        });
     }
 }

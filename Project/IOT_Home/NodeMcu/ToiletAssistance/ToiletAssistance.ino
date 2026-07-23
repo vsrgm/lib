@@ -11,6 +11,9 @@
 #include <Firebase_ESP_Client.h>
 #include "credentials.h"
 
+// Compile-time option to enable/disable MQTT
+//#define ENABLE_MQTT
+
 // Pin Definitions
 #define LDR_PIN A0
 #define FAN_PIN D0
@@ -43,11 +46,10 @@ const int mqttPorts[] = {1883, 8000, 8883, 8884};
 const int numMqttPorts = 4;
 
 String mqttClientId = "ToiletAssistance_" + String(ESP.getChipId(), HEX);
-String baseTopic = "smart_home/toilet/";
-String statusTopic = baseTopic + "status";
-String cmdTopic = baseTopic + "commands";
+String statusTopic = "frmesp32/toilet/status";
+String cmdTopic = "frmmobile/toilet/command";
 
-const String SW_VERSION = "1.0.1";
+const String SW_VERSION = "1.0.328";
 
 // System State
 float temperature = 0.0;
@@ -82,7 +84,7 @@ void setupFirebase() {
     Firebase.begin(&fbConfig, &fbAuth);
     Firebase.reconnectWiFi(true);
 
-    if (!Firebase.RTDB.beginStream(&fbdo, FIREBASE_NODE)) {
+    if (!Firebase.RTDB.beginStream(&fbdo, "frmmobile/toilet")) {
         Serial.printf("Firebase Stream begin error, %s\n\n", fbdo.errorReason().c_str());
     }
     Firebase.RTDB.setStreamCallback(&fbdo, handleFirebaseStream, [](bool timeout) {
@@ -110,8 +112,10 @@ void setup() {
     setupWiFi();
     setupTime();
 
+#ifdef ENABLE_MQTT
     mqttClient.setServer(mqttBroker.c_str(), mqttPort);
     mqttClient.setCallback(mqttCallback);
+#endif
 
     setupFirebase();
 
@@ -228,13 +232,15 @@ void publishStatus() {
     char buffer[512];
     serializeJson(doc, buffer);
 
+#ifdef ENABLE_MQTT
     if (mqttClient.connected()) {
         mqttClient.publish(statusTopic.c_str(), buffer);
     }
+#endif
 
     // Parallel Push to Firebase
     if (Firebase.ready()) {
-        Firebase.RTDB.setString(&fbdo, FIREBASE_NODE "/status", buffer);
+        Firebase.RTDB.setString(&fbdo, "frmesp32/toilet/status", buffer);
     }
 }
 
@@ -254,17 +260,21 @@ void logData(String reason) {
     // Parallel Push to Firebase History
     if (Firebase.ready()) {
         String entry = String(timestamp) + "," + reason;
-        Firebase.RTDB.pushString(&fbdo, FIREBASE_NODE "/history", entry);
+        Firebase.RTDB.pushString(&fbdo, "frmesp32/toilet/history", entry);
     }
 }
 
 void loop() {
     server.handleClient();
+#ifdef ENABLE_MQTT
     mqttClient.loop();
+#endif
     ArduinoOTA.handle();
 
     if (WiFi.status() == WL_CONNECTED) {
+#ifdef ENABLE_MQTT
         if (!mqttClient.connected()) reconnectMqtt();
+#endif
     }
 
     static unsigned long lastMeasure = 0;
@@ -351,6 +361,7 @@ void checkAutomation() {
     }
 }
 
+#ifdef ENABLE_MQTT
 void reconnectMqtt() {
     static unsigned long lastReconnectAttempt = 0;
     if (millis() - lastReconnectAttempt > 5000) {
@@ -376,3 +387,4 @@ void reconnectMqtt() {
         }
     }
 }
+#endif

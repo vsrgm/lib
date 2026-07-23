@@ -1,0 +1,288 @@
+{
+  "uuid": "9e53ab33fdd7cc3b814511be3a2a1460",
+  "path": "Offline/RoWasteWaterPump",
+  "name": "RoWasteWaterPump",
+  "content": "",
+  "created_at": "2026-07-25 08:14:46",
+  "updated_at": "2026-07-25 09:14:37",
+  "stick": "",
+  "documents": [
+    {
+      "uuid": "d504947951283f198761d11fa6137fd2",
+      "title": "Sheet_1",
+      "description": "",
+      "docType": "1",
+      "master": "",
+      "thumb": "/images/thumb-default.png",
+      "components": {
+        "6b183ead02164764b4179944bf03b053": 2,
+        "404aa9221ff94de597b8734806e7c74f": 6,
+        "a68dc5e6a9944c46b7604648a43dcd65": 1
+      },
+      "BOM": [
+        [
+          "Value",
+          "Quantity",
+          "Package",
+          "Components",
+          "CustomPara"
+        ],
+        [
+          "P",
+          1,
+          "HDR-M-2.54_1X1",
+          "J1",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "N",
+          1,
+          "HDR-M-2.54_1X1",
+          "J2",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "NodeMcuL",
+          1,
+          "HDR-M-2.54_1X15",
+          "J3",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C124373"
+          }
+        ],
+        [
+          "NodeMcuR",
+          1,
+          "HDR-M-2.54_1X15",
+          "J4",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C124373"
+          }
+        ],
+        [
+          "+",
+          1,
+          "HDR-M-2.54_1X1",
+          "J5",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "-",
+          1,
+          "HDR-M-2.54_1X1",
+          "J6",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "AC_P",
+          1,
+          "HDR-M-2.54_1X1",
+          "J7",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "ACN",
+          1,
+          "HDR-M-2.54_1X1",
+          "J8",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "HDR-M-2.54_1x3",
+          1,
+          "HDR-M-2.54_1X3",
+          "J9",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ]
+      ],
+      "updateTime": 1784949432,
+      "createTime": 1784947487,
+      "histories": [],
+      "created_at": "2026-07-25 08:14:47",
+      "updated_at": "2026-07-25 08:47:12"
+    },
+    {
+      "uuid": "ba3ec839ea7ad7b2815a377c496cffa3",
+      "puuid": "9e53ab33fdd7cc3b814511be3a2a1460",
+      "title": "PCB_RoWasteWaterPump",
+      "filename": "PCB_RoWasteWaterPump.json",
+      "description": "",
+      "docType": "3",
+      "master": "",
+      "thumb": "/images/thumb-default.png",
+      "components": {
+        "19c77e72422b43b59c26b9fa67af5de4": 6,
+        "5c151642f5ca4b219fdefa11da9edb9f": 2,
+        "9f77654394344f25b3de138e0fe05ff6": 1
+      },
+      "BOM": [
+        [
+          "Value",
+          "Quantity",
+          "Package",
+          "Components",
+          "CustomPara"
+        ],
+        [
+          "P",
+          1,
+          "HDR-M-2.54_1X1",
+          "J1",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "N",
+          1,
+          "HDR-M-2.54_1X1",
+          "J2",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "+",
+          1,
+          "HDR-M-2.54_1X1",
+          "J5",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "-",
+          1,
+          "HDR-M-2.54_1X1",
+          "J6",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "AC_P",
+          1,
+          "HDR-M-2.54_1X1",
+          "J7",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "ACN",
+          1,
+          "HDR-M-2.54_1X1",
+          "J8",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "NodeMcuL",
+          1,
+          "HDR-M-2.54_1X15",
+          "J3",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C124373"
+          }
+        ],
+        [
+          "NodeMcuR",
+          1,
+          "HDR-M-2.54_1X15",
+          "J4",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C124373"
+          }
+        ],
+        [
+          "HDR-M-2.54_1x3",
+          1,
+          "HDR-M-2.54_1X3",
+          "J9",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ]
+      ],
+      "updateTime": 1784951077,
+      "createTime": 1784949925,
+      "histories": [],
+      "created_at": "2026-07-25 08:55:25",
+      "updated_at": "2026-07-25 09:14:37"
+    }
+  ],
+  "sort": [],
+  "title": "RoWasteWaterPump",
+  "foldername": "RoWasteWaterPump",
+  "schfilename": "RoWasteWaterPump.json",
+  "schfilemtime": 1784949432646
+}

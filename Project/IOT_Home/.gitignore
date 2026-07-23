@@ -15,6 +15,7 @@
 **/.cxx/
 **/.externalNativeBuild/
 Android/app/google-services.json
+Android/app/src/main/java/com/example/sample/Credentials.java
 
 # Python / Pi
 **/__pycache__/
@@ -25,6 +26,7 @@ Android/app/google-services.json
 **/.venv/
 **/venv/
 **/env/
+pi/pikitchenMonitor/credentials.h
 
 # NodeMcu / Arduino
 **/*.hex
@@ -37,15 +39,18 @@ Android/app/google-services.json
 NodeMcu/Rccar/credentials.h
 NodeMcu/StudyRoomMonitor/credentials.h
 NodeMcu/ToiletAssistance/credentials.h
-
+NodeMcu/RO_Waste_WaterPump/credentials.h
+NodeMcu/Kitchen_Exhaust_Fan/credentials.h
 #ESP32
 ESP32/ESP32_CAM_Kitchen/credentials.h
 ESP32/ESP32_CAM_MainDoor/credentials.h
 ESP8266/RO_Waste_WaterPump/Source/credentials.h
-
+ESP8266/Kitchen_Exhaust_Fan/Minimal_OTA/credentials.h
+ESP8266/Kitchen_Exhaust_Fan/credentials.h
 # General
 .DS_Store
 Thumbs.db
 *.bak
 *.swp
 *~
+Schematics/offline_projects_backup

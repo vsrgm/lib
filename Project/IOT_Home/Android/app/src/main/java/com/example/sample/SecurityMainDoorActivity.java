@@ -38,7 +38,9 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -55,9 +57,15 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
     private DatabaseReference firebaseRef;
     private ValueEventListener firebaseListener;
     private final ExecutorService executor = Executors.newFixedThreadPool(2);
-    private final String baseTopic = "smart_home/main_door/";
+    private final String statusTopic = "FrmEsp32/Securitymaindoor/status";
+    private final String cmdTopic = "FrmMobile/esp32cam/Securitymaindoor/command";
+    private final String imageTopic = "FrmEsp32/Securitymaindoor/image";
     private SharedPreferences prefs;
     private int syncMode = 0; // 0: MQTT, 1: IP, 2: Firebase
+    private final List<String> discoveredNodes = new ArrayList<>();
+    private android.widget.ArrayAdapter<String> nodeAdapter;
+    private String selectedNodeId = "";
+    private String selectedNodeIp = "";
     private final StringBuilder logBuilder = new StringBuilder();
     private int[] mqttPorts = {};
     private int currentPortIndex = 0;
@@ -85,6 +93,36 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
             startActivity(new android.content.Intent(this, ImageViewerActivity.class));
         });
 
+        // Connected Nodes Setup
+        nodeAdapter = new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_item, discoveredNodes);
+        nodeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        binding.nodeSelector.setAdapter(nodeAdapter);
+        binding.nodeSelector.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(android.widget.AdapterView<?> parent, android.view.View view, int position, long id) {
+                String selected = discoveredNodes.get(position);
+                if (selected.contains("(") && selected.endsWith(")")) {
+                    selectedNodeId = selected.substring(0, selected.indexOf(" (")).trim();
+                    selectedNodeIp = selected.substring(selected.lastIndexOf("(") + 1, selected.length() - 1);
+                }
+            }
+            @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+        });
+
+        // Quick Controls
+        binding.btnQuickRelay.setOnClickListener(v -> {
+            boolean currentState = binding.rowRelay.sensorSwitch.isChecked();
+            sendCommand(currentState ? "RELAY_OFF" : "RELAY_ON");
+        });
+        binding.btnQuickBuzzer.setOnClickListener(v -> {
+            boolean currentState = binding.rowBuzzer.sensorSwitch.isChecked();
+            sendCommand(currentState ? "BUZZER_OFF" : "BUZZER_ON");
+        });
+        binding.btnQuickFlash.setOnClickListener(v -> {
+            boolean currentState = binding.rowFlash.sensorSwitch.isChecked();
+            sendCommand(currentState ? "FLASH_OFF" : "FLASH_ON");
+        });
+
         // Initialize labels and switches
         binding.rowPir.label.setText("PIR Motion");
         binding.rowDoor.label.setText("Door Sensor");
@@ -105,6 +143,13 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
             sendCommand(isChecked ? "BUZZER_ON" : "BUZZER_OFF");
         });
 
+        binding.rowFlash.label.setText("Built-in Flash");
+        binding.rowFlash.sensorSwitch.setVisibility(View.VISIBLE);
+        binding.rowFlash.sensorSwitch.setOnClickListener(v -> {
+            boolean isChecked = binding.rowFlash.sensorSwitch.isChecked();
+            sendCommand(isChecked ? "FLASH_ON" : "FLASH_OFF");
+        });
+
         binding.rowTemp.label.setText("Temperature");
         binding.rowPres.label.setText("Pressure");
 
@@ -121,11 +166,19 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
     }
 
     private void initFirebase() {
-        String url = prefs.getString("firebase_url", "https://gapsmarthome-default-rtdb.asia-southeast1.firebasedatabase.app/");
-        String node = prefs.getString("firebase_door_node", "smart_home/main_door");
+        String url = prefs.getString("firebase_url", AppDefaults.FIREBASE_URL);
+        String node = prefs.getString("firebase_door_node", AppDefaults.NODE_DOOR);
         
         addLog("Authenticating Firebase...");
-        FirebaseAuth.getInstance().signInWithEmailAndPassword("iot-device@gapsmarthome.com", "1q2w3e4r%T")
+        String email = prefs.getString("firebase_email", Credentials.FIREBASE_EMAIL);
+        String password = prefs.getString("firebase_password", Credentials.FIREBASE_PASSWORD);
+        
+        if (email.isEmpty() || password.isEmpty()) {
+            connectToFirebase(url, node);
+            return;
+        }
+
+        FirebaseAuth.getInstance().signInWithEmailAndPassword(email, password)
             .addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
                     addLog("Auth Success. Connecting to Database...");
@@ -148,6 +201,15 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
                         Object value = dataSnapshot.child("status").getValue();
                         if (value != null) {
                             handleStatus(value.toString());
+                            
+                            // Dynamically extract ESP32 Cam IP from Firebase status
+                            try {
+                                JSONObject json = new JSONObject(value.toString());
+                                if (json.has("ip")) {
+                                    String espIp = json.getString("ip");
+                                    checkLocalConnectivityAndSetupStream(espIp);
+                                }
+                            } catch (Exception ignored) {}
                         }
                     }
                 }
@@ -166,6 +228,36 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
         } catch (Exception e) {
             addLog("Firebase Init Failed: " + e.getMessage());
         }
+    }
+
+    private void checkLocalConnectivityAndSetupStream(String ipAddress) {
+        executor.execute(() -> {
+            boolean isLocalAvailable = false;
+            try {
+                URL url = new URL("http://" + ipAddress + "/status");
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setConnectTimeout(1500);
+                conn.setReadTimeout(1500);
+                int code = conn.getResponseCode();
+                if (code == 200) {
+                    isLocalAvailable = true;
+                }
+                conn.disconnect();
+            } catch (Exception e) {
+                isLocalAvailable = false;
+            }
+
+            final boolean useLocal = isLocalAvailable;
+            runOnUiThread(() -> {
+                if (useLocal) {
+                    addLog("Local connectivity verified. Starting local stream...");
+                    binding.videoStream.loadUrl("http://" + ipAddress + "/stream");
+                } else {
+                    addLog("Local connectivity unavailable. Showing Firebase placeholder stream.");
+                    binding.videoStream.loadData("<html><body style='background:black;color:white;display:flex;justify-content:center;align-items:center;'>Streaming over cloud via Firebase node status active.</body></html>", "text/html", "UTF-8");
+                }
+            });
+        });
     }
 
     private void setupNetworkListener() {
@@ -205,7 +297,7 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
         binding.videoStream.setWebViewClient(new WebViewClient());
         
         if (syncMode == 1) {
-            String ip = prefs.getString("local_node_ip", "192.168.0.107");
+            String ip = prefs.getString("local_node_ip", AppDefaults.DEFAULT_NODE_IP);
             binding.videoStream.loadUrl("http://" + ip + "/stream");
         } else {
             // MJPEG over MQTT not directly supported in WebView. 
@@ -218,7 +310,7 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
         executor.execute(() -> {
             while (!isFinishing()) {
                 try {
-                    String ip = prefs.getString("local_node_ip", "192.168.0.107");
+                    String ip = prefs.getString("local_node_ip", AppDefaults.DEFAULT_NODE_IP);
                     URL url = new URL("http://" + ip + "/status");
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setConnectTimeout(2000);
@@ -304,10 +396,10 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
                         addLog("Connection Lost: " + (cause != null ? cause.getMessage() : "Unknown"));
                     }
                     @Override public void messageArrived(String topic, MqttMessage message) {
-                        if (topic.equals(baseTopic + "status")) {
+                        if (topic.equals(statusTopic)) {
                             String payload = new String(message.getPayload());
                             handleStatus(payload);
-                        } else if (topic.equals(baseTopic + "image")) {
+                        } else if (topic.equals(imageTopic)) {
                             saveMqttImage(message.getPayload());
                         }
                     }
@@ -315,8 +407,8 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
                 });
 
                 mqttClient.connect(options);
-                mqttClient.subscribe(baseTopic + "status");
-                mqttClient.subscribe(baseTopic + "image");
+                mqttClient.subscribe(statusTopic);
+                mqttClient.subscribe(imageTopic);
 
                 runOnUiThread(() -> {
                     binding.syncStatus.setText("Connected (Port " + port + ")");
@@ -364,6 +456,21 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
         runOnUiThread(() -> {
             try {
                 JSONObject json = new JSONObject(payload);
+
+                // Update Node Info
+                if (json.has("ip")) {
+                    String ip = json.getString("ip");
+                    String id = json.optString("id", "Node");
+                    if (!binding.availableNodesInfo.getText().toString().contains(ip)) {
+                        binding.availableNodesInfo.setText(" (" + ip + ")");
+                    }
+                    String entry = id + " (" + ip + ")";
+                    if (!discoveredNodes.contains(entry)) {
+                        discoveredNodes.add(entry);
+                        nodeAdapter.notifyDataSetChanged();
+                    }
+                }
+
                 binding.rowPir.value.setText(json.getBoolean("pir") ? "Motion" : "Clear");
                 binding.rowDoor.value.setText(json.getBoolean("door") ? "Open" : "Closed");
                 binding.rowBell.value.setText(json.getBoolean("bell") ? "Pressed" : "Idle");
@@ -376,12 +483,18 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
                 boolean buzzer = json.getBoolean("buzzer");
                 binding.rowBuzzer.value.setText(buzzer ? "ON" : "OFF");
                 binding.rowBuzzer.sensorSwitch.setChecked(buzzer);
+
+                boolean flash = json.getBoolean("flash");
+                binding.rowFlash.value.setText(flash ? "ON" : "OFF");
+                binding.rowFlash.sensorSwitch.setChecked(flash);
                 
                 binding.rowTemp.value.setText(String.format("%.1f °C", json.getDouble("temp")));
                 binding.rowPres.value.setText(String.format("%.1f hPa", json.getDouble("pres")));
                 
-                String time = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
-                binding.syncStatus.setText("Last Update: " + time);
+                String nodeTs = json.optString("ts", "N/A");
+                String appTs = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
+                binding.syncStatus.setText("Node: " + nodeTs + " | App: " + appTs);
+                binding.syncStatus.setTextColor(Color.parseColor("#4CAF50"));
                 
                 addHistoryRow(json);
             } catch (Exception ignored) {}
@@ -415,7 +528,7 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
         if (syncMode == 1) {
             executor.execute(() -> {
                 try {
-                    String ip = prefs.getString("local_node_ip", "192.168.0.107");
+                    String ip = prefs.getString("local_node_ip", AppDefaults.DEFAULT_NODE_IP);
                     URL url = new URL("http://" + ip + "/control?cmd=" + cmd);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.getResponseCode();
@@ -425,14 +538,13 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
                 }
             });
         } else if (syncMode == 2) {
-            if (firebaseRef != null) {
-                firebaseRef.child("command").setValue(cmd);
-            }
+            String commandNode = "FrmMobile/esp32cam/Securitymaindoor";
+            FirebaseDatabase.getInstance().getReference(commandNode).child("command").setValue(cmd);
         } else {
             executor.execute(() -> {
                 try {
                     if (mqttClient != null && mqttClient.isConnected()) {
-                        mqttClient.publish(baseTopic + "commands", new MqttMessage(cmd.getBytes()));
+                        mqttClient.publish(cmdTopic, new MqttMessage(cmd.getBytes()));
                     }
                 } catch (Exception e) {
                     runOnUiThread(() -> Toast.makeText(this, "Failed to send MQTT command", Toast.LENGTH_SHORT).show());

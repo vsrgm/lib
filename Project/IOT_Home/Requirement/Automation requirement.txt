@@ -123,16 +123,17 @@ Implement both ESP32CAM side and Android side code
 		├── I2C (GPIO1  -> SDA, GPIO3  -> SCL)
 		│	├──PCF8574
 		│	│	├── P0 -> PIR (input)
-		│	│	├── P1 -> LDR Light sensor (input) (For Hardware Eng.: Fix with logic 0 and logic 1 based on needed light sensisity)
-		│	│	├── P2 -> External Power On/OFF (input)
-		│	│	├── P3 -> Relay (output)
-		│	│	├── P4 -> Buzzer (output)
-		│	│	├── P5 -> Spare
-		│	│	├── P6 -> Spare
+		│	│	├── P1 -> External Power On/OFF (input)
+		│	│	├── P2 -> Relay (output)
+		│	│	├── P3 -> Buzzer (output)
+		│	│	├── P4 -> MQ135 Gas sensor (Digital input)
+		│	│	├── P6 -> Indication LEDS (output)
 		│	│	└── P7 -> Spare
-		│	├── BMP280
+		│	├── BMP280 (Temperature and Pressure)
 		│	└── ADS1115
-		│		  └── MQ135
+		│         ├── LDR Light sensor (input)
+		│         ├── LM358 Temperature sensor (input)
+		│		  └── MQ135 Gas sensor (Analog input)
 		├── SD Card
 		└── Camera
 	3.1. System level expectations
@@ -149,11 +150,11 @@ Implement both ESP32CAM side and Android side code
 		3.1.1. ESP32 CAM should record following activities in interfaced sdcard
 			3.1.1.0. Any change in of system state the status keep appending in format of .csv file in the internal sdcard (New event added in first row).
 			3.1.1.1. Capture a image when any change of event happened with date and time
-		3.1.2. At low light detected and PIT Motion detected then
-			3.1.2.0 ESP32 should turn on the Relay, which turns on the Kitchen lamp
-			3.1.2.1 When Good light observed from LDR Relay should be turned off.
+		3.1.2. Kitchen Sensor usecases with sensor inputs
+			3.1.2.0 ESP32 should turn on the Relay, when ldr detects low light (light < 500) then turn off the Relay, which turns on the Kitchen lamp
+			3.1.2.1 When Good light observed from LDR Relay, then P2 External should be turned off.
 			3.1.2.2 Manul turning on and off of Relay from Mobile application
-			3.1.2.3 When Gas leak detected via MQ135 Buzzer should be turned on
+			3.1.2.3 When Gas leak detected via MQ135, then Buzzer should be turned on
 		3.1.3. At Mobile application
 			3.1.3.0. A view to display received .jpg images (Like in RC car imager viewer view)
 			3.1.3.1. A view to live and history of events (Like in Study room monitor based view)
@@ -167,25 +168,50 @@ Implement both ESP32CAM side and Android side code
 
 4. RO Waste Water Pump
 	4.0. Requirement : Create a view in Smart Home monitor -> RO Waste Water Management
-	ESP8266
-	├── GPIO0 - Relay (output)
-	├── GPIO1 (Tx) - Spare
-	└── GPI03 (RX) - Repurpose this as a GPIO input and use to detect Water level from Float switch (input)
+	NodeMcu
+	├── A0 - Spare
+	├── D0 - Spare
+	├── D1 - Relay (output)
+	├── D2 - Spare
+	├── D3 - spare
+	└──	D6 - Float (input)
 	
 	4.1. System level expectations
-		4.1.0. ESP8266 should send live status via MQTT protocol on request from Mobile application (or) any change in event occured in the system state
+		4.1.0. NodeMcu should send live status via MQTT protocol on request from Mobile application (or) any change in event occured in the system state
 			4.1.0.0. Date and Time (UTC + 5.30 corrected time)
 			4.1.0.1. Relay ON/OFF status
 			4.1.0.2. Safe Water level Float status (Yes / No).
-		4.1.1. On Receiving command from Mqtt (or) from local network,  ESP8266 should turn on the Relay (via GPIO0) ensuring the Water Float status as Yes.
-		4.1.2. When Water level Float status is Low, ESP8266 should turn off the Relay.
+		4.1.1. On Receiving command from Mqtt (or) from local network,  NodeMcu should turn on the Relay (via GPIO0) ensuring the Water Float status as Yes.
+		4.1.2. When Water level Float status is Low, NodeMcu should turn off the Relay.
 		4.1.3. Settings to select MQtt (or) Local ip based sync like in "Study Room monitor"
 			4.1.3.0. If local ip selected, then all the control live status should happen be reflected to mobile  
 			4.1.3.1. If Mqtt based sync selected then event based update is expected over Mqtt (Based on change in water level status and Relay ON/OFF state).
 		4.1.4. Android application view specific
-			4.1.4.0. All the interface status with ESP8266 should reflect lively in the application
+			4.1.4.0. All the interface status with NodeMcu should reflect lively in the application
 			4.1.4.1. If we have output pints then manual mode of enable/disable should be possible, where ever applicable should be similar to "Study Room monitor" Label, enable/disable button, Value.
-			
+
+5. Kitchen Exhaust Fan
+	5.0. Requirement : Create a view in Smart Home monitor -> Kitchen Exhaust Fan
+	NodeMcu
+	├── A0 - MQ2 sensor Analog input
+	├── D0 - MQ2 Sensor Digital input
+	├── D1 - Relay (output)
+	├── D2 - LDR Light sensor (input)
+	└── D3 - Manual Toggle Switch to Turn on Relay (input)
+
+	5.1. System level expectations
+		5.1.0. NodeMcu should send live status via MQTT protocol on request from Mobile application (or) any change in event occured in the system state
+			5.1.0.0. Date and Time (UTC + 5.30 corrected time)
+			5.1.0.1. Relay ON/OFF status
+			5.1.0.2. User Toggle current state (State 1 / State 2).
+		5.1.1. On Receiving command from Mqtt (or) from local network,  NodeMcu should turn on the Relay (via GPIO0).
+		5.1.2. Settings to select MQtt (or) Local ip based sync like in "Study Room monitor"
+			5.1.2.0. If local ip selected, then all the control live status should happen be reflected to mobile
+			5.1.2.1. If Mqtt based sync selected then event based update is expected over Mqtt (Based on change in water level status and Relay ON/OFF state).
+		5.1.3. Android application view specific
+			5.1.3.0. All the interface status with NodeMcu should reflect lively in the application
+			5.1.3.1. If we have output pints then manual mode of enable/disable should be possible, where ever applicable should be similar to "Study Room monitor" Label, enable/disable button, Value.
+
 New requirements appended in Automation requirement.txt compare with your implementation_status.md and implement missing
 
 Note : Create a .md file and preserve so far implementation context in that.

@@ -13,6 +13,9 @@
 #include <Firebase_ESP_Client.h>
 #include "credentials.h"
 
+// Compile-time option to enable/disable MQTT
+//#define ENABLE_MQTT
+
 #define LDR_PIN A0
 #define EMERGENCY_LIGHT_PIN D2
 #define DHTPIN D3
@@ -46,7 +49,7 @@ String globalCmdTopic = baseTopic + "all/commands";
 String discoveryTopic = baseTopic + "nodes/discovery";
 String historyTopic = baseTopic + mqttClientId + "/history";
 
-const String SW_VERSION = "1.0.178";
+const String SW_VERSION = "1.0.328";
 
 int currentMqttPortIndex = 0;
 const int mqttPorts[] = {1883, 8000, 8883, 8884};
@@ -122,9 +125,11 @@ void publishStatus() {
   char buffer[400];
   serializeJson(doc, buffer);
 
+#ifdef ENABLE_MQTT
   if (mqttClient.connected()) {
     mqttClient.publish(statusTopic.c_str(), buffer);
   }
+#endif
 
   if (Firebase.ready()) {
     FirebaseJson json;
@@ -214,18 +219,28 @@ void handleRemoteOTA(String url) {
 }
 
 void runPendingOTA() {
-  if (!LittleFS.exists("/ota.txt")) return;
+  String url = "";
+  bool isFull = false;
 
-  File f = LittleFS.open("/ota.txt", "r");
-  String url = f.readString();
-  f.close();
-  LittleFS.remove("/ota.txt");
+  if (LittleFS.exists("/ota.txt")) {
+    File f = LittleFS.open("/ota.txt", "r");
+    url = f.readString();
+    f.close();
+    LittleFS.remove("/ota.txt");
+  } else if (LittleFS.exists("/full_ota.txt")) {
+    File f = LittleFS.open("/full_ota.txt", "r");
+    url = f.readString();
+    f.close();
+    LittleFS.remove("/full_ota.txt");
+    isFull = true;
+  }
+
   url.trim();
-
   if (url.length() < 10) return;
 
-  Serial.println("Starting Fresh OTA: " + url);
-  addWebLog("Boot-OTA Attempt: " + url);
+  Serial.println("Starting OTA: " + url);
+  addWebLog(isFull ? "Stage 2 OTA: " : "Stage 1 OTA: ");
+  addWebLog(url);
 
   // CRITICAL: Wait for network to be fully stable
   delay(5000);
@@ -238,18 +253,12 @@ void runPendingOTA() {
   // 16384 (16KB) is the absolute max SSL fragment size.
   sClient.setBufferSizes(16384, 1024);
 
-  HTTPClient http;
-  http.begin(sClient, url);
-  http.setUserAgent("Mozilla/5.0 (ESP8266)");
-  http.setTimeout(180000);
-
   ESPhttpUpdate.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
   ESPhttpUpdate.rebootOnUpdate(true); // Standard mode: reboot immediately on success
 
-  t_httpUpdate_return ret = ESPhttpUpdate.update(http);
+  t_httpUpdate_return ret = ESPhttpUpdate.update(sClient, url);
 
   // If we reach here, update failed (otherwise it would have rebooted)
-  http.end();
   system_update_cpu_freq(80);
 
   String err = "OTA Fail: " + ESPhttpUpdate.getLastErrorString();
@@ -264,11 +273,25 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     publishStatus();
   } else if (msg.startsWith("OTA:")) {
     handleRemoteOTA(msg.substring(4));
+  } else if (msg.startsWith("OTA_FULL:")) {
+    String url = msg.substring(9);
+    File f = LittleFS.open("/full_ota.txt", "w");
+    if (f) {
+      f.print(url);
+      f.close();
+      addWebLog("Full OTA URL Saved");
+    }
   } else if (msg == "DISCOVER") {
     String discoveryMsg = "{\"ip\":\"" + WiFi.localIP().toString() + "\", \"id\":\"" + mqttClientId + "\", \"ver\":\"" + SW_VERSION + "\"}";
+#ifdef ENABLE_MQTT
     mqttClient.publish(discoveryTopic.c_str(), discoveryMsg.c_str());
-  } else if (msg == "CLEAR") {
+#endif
+  } else if (msg == "CLEAR" || msg == "clearHistory") {
     LittleFS.remove(logFile);
+    addWebLog("History Cleared");
+    if (Firebase.ready()) {
+      Firebase.RTDB.deleteNode(&fbdo, String(FB_OUTBOX) + "/history");
+    }
   } else if (msg.startsWith("CONFIG:")) {
     String jsonStr = msg.substring(7);
     StaticJsonDocument<128> doc; // Reduced from 256
@@ -292,11 +315,15 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
       while (f.available()) {
         String line = f.readStringUntil('\n');
         if (line.length() > 0) {
+#ifdef ENABLE_MQTT
           mqttClient.publish(historyTopic.c_str(), line.c_str());
+#endif
         }
       }
       f.close();
+#ifdef ENABLE_MQTT
       mqttClient.publish(historyTopic.c_str(), "EOF");
+#endif
     }
   }
 }
@@ -310,6 +337,7 @@ void reconnectWiFi() {
   }
 }
 
+#ifdef ENABLE_MQTT
 void reconnectMqtt() {
   static unsigned long lastReconnectAttempt = 0;
   if (millis() - lastReconnectAttempt > 5000) {
@@ -324,6 +352,7 @@ void reconnectMqtt() {
       secureClient.setInsecure();
       mqttClient.setClient(secureClient);
     }
+    mqttClient.setClient(mqttPort == 1883 ? wifiClient : secureClient);
     mqttClient.setServer(mqttBroker.c_str(), mqttPort);
 
     if (mqttClient.connect(mqttClientId.c_str())) {
@@ -334,6 +363,7 @@ void reconnectMqtt() {
     }
   }
 }
+#endif
 
 void checkCloudCommands() {
   if (Firebase.ready()) {
@@ -509,6 +539,14 @@ void setup() {
     server.streamFile(f, "text/csv");
     f.close();
   });
+  server.on("/clear", []() {
+    LittleFS.remove(logFile);
+    addWebLog("History Cleared via IP");
+    if (Firebase.ready()) {
+      Firebase.RTDB.deleteNode(&fbdo, String(FB_OUTBOX) + "/history");
+    }
+    server.send(200, "text/plain", "History Cleared");
+  });
   server.on("/config", HTTP_POST, []() {
     if (server.hasArg("plain")) {
       String body = server.arg("plain");
@@ -548,9 +586,11 @@ void setup() {
   server.begin();
   MDNS.addService("http", "tcp", 80);
 
+#ifdef ENABLE_MQTT
   mqttClient.setServer(mqttBroker.c_str(), mqttPort);
   mqttClient.setCallback(mqttCallback);
   mqttClient.setBufferSize(512); // Increased to 512 to avoid truncation of long URLs
+#endif
 
   dht.begin();
 
@@ -569,11 +609,13 @@ void loop()
   if (WiFi.status() != WL_CONNECTED) {
     reconnectWiFi();
   } else {
+#ifdef ENABLE_MQTT
     if (!mqttClient.connected()) {
       reconnectMqtt();
     } else {
       mqttClient.loop();
     }
+#endif
   }
 
   static unsigned long lastSensorRead = 0;
@@ -608,19 +650,19 @@ void loop()
     logData("Hourly Log");
   }
 
-  if ((old_dhtTemp != dhtTemp) ||
-      (old_dhtHum != dhtHum) ||
-      (old_lightRawValue != lightRawValue)) {
+  if (millis() - lastPeriodicPublish > 30000) {
+    lastPeriodicPublish = millis();
+    publishStatus();
+  }
+
+  // Only publish on significant changes to avoid spamming the app
+  if (abs(old_dhtTemp - dhtTemp) >= 0.2 ||
+      abs(old_dhtHum - dhtHum) >= 1.0 ||
+      abs(old_lightRawValue - lightRawValue) > 15) {
     old_lightRawValue = lightRawValue;
     old_dhtTemp = dhtTemp;
     old_dhtHum = dhtHum;
     publishStatus();
     lastPeriodicPublish = millis();
-  }
-
-  // Periodic publish every 30 seconds even if no change
-  if (millis() - lastPeriodicPublish > 30000) {
-    lastPeriodicPublish = millis();
-    publishStatus();
   }
 }

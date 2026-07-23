@@ -7,6 +7,7 @@
     android:padding="16dp"
     android:background="?android:attr/colorBackground">
 
+    <!-- Header -->
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -18,14 +19,14 @@
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@android:drawable/ic_menu_revert"
-            android:contentDescription="@string/content_desc_back"
+            android:contentDescription="Back"
             app:tint="?android:attr/textColorPrimary" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
-            android:text="@string/title_main_door"
+            android:text="Security Main Door"
             android:textColor="?android:attr/textColorPrimary"
             android:textSize="20sp"
             android:textStyle="bold" />
@@ -40,6 +41,7 @@
             app:tint="?android:attr/textColorPrimary" />
     </RelativeLayout>
 
+    <!-- Fixed Video Stream -->
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="240dp"
@@ -53,83 +55,174 @@
             android:background="#000000" />
     </com.google.android.material.card.MaterialCardView>
 
-    <ScrollView
+    <!-- Connected Nodes Section -->
+    <LinearLayout
+        android:id="@+id/card_ip_sync"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginBottom="8dp"
+        android:padding="4dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Connected Nodes"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+            <Spinner
+                android:id="@+id/node_selector"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+            <TextView
+                android:id="@+id/available_nodes_info"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=" (Searching...)"
+                android:textSize="12sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Main Scrollable Content -->
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:layout_marginBottom="12dp">
+        android:fillViewport="true">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
+            <!-- Status Rows -->
             <include layout="@layout/item_status_row" android:id="@+id/row_pir" />
             <include layout="@layout/item_status_row" android:id="@+id/row_door" />
             <include layout="@layout/item_status_row" android:id="@+id/row_bell" />
             <include layout="@layout/item_status_row" android:id="@+id/row_ldr" />
             <include layout="@layout/item_status_row" android:id="@+id/row_relay" />
             <include layout="@layout/item_status_row" android:id="@+id/row_buzzer" />
+            <include layout="@layout/item_status_row" android:id="@+id/row_flash" />
             <include layout="@layout/item_status_row" android:id="@+id/row_temp" />
             <include layout="@layout/item_status_row" android:id="@+id/row_pres" />
-        </LinearLayout>
-    </ScrollView>
 
+            <TextView
+                android:id="@+id/sync_status"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Connecting..."
+                android:padding="8dp" />
+
+            <!-- Quick Controls -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginBottom="12dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_quick_relay"
+                    style="@style/Widget.MaterialComponents.Button.TextButton.Icon"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Relay"
+                    app:icon="@android:drawable/ic_lock_power_off" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_quick_buzzer"
+                    style="@style/Widget.MaterialComponents.Button.TextButton.Icon"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Buzzer"
+                    app:icon="@android:drawable/ic_lock_silent_mode" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_quick_flash"
+                    style="@style/Widget.MaterialComponents.Button.TextButton.Icon"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Flash"
+                    app:icon="@android:drawable/ic_menu_day" />
+            </LinearLayout>
+
+            <!-- Logs Section -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="120dp"
+                android:layout_marginBottom="12dp"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="1dp">
+
+                <ScrollView
+                    android:id="@+id/log_scroll_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#1E1E1E"
+                    android:padding="8dp">
+
+                    <TextView
+                        android:id="@+id/tv_connection_logs"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="monospace"
+                        android:text="Logs will appear here..."
+                        android:textColor="#00FF00"
+                        android:textSize="10sp" />
+                </ScrollView>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- History Table -->
+            <TableLayout
+                android:id="@+id/history_table"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#000000"
+                android:padding="8dp"
+                android:layout_marginBottom="16dp">
+
+                <TableRow android:background="#333333" android:padding="4dp">
+                    <TextView android:text="Time" android:textColor="#FFFFFF" android:padding="8dp" android:textStyle="bold"/>
+                    <TextView android:text="Event" android:textColor="#FFFFFF" android:padding="8dp" android:textStyle="bold"/>
+                    <TextView android:text="Relay" android:textColor="#FFFFFF" android:padding="8dp" android:textStyle="bold"/>
+                </TableRow>
+            </TableLayout>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- Persistent Bottom Buttons -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="center"
-        android:layout_marginBottom="12dp">
+        android:paddingTop="8dp"
+        android:gravity="center">
 
-        <Button android:id="@+id/btn_capture" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Capture" android:layout_marginEnd="8dp" />
-        <Button android:id="@+id/btn_gallery" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Gallery" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_capture"
+            android:layout_width="0dp"
+            android:layout_height="60dp"
+            android:layout_weight="2"
+            android:text="Capture"
+            app:cornerRadius="12dp"
+            android:layout_marginEnd="8dp"
+            app:icon="@android:drawable/ic_menu_camera" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_gallery"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="60dp"
+            android:layout_weight="1"
+            android:text="Gallery"
+            app:cornerRadius="12dp"
+            app:icon="@android:drawable/ic_menu_gallery" />
     </LinearLayout>
 
-    <TextView android:id="@+id/sync_status" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:text="Connecting..." />
-
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="match_parent"
-        android:layout_height="100dp"
-        android:layout_marginTop="8dp"
-        app:cardCornerRadius="8dp"
-        app:cardElevation="1dp">
-
-        <ScrollView
-            android:id="@+id/log_scroll_view"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="#1E1E1E"
-            android:padding="8dp">
-
-            <TextView
-                android:id="@+id/tv_connection_logs"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:fontFamily="monospace"
-                android:text="Logs will appear here..."
-                android:textColor="#00FF00"
-                android:textSize="10sp" />
-        </ScrollView>
-    </com.google.android.material.card.MaterialCardView>
-
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:background="#000000">
-
-        <TableLayout
-            android:id="@+id/history_table"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="8dp">
-
-            <TableRow android:background="#333333" android:padding="4dp">
-                <TextView android:text="Time" android:textColor="#FFFFFF" android:padding="8dp" android:textStyle="bold"/>
-                <TextView android:text="Event" android:textColor="#FFFFFF" android:padding="8dp" android:textStyle="bold"/>
-                <TextView android:text="Relay" android:textColor="#FFFFFF" android:padding="8dp" android:textStyle="bold"/>
-            </TableRow>
-        </TableLayout>
-    </ScrollView>
 </LinearLayout>

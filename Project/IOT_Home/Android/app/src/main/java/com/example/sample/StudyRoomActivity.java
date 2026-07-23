@@ -123,9 +123,11 @@ public class StudyRoomActivity extends AppCompatActivity {
 
         if (syncMode == 2) {
             initFirebase();
-        } else {
+        } else if (AppDefaults.ENABLE_MQTT) {
             initMqtt();
             setupNetworkListener();
+        } else {
+            setupNetworkListener(); // Still need this for IP mode if wanted
         }
 
         binding.rowDhtTemp.label.setText(R.string.label_dht_temp);
@@ -170,7 +172,7 @@ public class StudyRoomActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         loadSettings();
-        if (isMqttAvailable()) {
+        if (AppDefaults.ENABLE_MQTT && isMqttAvailable()) {
             executor.execute(() -> {
                 try {
                     mqttClient.publish("smart_home/all/commands", new MqttMessage("DISCOVER".getBytes()));
@@ -180,11 +182,19 @@ public class StudyRoomActivity extends AppCompatActivity {
     }
 
     private void initFirebase() {
-        String url = prefs.getString("firebase_url", "https://gapsmarthome-default-rtdb.asia-southeast1.firebasedatabase.app/");
-        String room = "study"; 
+        String url = prefs.getString("firebase_url", AppDefaults.FIREBASE_URL);
+        String room = AppDefaults.NODE_STUDY; 
         
         addLog("Authenticating Firebase...");
-        FirebaseAuth.getInstance().signInWithEmailAndPassword("iot-device@gapsmarthome.com", "1q2w3e4r%T")
+        String email = prefs.getString("firebase_email", Credentials.FIREBASE_EMAIL);
+        String password = prefs.getString("firebase_password", Credentials.FIREBASE_PASSWORD);
+        
+        if (email.isEmpty() || password.isEmpty()) {
+            connectToFirebase(url, room);
+            return;
+        }
+
+        FirebaseAuth.getInstance().signInWithEmailAndPassword(email, password)
             .addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
                     addLog("Auth Success.");
@@ -207,27 +217,29 @@ public class StudyRoomActivity extends AppCompatActivity {
                 @Override
                 public void onDataChange(DataSnapshot dataSnapshot) {
                     if (dataSnapshot.exists()) {
-                        addLog("Data received from Outbox");
                         Object value = dataSnapshot.child("status").getValue();
                         if (value != null) {
                             handleMqttStatus("firebase/status", value.toString());
                         }
                         
-                        Object otaStatus = dataSnapshot.child("ota_status").getValue();
-                        if (otaStatus != null) {
-                            addLog("OTA Status: " + otaStatus.toString());
-                        }
-
                         DataSnapshot historyNode = dataSnapshot.child("history");
                         if (historyNode.exists()) {
-                            mqttHistoryBuffer.clear();
+                            final List<String> newHistory = new ArrayList<>();
                             for (DataSnapshot child : historyNode.getChildren()) {
                                 Object entry = child.getValue();
-                                if (entry != null) mqttHistoryBuffer.add(entry.toString());
+                                if (entry != null) newHistory.add(entry.toString());
                             }
-                            updateHistoryTable(mqttHistoryBuffer);
+                            
+                            // Offload processing to background, then update UI
+                            executor.execute(() -> {
+                                mqttHistoryBuffer.clear();
+                                mqttHistoryBuffer.addAll(newHistory);
+                                saveToLocalCsv(newHistory); // File I/O in background
+                                runOnUiThread(() -> updateHistoryTable(mqttHistoryBuffer));
+                            });
                         }
-                    } else {
+                    }
+else {
                         addLog("Outbox is empty. Waiting for device...");
                     }
                 }
@@ -252,7 +264,7 @@ public class StudyRoomActivity extends AppCompatActivity {
 
     private void loadSettings() {
         syncMode = prefs.getInt("sync_mode", 0); // 0: MQTT, 1: IP, 2: Firebase
-        String savedIp = prefs.getString("local_node_ip", getString(R.string.default_node_ip));
+        String savedIp = prefs.getString("local_node_ip", AppDefaults.DEFAULT_NODE_IP);
         String localEntryPrefix = "Local IP (";
 
         boolean changed = false;
@@ -370,7 +382,7 @@ public class StudyRoomActivity extends AppCompatActivity {
                 } else {
                     addLog("Firebase Database not initialized");
                 }
-            } else if (isMqttAvailable()) {
+            } else if (AppDefaults.ENABLE_MQTT && isMqttAvailable()) {
                 executor.execute(() -> {
                     try {
                         String targetTopic = selectedNodeId.isEmpty() ? "smart_home/all/commands" : "smart_home/" + selectedNodeId + "/commands";
@@ -398,7 +410,7 @@ public class StudyRoomActivity extends AppCompatActivity {
                 firebaseDatabase.getReference("FrmMobile").child("study").child("command")
                     .setValue("CLEAR");
             }
-        } else if (isMqttAvailable()) {
+        } else if (AppDefaults.ENABLE_MQTT && isMqttAvailable()) {
             executor.execute(() -> {
                 try {
                     String targetTopic = selectedNodeId.isEmpty() ? "smart_home/all/commands" : "smart_home/" + selectedNodeId + "/commands";
@@ -448,7 +460,7 @@ public class StudyRoomActivity extends AppCompatActivity {
                 firebaseDatabase.getReference("FrmMobile").child("study").child("command")
                     .setValue("HISTORY");
             }
-        } else if (isMqttAvailable()) {
+        } else if (AppDefaults.ENABLE_MQTT && isMqttAvailable()) {
             mqttHistoryBuffer.clear();
             executor.execute(() -> {
                 try {
@@ -460,7 +472,10 @@ public class StudyRoomActivity extends AppCompatActivity {
     }
 
     private void initMqtt() {
-        closeMqtt();
+        if (!AppDefaults.ENABLE_MQTT) return;
+        
+        executor.execute(this::closeMqtt); // Ensure closure is backgrounded
+        
         connectionAttemptId++;
         final long currentId = connectionAttemptId;
         
@@ -484,9 +499,15 @@ public class StudyRoomActivity extends AppCompatActivity {
         String time = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
         String logEntry = "[" + time + "] " + message + "\n";
         logBuilder.insert(0, logEntry);
+        
+        // Cap log size to 1000 characters for performance
+        if (logBuilder.length() > 1000) {
+            logBuilder.setLength(1000);
+        }
+
         runOnUiThread(() -> {
             binding.tvConnectionLogs.setText(logBuilder.toString());
-            binding.logScrollView.fullScroll(android.view.View.FOCUS_UP);
+            binding.logScrollView.post(() -> binding.logScrollView.fullScroll(android.view.View.FOCUS_UP));
         });
     }
 
@@ -513,7 +534,9 @@ public class StudyRoomActivity extends AppCompatActivity {
             try {
                 if (attemptId != connectionAttemptId) return;
 
-                closeMqtt(); // Clean up any previous attempt
+                // Important: Only close if we are switching ports or re-initializing
+                // But avoid closing if a connection is already stable and active.
+                
                 String brokerUri;
                 if (port == 8883) brokerUri = "ssl://" + broker + ":" + port;
                 else if (port == 8884) brokerUri = "wss://" + broker + ":" + port + "/mqtt";
@@ -573,12 +596,13 @@ public class StudyRoomActivity extends AppCompatActivity {
     }
 
     private void closeMqtt() {
-        if (mqttClient != null) {
+        final MqttClient clientToClose = mqttClient;
+        if (clientToClose != null) {
+            mqttClient = null; // Decouple immediately
             try {
-                if (mqttClient.isConnected()) mqttClient.disconnect();
-                mqttClient.close();
+                if (clientToClose.isConnected()) clientToClose.disconnect(500); // Short timeout
+                clientToClose.close();
             } catch (Exception ignored) {}
-            mqttClient = null;
         }
     }
 
@@ -630,7 +654,10 @@ public class StudyRoomActivity extends AppCompatActivity {
                     if (fsFree > 0) memoryInfo += " | " + (fsFree / 1024) + " KB FS";
                     binding.rowHeapFree.value.setText(memoryInfo);
 
-                    binding.syncStatus.setText("Last Update: " + new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date()));
+                    String nodeTs = json.optString("ts", "N/A");
+                    String appTs = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
+                    binding.syncStatus.setText("Node: " + nodeTs + " | App: " + appTs);
+                    binding.syncStatus.setTextColor(Color.parseColor("#4CAF50"));
                     isSyncing = false;
                 }
             } catch (Exception ignored) {
@@ -668,9 +695,11 @@ public class StudyRoomActivity extends AppCompatActivity {
             binding.historyTable.removeViews(1, binding.historyTable.getChildCount() - 1);
         }
         
-        saveToLocalCsv(lines);
+        // Limit UI display to last 20 entries for performance
+        int count = 0;
+        int maxRows = 20;
 
-        for (int i = lines.size() - 1; i >= 0; i--) {
+        for (int i = lines.size() - 1; i >= 0 && count < maxRows; i--) {
             String[] cols = lines.get(i).split(",");
             TableRow row = new TableRow(this);
             for (String col : cols) {
@@ -681,6 +710,7 @@ public class StudyRoomActivity extends AppCompatActivity {
                 row.addView(tv);
             }
             binding.historyTable.addView(row);
+            count++;
         }
     }
 
@@ -761,14 +791,14 @@ public class StudyRoomActivity extends AppCompatActivity {
                 firebaseDatabase.getReference("FrmMobile").child("study").child("command")
                     .setValue("SYNC");
             }
-        } else if (isMqttAvailable()) {
+        } else if (AppDefaults.ENABLE_MQTT && isMqttAvailable()) {
             executor.execute(() -> {
                 try {
                     String targetTopic = "smart_home/all/commands";
                     mqttClient.publish(targetTopic, new MqttMessage("SYNC".getBytes()));
                 } catch (Exception ignored) {}
             });
-        } else {
+        } else if (AppDefaults.ENABLE_MQTT) {
             addLog("MQTT not available. Re-initializing...");
             initMqtt();
         }
