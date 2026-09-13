@@ -1,0 +1,740 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1280</width>
+    <height>800</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>IoT Home Control Center (Qt x86 Desktop)</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">QMainWindow { background-color: #1e1e2f; color: #ffffff; }
+QTabWidget::pane { border: 1px solid #33334d; background: #252538; }
+QTabBar::tab { background: #1a1a28; color: #aaa; padding: 8px 16px; margin: 2px; border-radius: 4px; }
+QTabBar::tab:selected { background: #3d5afe; color: #fff; font-weight: bold; }
+QGroupBox { font-weight: bold; border: 1px solid #3d3d5c; border-radius: 6px; margin-top: 12px; padding-top: 10px; color: #3d5afe; }
+QGroupBox::title { subcontrol-origin: margin; subcontrol-position: top left; padding: 0 5px; }
+QLabel { color: #e0e0e0; }
+QPushButton { background-color: #3d5afe; color: white; border: none; border-radius: 4px; padding: 6px 12px; font-weight: bold; }
+QPushButton:hover { background-color: #536dfe; }
+QPushButton:pressed { background-color: #304ffe; }
+QLineEdit, QSpinBox, QComboBox { background-color: #1a1a28; border: 1px solid #3d3d5c; border-radius: 4px; color: #fff; padding: 4px; }
+QTableWidget { background-color: #1a1a28; color: #fff; gridline-color: #3d3d5c; border: 1px solid #3d3d5c; }
+QHeaderView::section { background-color: #252538; color: #888; border: 1px solid #3d3d5c; }
+QTextEdit { background-color: #12121c; color: #00ff66; font-family: monospace; border: 1px solid #3d3d5c; }</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayoutMain">
+    <item>
+     <widget class="QFrame" name="headerFrame">
+      <property name="frameShape">
+       <enum>QFrame::StyledPanel</enum>
+      </property>
+      <layout class="QHBoxLayout" name="horizontalLayoutHeader">
+       <item>
+        <widget class="QLabel" name="lblTitle">
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:14pt; font-weight:600; color:#3d5afe;&quot;&gt;IoT HOME CONTROL CENTER&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QLabel" name="lblAppIp">
+         <property name="text">
+          <string>App IP: Detecting...</string>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">color: #4caf50; font-weight: bold;</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="lblLastSync">
+         <property name="text">
+          <string>Last Synced: Never</string>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">color: #ffb74d; font-weight: bold;</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="lblSyncMode">
+         <property name="text">
+          <string>Mode: Local Network (IP)</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btnDiscover">
+         <property name="text">
+          <string>UDP Discover Devices</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+
+      <!-- TAB 0: Dashboard -->
+      <widget class="QWidget" name="tabDashboard">
+       <attribute name="title">
+        <string>Dashboard</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayoutDash">
+        <item row="0" column="0">
+         <widget class="QGroupBox" name="boxDashStudy">
+          <property name="title">
+           <string>Study Room</string>
+          </property>
+          <layout class="QVBoxLayout" name="vboxDashStudy">
+           <item><widget class="QLabel" name="lblDashStudyStatus"><property name="text"><string>Temp: -- °C | Hum: -- % | Light: --</string></property></widget></item>
+           <item><widget class="QLabel" name="lblDashStudyIp"><property name="text"><string>IP: Unmapped</string></property></widget></item>
+          </layout>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QGroupBox" name="boxDashBed">
+          <property name="title">
+           <string>Bed Room</string>
+          </property>
+          <layout class="QVBoxLayout" name="vboxDashBed">
+           <item><widget class="QLabel" name="lblDashBedStatus"><property name="text"><string>Temp: -- °C | Air Quality: -- | PIR: Idle</string></property></widget></item>
+           <item><widget class="QLabel" name="lblDashBedIp"><property name="text"><string>IP: Unmapped</string></property></widget></item>
+          </layout>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QGroupBox" name="boxDashKitchen">
+          <property name="title">
+           <string>Kitchen Monitor</string>
+          </property>
+          <layout class="QVBoxLayout" name="vboxDashKitchen">
+           <item><widget class="QLabel" name="lblDashKitchenStatus"><property name="text"><string>Gas: Normal | PIR: Clear | Lamp: OFF</string></property></widget></item>
+           <item><widget class="QLabel" name="lblDashKitchenIp"><property name="text"><string>IP: Unmapped</string></property></widget></item>
+          </layout>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QGroupBox" name="boxDashExhaust">
+          <property name="title">
+           <string>Kitchen Exhaust Fan</string>
+          </property>
+          <layout class="QVBoxLayout" name="vboxDashExhaust">
+           <item><widget class="QLabel" name="lblDashExhaustStatus"><property name="text"><string>Smoke: Normal | Fan: OFF</string></property></widget></item>
+           <item><widget class="QLabel" name="lblDashExhaustIp"><property name="text"><string>IP: Unmapped</string></property></widget></item>
+          </layout>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QGroupBox" name="boxDashToilet">
+          <property name="title">
+           <string>Toilet Assistance</string>
+          </property>
+          <layout class="QVBoxLayout" name="vboxDashToilet">
+           <item><widget class="QLabel" name="lblDashToiletStatus"><property name="text"><string>PIR: Clear | Emergency: Normal</string></property></widget></item>
+           <item><widget class="QLabel" name="lblDashToiletIp"><property name="text"><string>IP: Unmapped</string></property></widget></item>
+          </layout>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QGroupBox" name="boxDashRo">
+          <property name="title">
+           <string>RO Waste Water Pump</string>
+          </property>
+          <layout class="QVBoxLayout" name="vboxDashRo">
+           <item><widget class="QLabel" name="lblDashRoStatus"><property name="text"><string>Water Level: Normal | Pump: OFF</string></property></widget></item>
+           <item><widget class="QLabel" name="lblDashRoIp"><property name="text"><string>IP: Unmapped</string></property></widget></item>
+          </layout>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QGroupBox" name="boxDashDoor">
+          <property name="title">
+           <string>Main Door Security</string>
+          </property>
+          <layout class="QVBoxLayout" name="vboxDashDoor">
+           <item><widget class="QLabel" name="lblDashDoorStatus"><property name="text"><string>Door Lock: Locked | Motion: Idle</string></property></widget></item>
+           <item><widget class="QLabel" name="lblDashDoorIp"><property name="text"><string>IP: Unmapped</string></property></widget></item>
+          </layout>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QGroupBox" name="boxDashPi">
+          <property name="title">
+           <string>Pi Kitchen Monitor</string>
+          </property>
+          <layout class="QVBoxLayout" name="vboxDashPi">
+           <item><widget class="QLabel" name="lblDashPiStatus"><property name="text"><string>Status: Ready</string></property></widget></item>
+           <item><widget class="QLabel" name="lblDashPiIp"><property name="text"><string>IP: Unmapped</string></property></widget></item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+
+      <!-- TAB 1: Study Room -->
+      <widget class="QWidget" name="tabStudy">
+       <attribute name="title">
+        <string>Study Room</string>
+       </attribute>
+       <layout class="QHBoxLayout" name="hboxStudy">
+        <item>
+         <layout class="QVBoxLayout" name="vboxStudyLeft">
+          <item>
+           <widget class="QGroupBox" name="grpStudySensors">
+            <property name="title"><string>Sensors &amp; Telemetry</string></property>
+            <layout class="QFormLayout" name="formStudySensors">
+             <item row="0" column="0"><widget class="QLabel" name="lblStudyTempTitle"><property name="text"><string>DHT Temperature:</string></property></widget></item>
+             <item row="0" column="1"><widget class="QLabel" name="lblStudyTemp"><property name="text"><string>-- °C</string></property></widget></item>
+             <item row="1" column="0"><widget class="QLabel" name="lblStudyHumTitle"><property name="text"><string>DHT Humidity:</string></property></widget></item>
+             <item row="1" column="1"><widget class="QLabel" name="lblStudyHum"><property name="text"><string>-- %</string></property></widget></item>
+             <item row="2" column="0"><widget class="QLabel" name="lblStudyLdrTitle"><property name="text"><string>Ambient Light:</string></property></widget></item>
+             <item row="2" column="1"><widget class="QLabel" name="lblStudyLdr"><property name="text"><string>--</string></property></widget></item>
+             <item row="3" column="0"><widget class="QLabel" name="lblStudyHeapTitle"><property name="text"><string>Free Memory:</string></property></widget></item>
+             <item row="3" column="1"><widget class="QLabel" name="lblStudyHeap"><property name="text"><string>-- bytes</string></property></widget></item>
+             <item row="4" column="0"><widget class="QLabel" name="lblStudyNodeIpTitle"><property name="text"><string>Connected Node IP:</string></property></widget></item>
+             <item row="4" column="1"><widget class="QLabel" name="lblStudyNodeIp"><property name="text"><string>--</string></property></widget></item>
+             <item row="5" column="0"><widget class="QLabel" name="lblStudyLastSyncTitle"><property name="text"><string>Last Synced:</string></property></widget></item>
+             <item row="5" column="1"><widget class="QLabel" name="lblStudyLastSync"><property name="text"><string>Never</string></property></widget></item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="grpStudyControls">
+            <property name="title"><string>Controls</string></property>
+            <layout class="QVBoxLayout" name="vboxStudyControls">
+             <item><widget class="QCheckBox" name="chkStudyOverride"><property name="text"><string>Manual Override</string></property></widget></item>
+             <item><widget class="QCheckBox" name="chkStudyLight"><property name="text"><string>Emergency Light</string></property></widget></item>
+             <item><widget class="QCheckBox" name="chkStudyBuzzer"><property name="text"><string>Study Buzzer</string></property></widget></item>
+             <item>
+              <layout class="QHBoxLayout" name="hboxBuzzerFreq">
+               <item><widget class="QLabel" name="lblBuzzerFreq"><property name="text"><string>Buzzer Freq (Hz):</string></property></widget></item>
+               <item><widget class="QSlider" name="sliderStudyBuzzerFreq"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="minimum"><number>500</number></property><property name="maximum"><number>5000</number></property><property name="value"><number>2000</number></property></widget></item>
+               <item><widget class="QLabel" name="lblStudyBuzzerFreqVal"><property name="text"><string>2000 Hz</string></property></widget></item>
+              </layout>
+             </item>
+             <item><widget class="QCheckBox" name="chkStudyIrRecv"><property name="text"><string>IR Receive Mode</string></property></widget></item>
+             <item>
+              <layout class="QHBoxLayout" name="hboxStudySync">
+               <item><widget class="QPushButton" name="btnStudySync"><property name="text"><string>SYNC Now</string></property></widget></item>
+               <item><widget class="QPushButton" name="btnStudyClearHistory"><property name="text"><string>Clear History</string></property></widget></item>
+              </layout>
+             </item>
+            </layout>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="vboxStudyRight">
+          <item>
+           <widget class="QGroupBox" name="grpStudyHistory">
+            <property name="title"><string>History Table</string></property>
+            <layout class="QVBoxLayout" name="vboxHistoryTable">
+             <item>
+              <widget class="QTableWidget" name="tblStudyHistory">
+               <column><property name="text"><string>Time</string></property></column>
+               <column><property name="text"><string>Event</string></property></column>
+               <column><property name="text"><string>Details</string></property></column>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QTextEdit" name="txtStudyLog"><property name="readOnly"><bool>true</bool></property></widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+
+      <!-- TAB 2: Bed Room -->
+      <widget class="QWidget" name="tabBedRoom">
+       <attribute name="title"><string>Bed Room</string></attribute>
+       <layout class="QHBoxLayout" name="hboxBed">
+        <item>
+         <layout class="QVBoxLayout" name="vboxBedLeft">
+          <item>
+           <widget class="QGroupBox" name="grpBedSensors">
+            <property name="title"><string>Sensors</string></property>
+            <layout class="QFormLayout" name="formBedSensors">
+             <item row="0" column="0"><widget class="QLabel" name="lbl1"><property name="text"><string>DHT Temp:</string></property></widget></item>
+             <item row="0" column="1"><widget class="QLabel" name="lblBedTemp"><property name="text"><string>-- °C</string></property></widget></item>
+             <item row="1" column="0"><widget class="QLabel" name="lbl2"><property name="text"><string>DHT Humidity:</string></property></widget></item>
+             <item row="1" column="1"><widget class="QLabel" name="lblBedHum"><property name="text"><string>-- %</string></property></widget></item>
+             <item row="2" column="0"><widget class="QLabel" name="lbl3"><property name="text"><string>MQ135 Gas Analog:</string></property></widget></item>
+             <item row="2" column="1"><widget class="QLabel" name="lblBedMq135Analog"><property name="text"><string>--</string></property></widget></item>
+             <item row="3" column="0"><widget class="QLabel" name="lbl4"><property name="text"><string>MQ135 Gas Digital:</string></property></widget></item>
+             <item row="3" column="1"><widget class="QLabel" name="lblBedMq135Digital"><property name="text"><string>NORMAL</string></property></widget></item>
+             <item row="4" column="0"><widget class="QLabel" name="lbl5"><property name="text"><string>PIR Motion:</string></property></widget></item>
+             <item row="4" column="1"><widget class="QLabel" name="lblBedPir"><property name="text"><string>Clear</string></property></widget></item>
+             <item row="5" column="0"><widget class="QLabel" name="lblBedNodeIpTitle"><property name="text"><string>Connected Node IP:</string></property></widget></item>
+             <item row="5" column="1"><widget class="QLabel" name="lblBedNodeIp"><property name="text"><string>--</string></property></widget></item>
+             <item row="6" column="0"><widget class="QLabel" name="lblBedLastSyncTitle"><property name="text"><string>Last Synced:</string></property></widget></item>
+             <item row="6" column="1"><widget class="QLabel" name="lblBedLastSync"><property name="text"><string>Never</string></property></widget></item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="grpBedRemote">
+            <property name="title"><string>IR Remote Presets (Fan &amp; AC)</string></property>
+            <layout class="QGridLayout" name="gridBedRemote">
+             <item row="0" column="0"><widget class="QPushButton" name="btnFanOn"><property name="text"><string>Fan ON</string></property></widget></item>
+             <item row="0" column="1"><widget class="QPushButton" name="btnFanOff"><property name="text"><string>Fan OFF</string></property></widget></item>
+             <item row="1" column="0"><widget class="QPushButton" name="btnFanSpeed1"><property name="text"><string>Fan Spd 1</string></property></widget></item>
+             <item row="1" column="1"><widget class="QPushButton" name="btnFanSpeed2"><property name="text"><string>Fan Spd 2</string></property></widget></item>
+             <item row="2" column="0"><widget class="QPushButton" name="btnFanSpeed3"><property name="text"><string>Fan Spd 3</string></property></widget></item>
+             <item row="2" column="1"><widget class="QPushButton" name="btnFanSpeed4"><property name="text"><string>Fan Spd 4</string></property></widget></item>
+             <item row="3" column="0" colspan="2"><widget class="QPushButton" name="btnFanSpeed5"><property name="text"><string>Fan Spd 5</string></property></widget></item>
+             <item row="4" column="0"><widget class="QPushButton" name="btnAcOn"><property name="text"><string>AC ON</string></property></widget></item>
+             <item row="4" column="1"><widget class="QPushButton" name="btnAcOff"><property name="text"><string>AC OFF</string></property></widget></item>
+             <item row="5" column="0" colspan="2"><widget class="QPushButton" name="btnAc26"><property name="text"><string>AC 26°C</string></property></widget></item>
+            </layout>
+           </widget>
+          </item>
+          <item><widget class="QCheckBox" name="chkBedOverride"><property name="text"><string>Manual Override</string></property></widget></item>
+          <item>
+           <layout class="QHBoxLayout" name="hboxBedSyncBtn">
+            <item><widget class="QPushButton" name="btnBedSync"><property name="text"><string>SYNC Now</string></property></widget></item>
+            <item><widget class="QPushButton" name="btnBedClearHistory"><property name="text"><string>Clear History</string></property></widget></item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="vboxBedRight">
+          <item>
+           <widget class="QGroupBox" name="grpCustomIr"><property name="title"><string>Custom IR Transmitter</string></property>
+            <layout class="QHBoxLayout" name="hboxCustomIr">
+             <item><widget class="QLineEdit" name="txtIrHex"><property name="placeholderText"><string>Hex Code (e.g. 0x20DF10EF)</string></property></widget></item>
+             <item><widget class="QSpinBox" name="spinIrBits"><property name="value"><number>32</number></property></widget></item>
+             <item><widget class="QPushButton" name="btnSendCustomIr"><property name="text"><string>Send IR</string></property></widget></item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QTableWidget" name="tblBedHistory">
+            <column><property name="text"><string>Time</string></property></column>
+            <column><property name="text"><string>Event</string></property></column>
+            <column><property name="text"><string>Details</string></property></column>
+           </widget>
+          </item>
+          <item><widget class="QTextEdit" name="txtBedLog"><property name="readOnly"><bool>true</bool></property></widget></item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+
+      <!-- TAB 3: Kitchen Monitor -->
+      <widget class="QWidget" name="tabKitchen">
+       <attribute name="title"><string>Kitchen Monitor</string></attribute>
+       <layout class="QHBoxLayout" name="hboxKitchen">
+        <item>
+         <layout class="QVBoxLayout" name="vboxKitchenLeft">
+          <item>
+           <widget class="QGroupBox" name="grpKitchenSensors"><property name="title"><string>Kitchen Telemetry</string></property>
+            <layout class="QFormLayout" name="formKitchenSensors">
+             <item row="0" column="0"><widget class="QLabel" name="l1"><property name="text"><string>PIR Motion:</string></property></widget></item>
+             <item row="0" column="1"><widget class="QLabel" name="lblKitchenPir"><property name="text"><string>Clear</string></property></widget></item>
+             <item row="1" column="0"><widget class="QLabel" name="l2"><property name="text"><string>Gas Leak (Digital):</string></property></widget></item>
+             <item row="1" column="1"><widget class="QLabel" name="lblKitchenGasDigital"><property name="text"><string>NORMAL</string></property></widget></item>
+             <item row="2" column="0"><widget class="QLabel" name="l3"><property name="text"><string>Gas Level (Analog):</string></property></widget></item>
+             <item row="2" column="1"><widget class="QLabel" name="lblKitchenGasAnalog"><property name="text"><string>0</string></property></widget></item>
+             <item row="3" column="0"><widget class="QLabel" name="l4"><property name="text"><string>Temp LM358:</string></property></widget></item>
+             <item row="3" column="1"><widget class="QLabel" name="lblKitchenTempLm358"><property name="text"><string>-- °C</string></property></widget></item>
+             <item row="4" column="0"><widget class="QLabel" name="l5"><property name="text"><string>Temp BMP280:</string></property></widget></item>
+             <item row="4" column="1"><widget class="QLabel" name="lblKitchenTempBmp"><property name="text"><string>-- °C</string></property></widget></item>
+             <item row="5" column="0"><widget class="QLabel" name="l6"><property name="text"><string>Pressure:</string></property></widget></item>
+             <item row="5" column="1"><widget class="QLabel" name="lblKitchenPres"><property name="text"><string>-- hPa</string></property></widget></item>
+             <item row="6" column="0"><widget class="QLabel" name="lblKitNodeIpTitle"><property name="text"><string>Connected Node IP:</string></property></widget></item>
+             <item row="6" column="1"><widget class="QLabel" name="lblKitchenNodeIp"><property name="text"><string>--</string></property></widget></item>
+             <item row="7" column="0"><widget class="QLabel" name="lblKitLastSyncTitle"><property name="text"><string>Last Synced:</string></property></widget></item>
+             <item row="7" column="1"><widget class="QLabel" name="lblKitchenLastSync"><property name="text"><string>Never</string></property></widget></item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="grpKitchenControls"><property name="title"><string>Kitchen Relays</string></property>
+            <layout class="QVBoxLayout" name="vboxKitchenRelays">
+             <item><widget class="QCheckBox" name="chkKitchenOverride"><property name="text"><string>Manual Override</string></property></widget></item>
+             <item><widget class="QCheckBox" name="chkKitchenRelay"><property name="text"><string>Kitchen Lamp Relay</string></property></widget></item>
+             <item><widget class="QCheckBox" name="chkKitchenBuzzer"><property name="text"><string>Kitchen Alarm Buzzer</string></property></widget></item>
+             <item><widget class="QPushButton" name="btnKitchenSync"><property name="text"><string>SYNC Status</string></property></widget></item>
+             <item><widget class="QPushButton" name="btnKitchenCapture"><property name="text"><string>Capture Camera Snapshot</string></property></widget></item>
+            </layout>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="vboxKitchenRight">
+          <item><widget class="QLabel" name="lblKitchenCamStream"><property name="text"><string>[ ESP32-CAM Stream Viewer ]</string></property><property name="alignment"><set>Qt::AlignCenter</set></property><property name="styleSheet"><string>border:2px dashed #3d3d5c; background:#12121c;</string></property><property name="minimumSize"><size><width>480</width><height>320</height></size></property></widget></item>
+          <item><widget class="QTextEdit" name="txtKitchenLog"><property name="readOnly"><bool>true</bool></property></widget></item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+
+      <!-- TAB 4: Kitchen Exhaust Fan -->
+      <widget class="QWidget" name="tabExhaust">
+       <attribute name="title"><string>Kitchen Exhaust Fan</string></attribute>
+       <layout class="QHBoxLayout" name="hboxExhaust">
+        <item>
+         <layout class="QVBoxLayout" name="vboxExhaustLeft">
+          <item>
+           <widget class="QGroupBox" name="grpExhaustStatus"><property name="title"><string>Exhaust &amp; Smoke Telemetry</string></property>
+            <layout class="QFormLayout" name="formExhaustSensors">
+             <item row="0" column="0"><widget class="QLabel" name="ex1"><property name="text"><string>MQ2 Smoke Analog:</string></property></widget></item>
+             <item row="0" column="1"><widget class="QLabel" name="lblExhaustSmokeAnalog"><property name="text"><string>0</string></property></widget></item>
+             <item row="1" column="0"><widget class="QLabel" name="ex2"><property name="text"><string>MQ2 Smoke Digital:</string></property></widget></item>
+             <item row="1" column="1"><widget class="QLabel" name="lblExhaustSmokeDigital"><property name="text"><string>NORMAL</string></property></widget></item>
+             <item row="2" column="0"><widget class="QLabel" name="ex3"><property name="text"><string>Fan Relay Status:</string></property></widget></item>
+             <item row="2" column="1"><widget class="QLabel" name="lblExhaustFanStatus"><property name="text"><string>OFF</string></property></widget></item>
+             <item row="3" column="0"><widget class="QLabel" name="ex4"><property name="text"><string>Buzzer Alarm Status:</string></property></widget></item>
+             <item row="3" column="1"><widget class="QLabel" name="lblExhaustBuzzerStatus"><property name="text"><string>OFF</string></property></widget></item>
+             <item row="4" column="0"><widget class="QLabel" name="lblExNodeIpTitle"><property name="text"><string>Connected Node IP:</string></property></widget></item>
+             <item row="4" column="1"><widget class="QLabel" name="lblExhaustNodeIp"><property name="text"><string>--</string></property></widget></item>
+             <item row="5" column="0"><widget class="QLabel" name="lblExLastSyncTitle"><property name="text"><string>Last Synced:</string></property></widget></item>
+             <item row="5" column="1"><widget class="QLabel" name="lblExhaustLastSync"><property name="text"><string>Never</string></property></widget></item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="grpExhaustConfig"><property name="title"><string>Threshold Settings</string></property>
+            <layout class="QFormLayout" name="formExhaustConfig">
+             <item row="0" column="0"><widget class="QLabel" name="c1"><property name="text"><string>Smoke ON Threshold:</string></property></widget></item>
+             <item row="0" column="1"><widget class="QSpinBox" name="spinSmokeOnTh"><property name="maximum"><number>4095</number></property><property name="value"><number>650</number></property></widget></item>
+             <item row="1" column="0"><widget class="QLabel" name="c2"><property name="text"><string>Smoke OFF Threshold:</string></property></widget></item>
+             <item row="1" column="1"><widget class="QSpinBox" name="spinSmokeOffTh"><property name="maximum"><number>4095</number></property><property name="value"><number>450</number></property></widget></item>
+             <item row="2" column="0"><widget class="QLabel" name="c3"><property name="text"><string>Buzzer Threshold:</string></property></widget></item>
+             <item row="2" column="1"><widget class="QSpinBox" name="spinBuzzerTh"><property name="maximum"><number>4095</number></property><property name="value"><number>800</number></property></widget></item>
+             <item row="3" column="0" colspan="2"><widget class="QPushButton" name="btnExhaustUpdateConfig"><property name="text"><string>Update Threshold Config</string></property></widget></item>
+            </layout>
+           </widget>
+          </item>
+          <item><widget class="QCheckBox" name="chkExhaustOverride"><property name="text"><string>Manual Override</string></property></widget></item>
+          <item><widget class="QPushButton" name="btnExhaustSync"><property name="text"><string>SYNC Now</string></property></widget></item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="vboxExhaustRight">
+          <item>
+           <widget class="QTableWidget" name="tblExhaustHistory">
+            <column><property name="text"><string>Time</string></property></column>
+            <column><property name="text"><string>Event</string></property></column>
+            <column><property name="text"><string>Details</string></property></column>
+           </widget>
+          </item>
+          <item><widget class="QTextEdit" name="txtExhaustLog"><property name="readOnly"><bool>true</bool></property></widget></item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+
+      <!-- TAB 5: Toilet Assistance -->
+      <widget class="QWidget" name="tabToilet">
+       <attribute name="title"><string>Toilet Assistance</string></attribute>
+       <layout class="QHBoxLayout" name="hboxToilet">
+        <item>
+         <layout class="QVBoxLayout" name="vboxToiletLeft">
+          <item>
+           <widget class="QGroupBox" name="grpToiletStatus"><property name="title"><string>Toilet Telemetry</string></property>
+            <layout class="QFormLayout" name="formToiletSensors">
+             <item row="0" column="0"><widget class="QLabel" name="t1"><property name="text"><string>PIR Motion:</string></property></widget></item>
+             <item row="0" column="1"><widget class="QLabel" name="lblToiletPir"><property name="text"><string>Clear</string></property></widget></item>
+             <item row="1" column="0"><widget class="QLabel" name="t2"><property name="text"><string>Emergency Light:</string></property></widget></item>
+             <item row="1" column="1"><widget class="QLabel" name="lblToiletLight"><property name="text"><string>OFF</string></property></widget></item>
+             <item row="2" column="0"><widget class="QLabel" name="t3"><property name="text"><string>Buzzer Status:</string></property></widget></item>
+             <item row="2" column="1"><widget class="QLabel" name="lblToiletBuzzer"><property name="text"><string>OFF</string></property></widget></item>
+             <item row="3" column="0"><widget class="QLabel" name="lblToiNodeIpTitle"><property name="text"><string>Connected Node IP:</string></property></widget></item>
+             <item row="3" column="1"><widget class="QLabel" name="lblToiletNodeIp"><property name="text"><string>--</string></property></widget></item>
+             <item row="4" column="0"><widget class="QLabel" name="lblToiLastSyncTitle"><property name="text"><string>Last Synced:</string></property></widget></item>
+             <item row="4" column="1"><widget class="QLabel" name="lblToiletLastSync"><property name="text"><string>Never</string></property></widget></item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="grpToiletControls"><property name="title"><string>Controls</string></property>
+            <layout class="QVBoxLayout" name="vboxToiletControls">
+             <item><widget class="QCheckBox" name="chkToiletOverride"><property name="text"><string>Manual Override</string></property></widget></item>
+             <item><widget class="QCheckBox" name="chkToiletLight"><property name="text"><string>Emergency Light Switch</string></property></widget></item>
+             <item><widget class="QCheckBox" name="chkToiletBuzzer"><property name="text"><string>Alarm Buzzer Switch</string></property></widget></item>
+             <item><widget class="QPushButton" name="btnToiletPanic"><property name="text"><string>PANIC ALERT / RESET</string></property></widget></item>
+             <item><widget class="QPushButton" name="btnToiletSync"><property name="text"><string>SYNC Status</string></property></widget></item>
+            </layout>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="vboxToiletRight">
+          <item>
+           <widget class="QTableWidget" name="tblToiletHistory">
+            <column><property name="text"><string>Time</string></property></column>
+            <column><property name="text"><string>Event</string></property></column>
+            <column><property name="text"><string>Details</string></property></column>
+           </widget>
+          </item>
+          <item><widget class="QTextEdit" name="txtToiletLog"><property name="readOnly"><bool>true</bool></property></widget></item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+
+      <!-- TAB 6: RO / Waste Water -->
+      <widget class="QWidget" name="tabRoWater">
+       <attribute name="title"><string>RO Waste Water</string></attribute>
+       <layout class="QHBoxLayout" name="hboxRo">
+        <item>
+         <layout class="QVBoxLayout" name="vboxRoLeft">
+          <item>
+           <widget class="QGroupBox" name="grpRoStatus"><property name="title"><string>Water Tank Telemetry</string></property>
+            <layout class="QFormLayout" name="formRoSensors">
+             <item row="0" column="0"><widget class="QLabel" name="ro1"><property name="text"><string>Float Switch Level:</string></property></widget></item>
+             <item row="0" column="1"><widget class="QLabel" name="lblRoLevel"><property name="text"><string>Normal</string></property></widget></item>
+             <item row="1" column="0"><widget class="QLabel" name="ro2"><property name="text"><string>Pump Relay Status:</string></property></widget></item>
+             <item row="1" column="1"><widget class="QLabel" name="lblRoPumpStatus"><property name="text"><string>OFF</string></property></widget></item>
+             <item row="2" column="0"><widget class="QLabel" name="lblRoNodeIpTitle"><property name="text"><string>Connected Node IP:</string></property></widget></item>
+             <item row="2" column="1"><widget class="QLabel" name="lblRoNodeIp"><property name="text"><string>--</string></property></widget></item>
+             <item row="3" column="0"><widget class="QLabel" name="lblRoLastSyncTitle"><property name="text"><string>Last Synced:</string></property></widget></item>
+             <item row="3" column="1"><widget class="QLabel" name="lblRoLastSync"><property name="text"><string>Never</string></property></widget></item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="grpRoControls"><property name="title"><string>Pump Control</string></property>
+            <layout class="QVBoxLayout" name="vboxRoControls">
+             <item><widget class="QCheckBox" name="chkRoOverride"><property name="text"><string>Manual Control Enable</string></property></widget></item>
+             <item><widget class="QCheckBox" name="chkRoPump"><property name="text"><string>Pump Power Relay</string></property></widget></item>
+             <item><widget class="QPushButton" name="btnRoSync"><property name="text"><string>SYNC Status</string></property></widget></item>
+            </layout>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="vboxRoRight">
+          <item>
+           <widget class="QTableWidget" name="tblRoHistory">
+            <column><property name="text"><string>Time</string></property></column>
+            <column><property name="text"><string>Event</string></property></column>
+            <column><property name="text"><string>Details</string></property></column>
+           </widget>
+          </item>
+          <item><widget class="QTextEdit" name="txtRoLog"><property name="readOnly"><bool>true</bool></property></widget></item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+
+      <!-- TAB 7: Main Door Security -->
+      <widget class="QWidget" name="tabMainDoor">
+       <attribute name="title"><string>Main Door Security</string></attribute>
+       <layout class="QHBoxLayout" name="hboxDoor">
+        <item>
+         <layout class="QVBoxLayout" name="vboxDoorLeft">
+          <item>
+           <widget class="QGroupBox" name="grpDoorStatus"><property name="title"><string>Security Telemetry</string></property>
+            <layout class="QFormLayout" name="formDoorSensors">
+             <item row="0" column="0"><widget class="QLabel" name="d1"><property name="text"><string>PIR Motion:</string></property></widget></item>
+             <item row="0" column="1"><widget class="QLabel" name="lblDoorPir"><property name="text"><string>Clear</string></property></widget></item>
+             <item row="1" column="0"><widget class="QLabel" name="d2"><property name="text"><string>Door Lock Relay:</string></property></widget></item>
+             <item row="1" column="1"><widget class="QLabel" name="lblDoorRelay"><property name="text"><string>Locked</string></property></widget></item>
+             <item row="2" column="0"><widget class="QLabel" name="d3"><property name="text"><string>Buzzer Alarm:</string></property></widget></item>
+             <item row="2" column="1"><widget class="QLabel" name="lblDoorBuzzer"><property name="text"><string>OFF</string></property></widget></item>
+             <item row="3" column="0"><widget class="QLabel" name="d4"><property name="text"><string>Flash LED:</string></property></widget></item>
+             <item row="3" column="1"><widget class="QLabel" name="lblDoorFlash"><property name="text"><string>OFF</string></property></widget></item>
+             <item row="4" column="0"><widget class="QLabel" name="lblDoorNodeIpTitle"><property name="text"><string>Connected Node IP:</string></property></widget></item>
+             <item row="4" column="1"><widget class="QLabel" name="lblDoorNodeIp"><property name="text"><string>--</string></property></widget></item>
+             <item row="5" column="0"><widget class="QLabel" name="lblDoorLastSyncTitle"><property name="text"><string>Last Synced:</string></property></widget></item>
+             <item row="5" column="1"><widget class="QLabel" name="lblDoorLastSync"><property name="text"><string>Never</string></property></widget></item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="grpDoorControls"><property name="title"><string>Security Actions</string></property>
+            <layout class="QGridLayout" name="gridDoorActions">
+             <item row="0" column="0"><widget class="QPushButton" name="btnDoorUnlock"><property name="text"><string>Unlock Door</string></property></widget></item>
+             <item row="0" column="1"><widget class="QPushButton" name="btnDoorBuzzer"><property name="text"><string>Toggle Buzzer</string></property></widget></item>
+             <item row="1" column="0"><widget class="QPushButton" name="btnDoorFlash"><property name="text"><string>Toggle Flash LED</string></property></widget></item>
+             <item row="1" column="1"><widget class="QPushButton" name="btnDoorCapture"><property name="text"><string>Capture Snapshot</string></property></widget></item>
+             <item row="2" column="0" colspan="2"><widget class="QPushButton" name="btnDoorSync"><property name="text"><string>SYNC Camera &amp; Door Status</string></property></widget></item>
+             <item row="3" column="0" colspan="2"><widget class="QPushButton" name="btnDoorReboot"><property name="text"><string>Reboot ESP32-CAM</string></property></widget></item>
+            </layout>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="vboxDoorRight">
+          <item><widget class="QLabel" name="lblDoorStreamView"><property name="text"><string>[ ESP32-CAM Main Door Video Stream ]</string></property><property name="alignment"><set>Qt::AlignCenter</set></property><property name="styleSheet"><string>border:2px dashed #3d3d5c; background:#12121c;</string></property><property name="minimumSize"><size><width>480</width><height>320</height></size></property></widget></item>
+          <item><widget class="QTextEdit" name="txtDoorLog"><property name="readOnly"><bool>true</bool></property></widget></item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+
+      <!-- TAB 8: Pi Kitchen Monitor -->
+      <widget class="QWidget" name="tabPiKitchen">
+       <attribute name="title"><string>Pi Kitchen Monitor</string></attribute>
+       <layout class="QHBoxLayout" name="hboxPi">
+        <item>
+         <layout class="QVBoxLayout" name="vboxPiLeft">
+          <item>
+           <widget class="QGroupBox" name="grpPiInfo"><property name="title"><string>Pi Server Information</string></property>
+            <layout class="QFormLayout" name="formPiSensors">
+             <item row="0" column="0"><widget class="QLabel" name="p1"><property name="text"><string>Server Version:</string></property></widget></item>
+             <item row="0" column="1"><widget class="QLabel" name="lblPiVersion"><property name="text"><string>--</string></property></widget></item>
+             <item row="1" column="0"><widget class="QLabel" name="p2"><property name="text"><string>Pi IP Address:</string></property></widget></item>
+             <item row="1" column="1"><widget class="QLineEdit" name="txtPiIp"><property name="text"><string>192.168.1.50</string></property></widget></item>
+             <item row="2" column="0"><widget class="QLabel" name="lblPiLastSyncTitle"><property name="text"><string>Last Synced:</string></property></widget></item>
+             <item row="2" column="1"><widget class="QLabel" name="lblPiLastSync"><property name="text"><string>Never</string></property></widget></item>
+            </layout>
+           </widget>
+          </item>
+          <item><widget class="QPushButton" name="btnPiFetch"><property name="text"><string>Query Pi Server &amp; Controls</string></property></widget></item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="vboxPiRight">
+          <item><widget class="QLabel" name="lblPiStreamView"><property name="text"><string>[ Raspberry Pi Video Stream ]</string></property><property name="alignment"><set>Qt::AlignCenter</set></property><property name="styleSheet"><string>border:2px dashed #3d3d5c; background:#12121c;</string></property><property name="minimumSize"><size><width>480</width><height>320</height></size></property></widget></item>
+          <item><widget class="QTextEdit" name="txtPiLog"><property name="readOnly"><bool>true</bool></property></widget></item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+
+      <!-- TAB 9: RC Car Controller -->
+      <widget class="QWidget" name="tabRcCar">
+       <attribute name="title"><string>RC Car Controller</string></attribute>
+       <layout class="QHBoxLayout" name="hboxRc">
+        <item>
+         <layout class="QVBoxLayout" name="vboxRcLeft">
+          <item>
+           <widget class="QGroupBox" name="grpRcControls"><property name="title"><string>Drive Controls</string></property>
+            <layout class="QGridLayout" name="gridRcDrive">
+             <item row="0" column="1"><widget class="QPushButton" name="btnRcForward"><property name="text"><string>▲ FORWARD</string></property></widget></item>
+             <item row="1" column="0"><widget class="QPushButton" name="btnRcLeft"><property name="text"><string>◄ LEFT</string></property></widget></item>
+             <item row="1" column="1"><widget class="QPushButton" name="btnRcStop"><property name="text"><string>■ STOP</string></property></widget></item>
+             <item row="1" column="2"><widget class="QPushButton" name="btnRcRight"><property name="text"><string>► RIGHT</string></property></widget></item>
+             <item row="2" column="1"><widget class="QPushButton" name="btnRcBackward"><property name="text"><string>▼ BACKWARD</string></property></widget></item>
+            </layout>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="vboxRcRight">
+          <item><widget class="QTextEdit" name="txtRcLog"><property name="readOnly"><bool>true</bool></property></widget></item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+
+      <!-- TAB 10: Settings -->
+      <widget class="QWidget" name="tabSettings">
+       <attribute name="title"><string>Settings &amp; Config</string></attribute>
+       <layout class="QVBoxLayout" name="vboxSettings">
+        <item>
+         <widget class="QGroupBox" name="grpSyncModeSettings"><property name="title"><string>Network Sync Mode</string></property>
+          <layout class="QHBoxLayout" name="hboxSyncModes">
+           <item><widget class="QRadioButton" name="rbMqtt"><property name="text"><string>MQTT Mode</string></property></widget></item>
+           <item><widget class="QRadioButton" name="rbLocalIp"><property name="text"><string>Local Network Mode (IP)</string></property><property name="checked"><bool>true</bool></property></widget></item>
+           <item><widget class="QRadioButton" name="rbFirebase"><property name="text"><string>Firebase Cloud Mode</string></property></widget></item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="grpLocalIps"><property name="title"><string>Mapped Node Local IP Addresses</string></property>
+          <layout class="QGridLayout" name="gridLocalIps">
+           <item row="0" column="0"><widget class="QLabel" name="s1"><property name="text"><string>Study Room IP:</string></property></widget></item>
+           <item row="0" column="1"><widget class="QLineEdit" name="txtIpStudy"><property name="text"><string>192.168.1.10</string></property></widget></item>
+           <item row="0" column="2"><widget class="QLabel" name="s2"><property name="text"><string>Bed Room IP:</string></property></widget></item>
+           <item row="0" column="3"><widget class="QLineEdit" name="txtIpBed"><property name="text"><string>192.168.1.11</string></property></widget></item>
+           <item row="1" column="0"><widget class="QLabel" name="s3"><property name="text"><string>Kitchen Monitor IP:</string></property></widget></item>
+           <item row="1" column="1"><widget class="QLineEdit" name="txtIpKitchen"><property name="text"><string>192.168.1.12</string></property></widget></item>
+           <item row="1" column="2"><widget class="QLabel" name="s4"><property name="text"><string>Kitchen Exhaust IP:</string></property></widget></item>
+           <item row="1" column="3"><widget class="QLineEdit" name="txtIpExhaust"><property name="text"><string>192.168.1.13</string></property></widget></item>
+           <item row="2" column="0"><widget class="QLabel" name="s5"><property name="text"><string>Toilet Assistance IP:</string></property></widget></item>
+           <item row="2" column="1"><widget class="QLineEdit" name="txtIpToilet"><property name="text"><string>192.168.1.14</string></property></widget></item>
+           <item row="2" column="2"><widget class="QLabel" name="s6"><property name="text"><string>RO Water Pump IP:</string></property></widget></item>
+           <item row="2" column="3"><widget class="QLineEdit" name="txtIpRo"><property name="text"><string>192.168.1.15</string></property></widget></item>
+           <item row="3" column="0"><widget class="QLabel" name="s7"><property name="text"><string>Main Door Security IP:</string></property></widget></item>
+           <item row="3" column="1"><widget class="QLineEdit" name="txtIpDoor"><property name="text"><string>192.168.1.16</string></property></widget></item>
+           <item row="3" column="2"><widget class="QLabel" name="s8"><property name="text"><string>Pi Kitchen IP:</string></property></widget></item>
+           <item row="3" column="3"><widget class="QLineEdit" name="txtIpPi"><property name="text"><string>192.168.1.50</string></property></widget></item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="grpMqttSettings"><property name="title"><string>MQTT &amp; Firebase Settings</string></property>
+          <layout class="QGridLayout" name="gridMqtt">
+           <item row="0" column="0"><widget class="QLabel" name="m1"><property name="text"><string>MQTT Broker:</string></property></widget></item>
+           <item row="0" column="1"><widget class="QLineEdit" name="txtMqttBroker"><property name="text"><string>broker.hivemq.com</string></property></widget></item>
+           <item row="0" column="2"><widget class="QLabel" name="m2"><property name="text"><string>MQTT Ports:</string></property></widget></item>
+           <item row="0" column="3"><widget class="QLineEdit" name="txtMqttPorts"><property name="text"><string>1883, 8000, 8883, 8884</string></property></widget></item>
+           <item row="1" column="0"><widget class="QLabel" name="fb1"><property name="text"><string>Firebase URL:</string></property></widget></item>
+           <item row="1" column="1" colspan="3"><widget class="QLineEdit" name="txtFirebaseUrl"><property name="text"><string>https://gapsmarthome-default-rtdb.asia-southeast1.firebasedatabase.app</string></property></widget></item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="grpOtaSettings"><property name="title"><string>OTA Firmware Flash Trigger</string></property>
+          <layout class="QHBoxLayout" name="hboxOta">
+           <item><widget class="QLineEdit" name="txtFullOtaUrl"><property name="placeholderText"><string>Full Firmware URL (.bin)</string></property></widget></item>
+           <item><widget class="QLineEdit" name="txtMinimalOtaUrl"><property name="placeholderText"><string>Minimal Bridge Firmware URL (.bin)</string></property></widget></item>
+           <item><widget class="QComboBox" name="cmbOtaTargetNode">
+            <item><property name="text"><string>study</string></property></item>
+            <item><property name="text"><string>bedroom</string></property></item>
+            <item><property name="text"><string>kitchen</string></property></item>
+            <item><property name="text"><string>exhaust</string></property></item>
+            <item><property name="text"><string>toilet</string></property></item>
+            <item><property name="text"><string>ro_pump</string></property></item>
+            <item><property name="text"><string>door</string></property></item>
+           </widget></item>
+           <item><widget class="QPushButton" name="btnTriggerOta"><property name="text"><string>Trigger OTA Update</string></property></widget></item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="hboxSaveButtons">
+          <item><widget class="QPushButton" name="btnSaveSettings"><property name="text"><string>Save Settings Locally</string></property></widget></item>
+          <item><widget class="QPushButton" name="btnSyncNodeConfig"><property name="text"><string>Sync Settings to Selected Node (POST /config)</string></property></widget></item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

@@ -131,12 +131,17 @@ void setup() {
   server.onNotFound(HTTP_handleRoot);  // when a client requests an unknown URI (i.e. something other than "/"), call function "handleNotFound"
   server.begin();                      // actually start the server
 
+  ArduinoOTA.onStart([]() {
+    ESP.wdtEnable(20000);
+  });
   ArduinoOTA.begin();  // enable to receive update/uploade firmware via Wifi OTA
 
+  ESP.wdtEnable(WDTO_8S);
   setupFirebase();
 }
 
 void loop() {
+  ESP.wdtFeed();
   ArduinoOTA.handle();    // listen for update OTA request from clients
   server.handleClient();  // listen for HTTP requests from clients
 

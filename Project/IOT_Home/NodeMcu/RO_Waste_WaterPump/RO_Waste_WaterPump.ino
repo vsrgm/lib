@@ -1,5 +1,6 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
+#include <WiFiUdp.h>
 #include <ArduinoJson.h>
 #include <LittleFS.h>
 #include <time.h>
@@ -46,7 +47,31 @@ String globalCmdTopic = baseTopic + "all/commands";
 String discoveryTopic = baseTopic + "nodes/discovery";
 String historyTopic = baseTopic + mqttClientId + "/history";
 
-const String SW_VERSION = "1.0.328";
+const String SW_VERSION = "1.0.416";
+
+WiFiUDP udpDiscovery;
+const int UDP_DISCOVERY_PORT = 8888;
+
+void setupUdpDiscovery() {
+  udpDiscovery.begin(UDP_DISCOVERY_PORT);
+}
+
+void checkUdpDiscovery() {
+  int packetSize = udpDiscovery.parsePacket();
+  if (packetSize) {
+    char buf[255];
+    int len = udpDiscovery.read(buf, 255);
+    if (len > 0) buf[len] = 0;
+    String msg = String(buf);
+    msg.trim();
+    if (msg == "DISCOVER" || msg.indexOf("DISCOVER") != -1) {
+      String response = "{\"ip\":\"" + WiFi.localIP().toString() + "\",\"id\":\"" + mqttClientId + "\",\"name\":\"ro_pump\",\"ver\":\"" + SW_VERSION + "\"}";
+      udpDiscovery.beginPacket(udpDiscovery.remoteIP(), udpDiscovery.remotePort());
+      udpDiscovery.print(response);
+      udpDiscovery.endPacket();
+    }
+  }
+}
 
 int currentMqttPortIndex = 0;
 const int mqttPorts[] = {1883, 8000, 8883, 8884};
@@ -58,6 +83,7 @@ bool waterLevelOk = false;
 bool manualOverride = false;
 unsigned long pumpStartTime = 0;
 const unsigned long MAX_RUN_TIME = 600000; // 10 minutes safety timeout
+unsigned long lastHeartbeatTime = 0;
 
 // Web Logging
 String webLogs = "";
@@ -134,9 +160,11 @@ void publishStatus() {
 #endif
 
   if (Firebase.ready()) {
-    FirebaseJson json;
-    json.setJsonData(buffer);
-    Firebase.RTDB.setJSON(&fbdo, String(FB_OUTBOX) + "/status", &json);
+    if (millis() - lastHeartbeatTime < 60000) {
+      FirebaseJson json;
+      json.setJsonData(buffer);
+      Firebase.RTDB.setJSON(&fbdo, String(FB_OUTBOX) + "/status", &json);
+    }
   }
 }
 
@@ -167,9 +195,11 @@ void logData(String eventType) {
   f.close();
 
   if (Firebase.ready()) {
-    String trimmedEntry = entry;
-    trimmedEntry.trim();
-    Firebase.RTDB.pushString(&fbdo, String(FB_OUTBOX) + "/history", trimmedEntry);
+    if (millis() - lastHeartbeatTime < 60000) {
+      String trimmedEntry = entry;
+      trimmedEntry.trim();
+      Firebase.RTDB.pushString(&fbdo, String(FB_OUTBOX) + "/history", trimmedEntry);
+    }
   }
 }
 
@@ -231,6 +261,7 @@ void runPendingOTA() {
   addWebLog(url);
 
   delay(5000);
+  ESP.wdtEnable(20000);
   system_update_cpu_freq(160);
 
   WiFiClientSecure sClient;
@@ -254,6 +285,8 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
 
   if (msg == "SYNC") {
     publishStatus();
+  } else if (msg == "HEARTBEAT") {
+    lastHeartbeatTime = millis();
   } else if (msg.startsWith("OTA:")) {
     handleRemoteOTA(msg.substring(4));
   } else if (msg.startsWith("OTA_FULL:")) {
@@ -469,12 +502,14 @@ void setup() {
   });
 
   server.on("/status", []() {
-    StaticJsonDocument<256> doc;
+    StaticJsonDocument<512> doc;
     doc["pump"] = pumpActive ? "ON" : "OFF";
     doc["level"] = waterLevelOk ? "OK" : "LOW";
     doc["manual"] = manualOverride ? "ON" : "OFF";
     doc["heap"] = ESP.getFreeHeap();
     doc["ver"] = SW_VERSION;
+    doc["ip"] = WiFi.localIP().toString();
+    doc["id"] = mqttClientId;
     String response;
     serializeJson(doc, response);
     server.send(200, "application/json", response);
@@ -493,6 +528,7 @@ void setup() {
   server.on("/update", HTTP_GET, []() {
     mqttClient.disconnect();
     fbdo.clear();
+    ESP.wdtEnable(20000);
     server.send(200, "text/html", "Update Mode. <a href='/update_now'>Upload</a>");
   });
 
@@ -511,12 +547,17 @@ void setup() {
   mqttClient.setBufferSize(512);
 #endif
 
+  ESP.wdtEnable(WDTO_8S);
+  setupUdpDiscovery();
+
   publishStatus();
 }
 
 void loop() {
+  ESP.wdtFeed();
   server.handleClient();
   MDNS.update();
+  checkUdpDiscovery();
 
   if (WiFi.status() == WL_CONNECTED) {
 #ifdef ENABLE_MQTT

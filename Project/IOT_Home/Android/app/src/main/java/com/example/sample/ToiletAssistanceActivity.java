@@ -47,16 +47,25 @@ public class ToiletAssistanceActivity extends AppCompatActivity {
 
     private ActivityToiletAssistanceBinding binding;
     private MqttClient mqttClient;
+    private FirebaseDatabase firebaseDatabase;
     private DatabaseReference firebaseRef;
     private ValueEventListener firebaseListener;
     private final ExecutorService executor = Executors.newFixedThreadPool(2);
-    private final String statusTopic = "frmesp32/toilet/status";
-    private final String cmdTopic = "frmmobile/toilet/command";
+    private final String statusTopic = "FrmEsp32/toilet/status";
+    private final String cmdTopic = "FrmMobile/toilet/command";
     private SharedPreferences prefs;
     private int syncMode = 0; // 0: MQTT, 1: IP, 2: Firebase
     private final StringBuilder logBuilder = new StringBuilder();
     private int[] mqttPorts = {};
     private int currentPortIndex = 0;
+    private final android.os.Handler heartbeatHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable heartbeatRunnable = new Runnable() {
+        @Override
+        public void run() {
+            sendCommand("HEARTBEAT");
+            heartbeatHandler.postDelayed(this, 30000); // Send every 30 seconds
+        }
+    };
     private ConnectivityManager connectivityManager;
     private ConnectivityManager.NetworkCallback networkCallback;
 
@@ -136,14 +145,15 @@ public class ToiletAssistanceActivity extends AppCompatActivity {
                     connectToFirebase(url, node);
                 } else {
                     addLog("Auth Failed: " + (task.getException() != null ? task.getException().getMessage() : "Unknown"));
+                    connectToFirebase(url, node);
                 }
             });
     }
 
     private void connectToFirebase(String url, String node) {
         try {
-            FirebaseDatabase database = FirebaseDatabase.getInstance(url);
-            firebaseRef = database.getReference(node);
+            firebaseDatabase = FirebaseDatabase.getInstance(url);
+            firebaseRef = firebaseDatabase.getReference(node);
             
             firebaseListener = new ValueEventListener() {
                 @Override
@@ -205,7 +215,7 @@ public class ToiletAssistanceActivity extends AppCompatActivity {
         executor.execute(() -> {
             while (!isFinishing()) {
                 try {
-                    String ip = prefs.getString("local_node_ip", AppDefaults.DEFAULT_NODE_IP);
+                    String ip = LocalDiscoveryManager.getDeviceIp(prefs, "toilet");
                     URL url = new URL("http://" + ip + "/status");
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setConnectTimeout(2000);
@@ -380,7 +390,7 @@ public class ToiletAssistanceActivity extends AppCompatActivity {
         if (syncMode == 1) {
             executor.execute(() -> {
                 try {
-                    String ip = prefs.getString("local_node_ip", AppDefaults.DEFAULT_NODE_IP);
+                    String ip = LocalDiscoveryManager.getDeviceIp(prefs, "toilet");
                     URL url = new URL("http://" + ip + "/control?cmd=" + cmd);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.getResponseCode();
@@ -388,8 +398,17 @@ public class ToiletAssistanceActivity extends AppCompatActivity {
                 } catch (Exception e) {}
             });
         } else if (syncMode == 2) {
-            String commandNode = "frmmobile/toilet";
-            FirebaseDatabase.getInstance().getReference(commandNode).child("command").setValue(cmd);
+            String fbNode = prefs.getString("firebase_toilet_node", AppDefaults.NODE_TOILET);
+            String room = fbNode;
+            if (room.contains("/")) room = room.substring(room.lastIndexOf("/") + 1);
+            room = room.toLowerCase();
+            String commandNode = "FrmMobile/" + room;
+            
+            if (firebaseDatabase != null) {
+                firebaseDatabase.getReference(commandNode).child("command").setValue(cmd);
+            } else {
+                FirebaseDatabase.getInstance().getReference(commandNode).child("command").setValue(cmd);
+            }
         } else if (AppDefaults.ENABLE_MQTT) {
             executor.execute(() -> {
                 try {
@@ -399,6 +418,26 @@ public class ToiletAssistanceActivity extends AppCompatActivity {
                 } catch (Exception e) {}
             });
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        heartbeatHandler.removeCallbacks(heartbeatRunnable);
+        heartbeatHandler.post(heartbeatRunnable);
+        if (syncMode == 1) {
+            LocalDiscoveryManager.discoverDevices(this, (key, deviceName, ipAddress) -> {
+                if ("ip_toilet".equals(key)) {
+                    addLog("Local IP Mapped: " + ipAddress);
+                }
+            });
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        heartbeatHandler.removeCallbacks(heartbeatRunnable);
     }
 
     @Override

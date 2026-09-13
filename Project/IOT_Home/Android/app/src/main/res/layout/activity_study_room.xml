@@ -215,7 +215,82 @@
             <include layout="@layout/item_status_row" android:id="@+id/row_dht_hum" />
             <include layout="@layout/item_status_row" android:id="@+id/row_ambient" />
             <include layout="@layout/item_status_row" android:id="@+id/row_emergency_light" />
+            <include layout="@layout/item_status_row" android:id="@+id/row_buzzer" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="2dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Buzzer Frequency"
+                        android:textStyle="bold"
+                        android:textSize="14sp" />
+
+                    <SeekBar
+                        android:id="@+id/sb_buzzer_freq"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:max="5000"
+                        android:progress="2000" />
+
+                    <TextView
+                        android:id="@+id/tv_buzzer_freq_val"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="2000 Hz"
+                        android:gravity="center"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
             <include layout="@layout/item_status_row" android:id="@+id/row_manual_override" />
+            <include layout="@layout/item_status_row" android:id="@+id/row_ir_receive_mode" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_captured_ir"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:visibility="gone"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="2dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Last Captured IR"
+                        android:textStyle="bold"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/tv_captured_ir_val"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Waiting for IR..."
+                        android:textColor="?attr/colorPrimary"
+                        android:fontFamily="monospace"
+                        android:textSize="14sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <!-- Memory Stats -->
             <include layout="@layout/item_status_row" android:id="@+id/row_heap_free" />

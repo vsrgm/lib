@@ -1,25 +1,27 @@
 package com.example.sample;
 
-import android.content.ContentValues;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.net.Uri;
-import android.os.Build;
+import android.graphics.Color;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 import android.os.Bundle;
-import android.os.Environment;
-import android.provider.MediaStore;
 import android.util.Log;
-import android.widget.Toast;
-
 import android.widget.ArrayAdapter;
 import android.widget.TableRow;
 import android.widget.TextView;
-import android.graphics.Color;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.sample.databinding.ActivityStudyRoomBinding;
+import com.example.sample.databinding.ActivityBedRoomMonitorBinding;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
@@ -29,17 +31,9 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.json.JSONObject;
 
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
@@ -47,19 +41,13 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import android.net.ConnectivityManager;
-import android.net.Network;
-import android.net.NetworkRequest;
-import android.net.NetworkCapabilities;
+public class BedRoomMonitorActivity extends AppCompatActivity {
 
-public class StudyRoomActivity extends AppCompatActivity {
-
-    private static final String TAG = "StudyRoomActivity";
-    private ActivityStudyRoomBinding binding;
+    private static final String TAG = "BedRoomMonitorActivity";
+    private ActivityBedRoomMonitorBinding binding;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private DatabaseReference firebaseRef;
     private FirebaseDatabase firebaseDatabase;
@@ -90,7 +78,6 @@ public class StudyRoomActivity extends AppCompatActivity {
         }
     };
 
-    // MQTT Configuration for HiveMQ Broker
     private int[] mqttPorts = {};
     private int currentPortIndex = 0;
 
@@ -105,7 +92,7 @@ public class StudyRoomActivity extends AppCompatActivity {
         }
 
         super.onCreate(savedInstanceState);
-        binding = ActivityStudyRoomBinding.inflate(getLayoutInflater());
+        binding = ActivityBedRoomMonitorBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
         prefs = getSharedPreferences("SmartHomePrefs", MODE_PRIVATE);
@@ -136,19 +123,21 @@ public class StudyRoomActivity extends AppCompatActivity {
             initMqtt();
             setupNetworkListener();
         } else {
-            setupNetworkListener(); // Still need this for IP mode if wanted
+            setupNetworkListener();
         }
 
-        binding.rowDhtTemp.label.setText(R.string.label_dht_temp);
-        binding.rowDhtHum.label.setText(R.string.label_dht_hum);
-        binding.rowAmbient.label.setText(R.string.label_ambient_light);
-        binding.rowEmergencyLight.sensorSwitch.setVisibility(android.view.View.VISIBLE);
-        binding.rowBuzzer.label.setText("Study Buzzer");
+        binding.rowMq135Analog.label.setText("MQ135 Gas Analog");
+        binding.rowMq135Digital.label.setText("MQ135 Gas Digital");
+        binding.rowDhtTemp.label.setText("DHT11 Temperature");
+        binding.rowDhtHum.label.setText("DHT11 Humidity");
+        binding.rowAmbient.label.setText("LDR Light");
+        binding.rowPir.label.setText("PIR Motion");
+        binding.rowBuzzer.label.setText("Buzzer Alert");
         binding.rowBuzzer.sensorSwitch.setVisibility(android.view.View.VISIBLE);
         binding.rowManualOverride.label.setText("Manual Override");
         binding.rowManualOverride.sensorSwitch.setVisibility(android.view.View.VISIBLE);
-        binding.rowIrReceiveMode.label.setText("IR Receive Mode");
-        binding.rowIrReceiveMode.sensorSwitch.setVisibility(android.view.View.VISIBLE);
+        binding.rowIrTransmitterMode.label.setText("IR Transmitter Mode");
+        binding.rowIrTransmitterMode.sensorSwitch.setVisibility(android.view.View.VISIBLE);
         binding.rowHeapFree.label.setText("Free Memory");
 
         binding.btnBack.setOnClickListener(v -> finish());
@@ -157,22 +146,15 @@ public class StudyRoomActivity extends AppCompatActivity {
         binding.btnClearHistory.setOnClickListener(v -> clearHistory());
         binding.btnSettings.setOnClickListener(v -> {
             Intent intent = new Intent(this, SmartHomeSettingsActivity.class);
-            intent.putExtra("caller_context", "study");
+            intent.putExtra("caller_context", "bedroom");
             startActivity(intent);
         });
 
         binding.historyHeader.setOnClickListener(v -> toggleHistoryExpansion());
 
-        // Interaction listeners
-        binding.rowEmergencyLight.sensorSwitch.setOnClickListener(v -> {
-            binding.rowEmergencyLight.value.setText(binding.rowEmergencyLight.sensorSwitch.isChecked() ? "ON" : "OFF");
-            updateSensorConfig();
-        });
-        
         binding.rowManualOverride.sensorSwitch.setOnClickListener(v -> {
             boolean isChecked = binding.rowManualOverride.sensorSwitch.isChecked();
             binding.rowManualOverride.value.setText(isChecked ? "ON" : "OFF");
-            binding.rowEmergencyLight.sensorSwitch.setEnabled(isChecked);
             binding.rowBuzzer.sensorSwitch.setEnabled(isChecked);
             updateSensorConfig();
         });
@@ -194,42 +176,96 @@ public class StudyRoomActivity extends AppCompatActivity {
             updateSensorConfig();
         });
 
-        binding.rowIrReceiveMode.sensorSwitch.setOnClickListener(v -> {
-            binding.rowIrReceiveMode.value.setText(binding.rowIrReceiveMode.sensorSwitch.isChecked() ? "ON" : "OFF");
+        binding.rowIrTransmitterMode.sensorSwitch.setOnClickListener(v -> {
+            boolean isChecked = binding.rowIrTransmitterMode.sensorSwitch.isChecked();
+            binding.rowIrTransmitterMode.value.setText(isChecked ? "ON" : "OFF");
+            binding.remotesHeader.setVisibility(isChecked ? android.view.View.VISIBLE : android.view.View.GONE);
+            if (!isChecked) {
+                binding.remotesContainer.setVisibility(android.view.View.GONE);
+                binding.remotesHeader.setText("Remote Controls ▼ (Click to Expand)");
+            }
             updateSensorConfig();
         });
 
-        // Initialize state based on manual override
-        binding.rowEmergencyLight.sensorSwitch.setEnabled(binding.rowManualOverride.sensorSwitch.isChecked());
-        binding.rowBuzzer.sensorSwitch.setEnabled(binding.rowManualOverride.sensorSwitch.isChecked());
+        binding.remotesHeader.setOnClickListener(v -> {
+            if (binding.remotesContainer.getVisibility() == android.view.View.VISIBLE) {
+                binding.remotesContainer.setVisibility(android.view.View.GONE);
+                binding.remotesHeader.setText("Remote Controls ▼ (Click to Expand)");
+            } else {
+                binding.remotesContainer.setVisibility(android.view.View.VISIBLE);
+                binding.remotesHeader.setText("Remote Controls ▲ (Click to Collapse)");
+            }
+        });
 
-        if (syncMode == 2) listenToCapturedIr();
+        setupRemoteButtons();
+
+        binding.rowBuzzer.sensorSwitch.setEnabled(binding.rowManualOverride.sensorSwitch.isChecked());
     }
 
-    private void listenToCapturedIr() {
-        if (firebaseDatabase == null) return;
-        DatabaseReference capturedIrRef = firebaseDatabase.getReference("FrmNodeMcu").child(AppDefaults.NODE_STUDY).child("captured_ir");
-        capturedIrRef.limitToLast(1).addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                if (dataSnapshot.exists()) {
-                    for (DataSnapshot child : dataSnapshot.getChildren()) {
-                        String hex = child.child("hex").getValue(String.class);
-                        String protocol = child.child("protocol").getValue(String.class);
-                        Object bitsObj = child.child("bits").getValue();
-                        
-                        String info = "Hex: " + hex + "\nProtocol: " + protocol + "\nBits: " + bitsObj;
-                        runOnUiThread(() -> {
-                            binding.tvCapturedIrVal.setText(info);
-                            binding.cardCapturedIr.setVisibility(android.view.View.VISIBLE);
-                        });
-                    }
-                }
-            }
+    private void setupRemoteButtons() {
+        // Sony TV (Sony protocol = 4 in IRremoteESP8266)
+        setupIrButton(binding.btnTvPower, "4,A90,12");
+        setupIrButton(binding.btnTvInput, "4,A50,12");
+        setupIrButton(binding.btnTvExit, "4,C70,12");
+        setupIrButton(binding.btnTvVolUp, "4,490,12");
+        setupIrButton(binding.btnTvVolDown, "4,C90,12");
+        setupIrButton(binding.btnTvChUp, "4,090,12");
+        setupIrButton(binding.btnTvChDown, "4,890,12");
+        setupIrButton(binding.btnTvMute, "4,290,12");
+        setupIrButton(binding.btnTvHome, "4,070,12");
 
-            @Override
-            public void onCancelled(DatabaseError databaseError) {}
+        // Sony Soundbar
+        setupIrButton(binding.btnSbPower, "4,540A,15");
+        setupIrButton(binding.btnSbInput, "4,0C0A,15");
+        setupIrButton(binding.btnSbMute, "4,140A,15");
+        setupIrButton(binding.btnSbVolUp, "4,240A,15");
+        setupIrButton(binding.btnSbVolDown, "4,640A,15");
+        setupIrButton(binding.btnSbSwUp, "4,3A0A,15");
+        setupIrButton(binding.btnSbSwDown, "4,7A0A,15");
+        setupIrButton(binding.btnSbNight, "4,1E0A,15");
+        setupIrButton(binding.btnSbMusic, "4,120A,15");
+
+        // Sarru Automation (NEC protocol = 3 in IRremoteESP8266)
+        setupIrButton(binding.btnSaPower, "3,00FF906F,32");
+        setupIrButton(binding.btnSa1, "3,00FF6897,32");
+        setupIrButton(binding.btnSa2, "3,00FF9867,32");
+        setupIrButton(binding.btnSa3, "3,00FFB04F,32");
+        setupIrButton(binding.btnSa4, "3,00FF30CF,32");
+        setupIrButton(binding.btnSa5, "3,00FF18E7,32");
+        setupIrButton(binding.btnSa6, "3,00FF7A85,32");
+        setupIrButton(binding.btnSa7, "3,00FF10EF,32");
+        setupIrButton(binding.btnSa8, "3,00FF38C7,32");
+        setupIrButton(binding.btnSa9, "3,00FF5AA5,32");
+
+        // AC Remote
+        setupIrButton(binding.btnAcPowerOn, "PRESET:AC_ON");
+        setupIrButton(binding.btnAcPowerOff, "PRESET:AC_OFF");
+        setupIrButton(binding.btnAc26c, "PRESET:AC_26C");
+
+        // Fan Remote
+        setupIrButton(binding.btnFanPower, "PRESET:FAN_OFF");
+        setupIrButton(binding.btnFanSpeedUp, "PRESET:FAN_SPEED3");
+        setupIrButton(binding.btnFanSpeedDown, "PRESET:FAN_SPEED1");
+        setupIrButton(binding.btnFanSpeed1, "PRESET:FAN_SPEED1");
+        setupIrButton(binding.btnFanSpeed2, "PRESET:FAN_SPEED2");
+        setupIrButton(binding.btnFanSpeed3, "PRESET:FAN_SPEED3");
+        setupIrButton(binding.btnFanSpeed4, "PRESET:FAN_SPEED4");
+        setupIrButton(binding.btnFanSpeed5, "PRESET:FAN_SPEED5");
+        setupIrButton(binding.btnFanOn, "PRESET:FAN_ON");
+    }
+
+    private void setupIrButton(android.view.View btn, String irData) {
+        btn.setOnClickListener(v -> {
+            // Glow effect
+            v.animate().scaleX(1.1f).scaleY(1.1f).setDuration(100).withEndAction(() -> v.animate().scaleX(1.0f).scaleY(1.0f).setDuration(100).start()).start();
+            
+            sendIrCommand(irData);
         });
+    }
+
+    private void sendIrCommand(String irData) {
+        String payload = "IR_SEND:" + irData;
+        sendNodeCommand(payload);
     }
 
     @Override
@@ -240,7 +276,7 @@ public class StudyRoomActivity extends AppCompatActivity {
         heartbeatHandler.post(heartbeatRunnable);
         if (syncMode == 1) {
             LocalDiscoveryManager.discoverDevices(this, (key, deviceName, ipAddress) -> {
-                if ("ip_study".equals(key)) {
+                if ("ip_bedroom".equals(key)) {
                     runOnUiThread(this::loadSettings);
                 }
             });
@@ -271,22 +307,13 @@ public class StudyRoomActivity extends AppCompatActivity {
                         conn.setDoOutput(true);
                         conn.getOutputStream().write(payload.getBytes());
                     }
-                    if (conn.getResponseCode() == 200) {
-                        BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                        StringBuilder sb = new StringBuilder();
-                        String line;
-                        while ((line = reader.readLine()) != null) sb.append(line);
-                        String response = sb.toString().trim();
-                        if (response.startsWith("{")) {
-                            handleMqttStatus("local/ip/status", response);
-                        }
-                    }
+                    conn.getResponseCode();
                     conn.disconnect();
                 } catch (Exception ignored) {}
             });
         } else if (syncMode == 2) {
             if (firebaseDatabase != null) {
-                firebaseDatabase.getReference("FrmMobile").child("study").child("command")
+                firebaseDatabase.getReference("FrmMobile").child("bedroom").child("command")
                         .setValue(payload);
             }
         } else if (AppDefaults.ENABLE_MQTT && isMqttAvailable()) {
@@ -301,7 +328,7 @@ public class StudyRoomActivity extends AppCompatActivity {
 
     private void initFirebase() {
         String url = prefs.getString("firebase_url", AppDefaults.FIREBASE_URL);
-        String room = AppDefaults.NODE_STUDY; 
+        String room = AppDefaults.NODE_BEDROOM;
         
         addLog("Authenticating Firebase...");
         String email = prefs.getString("firebase_email", Credentials.FIREBASE_EMAIL);
@@ -326,7 +353,6 @@ public class StudyRoomActivity extends AppCompatActivity {
     private void connectToFirebase(String url, String room) {
         try {
             firebaseDatabase = FirebaseDatabase.getInstance(url);
-            // LISTEN to the OUTBOX
             DatabaseReference outboxRef = firebaseDatabase.getReference("FrmNodeMcu").child(room);
             
             addLog("Listening to Outbox: FrmNodeMcu/" + room);
@@ -348,16 +374,14 @@ public class StudyRoomActivity extends AppCompatActivity {
                                 if (entry != null) newHistory.add(entry.toString());
                             }
                             
-                            // Offload processing to background, then update UI
                             executor.execute(() -> {
                                 mqttHistoryBuffer.clear();
                                 mqttHistoryBuffer.addAll(newHistory);
-                                saveToLocalCsv(newHistory); // File I/O in background
+                                saveToLocalCsv(newHistory);
                                 runOnUiThread(() -> updateHistoryTable(mqttHistoryBuffer));
                             });
                         }
-                    }
-else {
+                    } else {
                         addLog("Outbox is empty. Waiting for device...");
                     }
                 }
@@ -381,12 +405,11 @@ else {
     }
 
     private void loadSettings() {
-        syncMode = prefs.getInt("sync_mode", 0); // 0: MQTT, 1: IP, 2: Firebase
-        String savedIp = LocalDiscoveryManager.getDeviceIp(prefs, "study");
+        syncMode = prefs.getInt("sync_mode", 0);
+        String savedIp = LocalDiscoveryManager.getDeviceIp(prefs, "bedroom");
         String localEntryPrefix = "Local IP (";
 
         boolean changed = false;
-        // Clean up any old Local IP entries to refresh
         for (int i = discoveredNodes.size() - 1; i >= 0; i--) {
             if (discoveredNodes.get(i).startsWith(localEntryPrefix)) {
                 discoveredNodes.remove(i);
@@ -399,8 +422,6 @@ else {
             if (!discoveredNodes.contains(entry)) {
                 discoveredNodes.add(0, entry);
                 changed = true;
-                
-                // Auto-select Local IP
                 selectedNodeIp = savedIp;
                 selectedNodeId = "";
                 runOnUiThread(() -> binding.nodeSelector.setSelection(0));
@@ -467,11 +488,10 @@ else {
         lastInteractionTime = System.currentTimeMillis();
         try {
             JSONObject config = new JSONObject();
-            config.put("en_emer", binding.rowEmergencyLight.sensorSwitch.isChecked());
             config.put("manual_override", binding.rowManualOverride.sensorSwitch.isChecked());
             config.put("buzzer", binding.rowBuzzer.sensorSwitch.isChecked());
             config.put("buzzer_freq", binding.sbBuzzerFreq.getProgress());
-            config.put("ir_receive_mode", binding.rowIrReceiveMode.sensorSwitch.isChecked());
+            config.put("ir_transmitter_mode", binding.rowIrTransmitterMode.sensorSwitch.isChecked());
             
             String payload = "CONFIG:" + config.toString();
 
@@ -494,14 +514,12 @@ else {
             } else if (syncMode == 2) {
                 addLog("Sending Config to Firebase...");
                 if (firebaseDatabase != null) {
-                    firebaseDatabase.getReference("FrmMobile").child("study").child("command")
+                    firebaseDatabase.getReference("FrmMobile").child("bedroom").child("command")
                         .setValue(payload)
                         .addOnCompleteListener(task -> {
                             if (task.isSuccessful()) addLog("Config Sent successfully");
                             else addLog("Config Send Failed: " + (task.getException() != null ? task.getException().getMessage() : "Unknown"));
                         });
-                } else {
-                    addLog("Firebase Database not initialized");
                 }
             } else if (AppDefaults.ENABLE_MQTT && isMqttAvailable()) {
                 executor.execute(() -> {
@@ -528,7 +546,7 @@ else {
             });
         } else if (syncMode == 2) {
             if (firebaseDatabase != null) {
-                firebaseDatabase.getReference("FrmMobile").child("study").child("command")
+                firebaseDatabase.getReference("FrmMobile").child("bedroom").child("command")
                     .setValue("CLEAR");
             }
         } else if (AppDefaults.ENABLE_MQTT && isMqttAvailable()) {
@@ -567,9 +585,6 @@ else {
                             updateHistoryTable(mqttHistoryBuffer);
                             Toast.makeText(this, "History synced via IP", Toast.LENGTH_SHORT).show();
                         });
-                    } else {
-                        final int code = conn.getResponseCode();
-                        runOnUiThread(() -> Toast.makeText(this, "Sync failed: " + code, Toast.LENGTH_SHORT).show());
                     }
                     conn.disconnect();
                 } catch (Exception e) {
@@ -578,7 +593,7 @@ else {
             });
         } else if (syncMode == 2) {
             if (firebaseDatabase != null) {
-                firebaseDatabase.getReference("FrmMobile").child("study").child("command")
+                firebaseDatabase.getReference("FrmMobile").child("bedroom").child("command")
                     .setValue("HISTORY");
             }
         } else if (AppDefaults.ENABLE_MQTT && isMqttAvailable()) {
@@ -595,7 +610,7 @@ else {
     private void initMqtt() {
         if (!AppDefaults.ENABLE_MQTT) return;
         
-        executor.execute(this::closeMqtt); // Ensure closure is backgrounded
+        executor.execute(this::closeMqtt);
         
         connectionAttemptId++;
         final long currentId = connectionAttemptId;
@@ -621,7 +636,6 @@ else {
         String logEntry = "[" + time + "] " + message + "\n";
         logBuilder.insert(0, logEntry);
         
-        // Cap log size to 1000 characters for performance
         if (logBuilder.length() > 1000) {
             logBuilder.setLength(1000);
         }
@@ -633,7 +647,7 @@ else {
     }
 
     private void tryConnectNextPort(final long attemptId) {
-        if (attemptId != connectionAttemptId) return; // Stale attempt
+        if (attemptId != connectionAttemptId) return;
 
         if (currentPortIndex >= mqttPorts.length) {
             runOnUiThread(() -> {
@@ -654,9 +668,6 @@ else {
         executor.execute(() -> {
             try {
                 if (attemptId != connectionAttemptId) return;
-
-                // Important: Only close if we are switching ports or re-initializing
-                // But avoid closing if a connection is already stable and active.
                 
                 String brokerUri;
                 if (port == 8883) brokerUri = "ssl://" + broker + ":" + port;
@@ -668,7 +679,7 @@ else {
                 MqttConnectOptions options = new MqttConnectOptions();
                 options.setAutomaticReconnect(true);
                 options.setCleanSession(true);
-                options.setConnectionTimeout(10); 
+                options.setConnectionTimeout(10);
                 options.setKeepAliveInterval(60);
 
                 client.setCallback(new MqttCallback() {
@@ -706,8 +717,6 @@ else {
 
             } catch (Exception e) {
                 if (attemptId != connectionAttemptId) return;
-
-                Log.w(TAG, "Port " + port + " failed: " + e.getMessage());
                 final String errorMsg = e.getMessage() != null ? e.getMessage() : "Timeout";
                 addLog("FAILED: Port " + port + " - " + errorMsg);
                 currentPortIndex++;
@@ -719,9 +728,9 @@ else {
     private void closeMqtt() {
         final MqttClient clientToClose = mqttClient;
         if (clientToClose != null) {
-            mqttClient = null; // Decouple immediately
+            mqttClient = null;
             try {
-                if (clientToClose.isConnected()) clientToClose.disconnect(500); // Short timeout
+                if (clientToClose.isConnected()) clientToClose.disconnect(500);
                 clientToClose.close();
             } catch (Exception ignored) {}
         }
@@ -737,7 +746,6 @@ else {
                 if (json.has("dht_temp")) {
                     isSyncing = true;
 
-                    // Update IP and ID info if available (crucial for Firebase mode)
                     if (json.has("ip")) {
                         String ip = json.getString("ip");
                         String id = json.optString("id", "Node");
@@ -751,12 +759,12 @@ else {
                         }
                     }
 
+                    binding.rowMq135Analog.value.setText(json.optString("mq135_analog", "0"));
+                    binding.rowMq135Digital.value.setText("1".equals(json.optString("mq135_digital", "0")) ? "ALERT" : "NORMAL");
                     binding.rowDhtTemp.value.setText(json.getString("dht_temp") + " °C");
                     binding.rowDhtHum.value.setText(json.getString("dht_hum") + " %");
                     binding.rowAmbient.value.setText(json.getString("light_raw"));
-                    
-                    String emerState = json.getString("emer");
-                    binding.rowEmergencyLight.value.setText(emerState);
+                    binding.rowPir.value.setText("1".equals(json.optString("pir", "0")) ? "MOTION DETECTED" : "NO MOTION");
                     
                     String buzzerState = json.optString("buzzer", "OFF");
                     binding.rowBuzzer.value.setText(buzzerState);
@@ -766,30 +774,28 @@ else {
                     String overrideState = json.optString("manual_override", "OFF");
                     manualOverrideEnabled = "ON".equals(overrideState);
                     
-                    // Display the long reason string but use ON/OFF for logic
                     binding.rowManualOverride.value.setText(json.optString("reason", overrideState));
                     binding.rowManualOverride.sensorSwitch.setChecked(manualOverrideEnabled);
 
-                    String irModeState = json.optString("ir_receive_mode", "OFF");
-                    binding.rowIrReceiveMode.value.setText(irModeState);
+                    String irTransState = json.optString("ir_transmitter_mode", "OFF");
+                    binding.rowIrTransmitterMode.value.setText(irTransState);
+                    boolean isTransmitting = "ON".equals(irTransState);
+                    binding.remotesHeader.setVisibility(isTransmitting ? android.view.View.VISIBLE : android.view.View.GONE);
+                    if (!isTransmitting) {
+                        binding.remotesContainer.setVisibility(android.view.View.GONE);
+                    }
 
-                    // Sync UI components
                     if (System.currentTimeMillis() - lastInteractionTime > 5000) {
-                        binding.rowEmergencyLight.sensorSwitch.setChecked("ON".equals(emerState));
                         binding.rowBuzzer.sensorSwitch.setChecked("ON".equals(buzzerState));
-                        binding.rowIrReceiveMode.sensorSwitch.setChecked("ON".equals(irModeState));
+                        binding.rowIrTransmitterMode.sensorSwitch.setChecked(isTransmitting);
                         binding.sbBuzzerFreq.setProgress(bFreq);
                         binding.tvBuzzerFreqVal.setText(bFreq + " Hz");
                     }
                     
-                    binding.rowEmergencyLight.sensorSwitch.setEnabled(manualOverrideEnabled);
                     binding.rowBuzzer.sensorSwitch.setEnabled(manualOverrideEnabled);
                     
                     long heap = json.optLong("heap", 0);
-                    long fsFree = json.optLong("fs_free", 0);
-                    String memoryInfo = (heap / 1024) + " KB Heap";
-                    if (fsFree > 0) memoryInfo += " | " + (fsFree / 1024) + " KB FS";
-                    binding.rowHeapFree.value.setText(memoryInfo);
+                    binding.rowHeapFree.value.setText((heap / 1024) + " KB Heap");
 
                     String nodeTs = json.optString("ts", "N/A");
                     String appTs = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
@@ -832,7 +838,6 @@ else {
             binding.historyTable.removeViews(1, binding.historyTable.getChildCount() - 1);
         }
         
-        // Limit UI display to last 20 entries for performance
         int count = 0;
         int maxRows = 20;
 
@@ -852,16 +857,8 @@ else {
     }
 
     private void saveToLocalCsv(List<String> newLines) {
-        String path = prefs.getString("csv_path", getString(R.string.default_csv_path));
-        File file;
-        if (path.startsWith("/")) {
-            file = new File(path);
-        } else {
-            file = new File(StorageUtils.getDownloadsDir(), path);
-        }
-        
+        File file = new File(StorageUtils.getDownloadsDir(), "IOT_HOME/BedRoom/BedRoomMonitor.csv");
         try {
-            // Ensure parent directories exist
             File parent = file.getParentFile();
             if (parent != null && !parent.exists()) parent.mkdirs();
 
@@ -877,11 +874,9 @@ else {
 
             java.io.FileWriter fw = new java.io.FileWriter(file, true);
             int addedCount = 0;
-            
             for (String newLine : newLines) {
                 String trimmed = newLine.trim();
-                if (trimmed.isEmpty() || trimmed.startsWith("Date,Time")) continue; // Skip header
-                
+                if (trimmed.isEmpty() || trimmed.startsWith("Date,Time")) continue;
                 if (!existingLines.contains(trimmed)) {
                     fw.write(trimmed + "\n");
                     existingLines.add(trimmed);
@@ -889,7 +884,6 @@ else {
                 }
             }
             fw.close();
-            
             if (addedCount > 0) {
                 final int finalAdded = addedCount;
                 runOnUiThread(() -> Toast.makeText(this, "Saved " + finalAdded + " new records to local CSV", Toast.LENGTH_SHORT).show());
@@ -914,9 +908,6 @@ else {
                         while ((line = reader.readLine()) != null) sb.append(line);
                         handleMqttStatus("local/ip/status", sb.toString());
                         runOnUiThread(() -> Toast.makeText(this, "Data synced via IP", Toast.LENGTH_SHORT).show());
-                    } else {
-                        final int code = conn.getResponseCode();
-                        runOnUiThread(() -> Toast.makeText(this, "Sync failed: " + code, Toast.LENGTH_SHORT).show());
                     }
                     conn.disconnect();
                 } catch (Exception e) {
@@ -925,19 +916,15 @@ else {
             });
         } else if (syncMode == 2) {
             if (firebaseDatabase != null) {
-                firebaseDatabase.getReference("FrmMobile").child("study").child("command")
+                firebaseDatabase.getReference("FrmMobile").child("bedroom").child("command")
                     .setValue("SYNC");
             }
         } else if (AppDefaults.ENABLE_MQTT && isMqttAvailable()) {
             executor.execute(() -> {
                 try {
-                    String targetTopic = "smart_home/all/commands";
-                    mqttClient.publish(targetTopic, new MqttMessage("SYNC".getBytes()));
+                    mqttClient.publish("smart_home/all/commands", new MqttMessage("SYNC".getBytes()));
                 } catch (Exception ignored) {}
             });
-        } else if (AppDefaults.ENABLE_MQTT) {
-            addLog("MQTT not available. Re-initializing...");
-            initMqtt();
         }
     }
 

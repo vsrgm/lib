@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include <arpa/inet.h>
+#include <cstdint>
+//#include <arpa/inet.h>
 #define CLIP(x) (((x) > 0xFF) ? 0xFF : (((x) < 0) ? 0 :(uint8_t)(x)))
 
 int32_t convert_bgr888_rgb888(uint8_t *src_buffer, uint8_t *dest_buffer,

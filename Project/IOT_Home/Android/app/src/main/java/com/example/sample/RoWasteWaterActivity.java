@@ -69,6 +69,15 @@ public class RoWasteWaterActivity extends AppCompatActivity {
     private long lastInteractionTime = 0;
     private long connectionAttemptId = 0;
 
+    private final android.os.Handler heartbeatHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable heartbeatRunnable = new Runnable() {
+        @Override
+        public void run() {
+            sendNodeCommand("HEARTBEAT");
+            heartbeatHandler.postDelayed(this, 30000); // Send every 30 seconds
+        }
+    };
+
     private int[] mqttPorts = {};
     private int currentPortIndex = 0;
 
@@ -147,6 +156,35 @@ public class RoWasteWaterActivity extends AppCompatActivity {
         });
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadSettings();
+        startHeartbeat();
+        if (syncMode == 1) {
+            LocalDiscoveryManager.discoverDevices(this, (key, deviceName, ipAddress) -> {
+                if ("ip_ro_pump".equals(key)) {
+                    runOnUiThread(this::loadSettings);
+                }
+            });
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        stopHeartbeat();
+    }
+
+    private void startHeartbeat() {
+        heartbeatHandler.removeCallbacks(heartbeatRunnable);
+        heartbeatHandler.post(heartbeatRunnable);
+    }
+
+    private void stopHeartbeat() {
+        heartbeatHandler.removeCallbacks(heartbeatRunnable);
+    }
+
     private void initFirebase() {
         String url = prefs.getString("firebase_url", AppDefaults.FIREBASE_URL);
         String room = AppDefaults.NODE_RO_PUMP; 
@@ -219,7 +257,7 @@ public class RoWasteWaterActivity extends AppCompatActivity {
 
     private void loadSettings() {
         syncMode = prefs.getInt("sync_mode", 0);
-        String savedIp = prefs.getString("local_node_ip", AppDefaults.DEFAULT_NODE_IP);
+        String savedIp = LocalDiscoveryManager.getDeviceIp(prefs, "ro_pump");
         String localEntryPrefix = "Local IP (";
 
         boolean changed = false;
@@ -272,6 +310,38 @@ public class RoWasteWaterActivity extends AppCompatActivity {
         connectivityManager.registerNetworkCallback(request, networkCallback);
     }
 
+    private void sendNodeCommand(String payload) {
+        if (syncMode == 1 && !selectedNodeIp.isEmpty()) {
+            executor.execute(() -> {
+                try {
+                    // Local IP control might need a specific endpoint for complex CONFIG if not MQTT
+                    // For now, assuming MQTT or Firebase for HEARTBEAT/SYNC if local isn't implemented
+                    if (payload.startsWith("CONFIG:")) {
+                        URL url = new URL("http://" + selectedNodeIp + "/config");
+                        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                        conn.setRequestMethod("POST");
+                        conn.setDoOutput(true);
+                        conn.getOutputStream().write(payload.getBytes());
+                        conn.getResponseCode();
+                        conn.disconnect();
+                    }
+                } catch (Exception ignored) {}
+            });
+        } else if (syncMode == 2) {
+            if (firebaseDatabase != null) {
+                firebaseDatabase.getReference("FrmMobile").child("ro_pump").child("command")
+                        .setValue(payload);
+            }
+        } else if (AppDefaults.ENABLE_MQTT && isMqttAvailable()) {
+            executor.execute(() -> {
+                try {
+                    String targetTopic = selectedNodeId.isEmpty() ? "smart_home/all/commands" : "smart_home/" + selectedNodeId + "/commands";
+                    mqttClient.publish(targetTopic, new MqttMessage(payload.getBytes()));
+                } catch (Exception ignored) {}
+            });
+        }
+    }
+
     private void updateSensorConfig() {
         if (isSyncing) return;
         lastInteractionTime = System.currentTimeMillis();
@@ -280,34 +350,7 @@ public class RoWasteWaterActivity extends AppCompatActivity {
             config.put("pump", binding.rowPumpStatus.sensorSwitch.isChecked());
             config.put("manual", binding.rowManual.sensorSwitch.isChecked());
             
-            String payload = "CONFIG:" + config.toString();
-
-            if (syncMode == 1 && !selectedNodeIp.isEmpty()) {
-                executor.execute(() -> {
-                    try {
-                        String ip = prefs.getString("local_node_ip", AppDefaults.DEFAULT_NODE_IP);
-                        URL url = new URL("http://" + ip + "/config");
-                        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                        conn.setRequestMethod("POST");
-                        conn.setDoOutput(true);
-                        conn.getOutputStream().write(payload.getBytes());
-                        conn.getResponseCode();
-                        conn.disconnect();
-                    } catch (Exception ignored) {}
-                });
-            } else if (syncMode == 2) {
-                if (firebaseDatabase != null) {
-                    firebaseDatabase.getReference("FrmMobile").child("ro_pump").child("command")
-                        .setValue(payload);
-                }
-            } else if (AppDefaults.ENABLE_MQTT && isMqttAvailable()) {
-                executor.execute(() -> {
-                    try {
-                        String targetTopic = selectedNodeId.isEmpty() ? "smart_home/all/commands" : "smart_home/" + selectedNodeId + "/commands";
-                        mqttClient.publish(targetTopic, new MqttMessage(payload.getBytes()));
-                    } catch (Exception ignored) {}
-                });
-            }
+            sendNodeCommand("CONFIG:" + config.toString());
         } catch (Exception ignored) {}
     }
 
@@ -337,18 +380,8 @@ public class RoWasteWaterActivity extends AppCompatActivity {
                     conn.disconnect();
                 } catch (Exception ignored) {}
             });
-        } else if (syncMode == 2) {
-            if (firebaseDatabase != null) {
-                firebaseDatabase.getReference("FrmMobile").child("ro_pump").child("command")
-                    .setValue("HISTORY");
-            }
-        } else if (AppDefaults.ENABLE_MQTT && isMqttAvailable()) {
-            executor.execute(() -> {
-                try {
-                    String targetTopic = selectedNodeId.isEmpty() ? "smart_home/all/commands" : "smart_home/" + selectedNodeId + "/commands";
-                    mqttClient.publish(targetTopic, new MqttMessage("HISTORY".getBytes()));
-                } catch (Exception ignored) {}
-            });
+        } else {
+            sendNodeCommand("HISTORY");
         }
     }
 
@@ -362,18 +395,8 @@ public class RoWasteWaterActivity extends AppCompatActivity {
                     conn.disconnect();
                 } catch (Exception ignored) {}
             });
-        } else if (syncMode == 2) {
-            if (firebaseDatabase != null) {
-                firebaseDatabase.getReference("FrmMobile").child("ro_pump").child("command")
-                    .setValue("CLEAR");
-            }
-        } else if (AppDefaults.ENABLE_MQTT && isMqttAvailable()) {
-            executor.execute(() -> {
-                try {
-                    String targetTopic = selectedNodeId.isEmpty() ? "smart_home/all/commands" : "smart_home/" + selectedNodeId + "/commands";
-                    mqttClient.publish(targetTopic, new MqttMessage("CLEAR".getBytes()));
-                } catch (Exception ignored) {}
-            });
+        } else {
+            sendNodeCommand("CLEAR");
         }
     }
 
@@ -600,17 +623,8 @@ public class RoWasteWaterActivity extends AppCompatActivity {
                     conn.disconnect();
                 } catch (Exception ignored) {}
             });
-        } else if (syncMode == 2) {
-            if (firebaseDatabase != null) {
-                firebaseDatabase.getReference("FrmMobile").child("ro_pump").child("command")
-                    .setValue("SYNC");
-            }
-        } else if (AppDefaults.ENABLE_MQTT && isMqttAvailable()) {
-            executor.execute(() -> {
-                try {
-                    mqttClient.publish("smart_home/all/commands", new MqttMessage("SYNC".getBytes()));
-                } catch (Exception ignored) {}
-            });
+        } else {
+            sendNodeCommand("SYNC");
         }
     }
 

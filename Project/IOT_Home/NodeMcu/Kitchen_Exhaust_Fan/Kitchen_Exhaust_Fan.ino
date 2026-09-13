@@ -1,5 +1,6 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
+#include <WiFiUdp.h>
 #include <ArduinoJson.h>
 #include <LittleFS.h>
 #include <time.h>
@@ -21,7 +22,7 @@
 #define BUZZER_PIN 2        // D4
 
 int smokeThresholdOn = 650;
-int smokeThresholdOff = 550;
+int smokeThresholdOff = 450;
 int buzzerThreshold = 800;
 int buzzerFreq = 2000;
 
@@ -51,7 +52,31 @@ String globalCmdTopic = baseTopic + "all/commands";
 String discoveryTopic = baseTopic + "nodes/discovery";
 String historyTopic = baseTopic + mqttClientId + "/history";
 
-const String SW_VERSION = "1.0.328";
+const String SW_VERSION = "1.0.416";
+
+WiFiUDP udpDiscovery;
+const int UDP_DISCOVERY_PORT = 8888;
+
+void setupUdpDiscovery() {
+  udpDiscovery.begin(UDP_DISCOVERY_PORT);
+}
+
+void checkUdpDiscovery() {
+  int packetSize = udpDiscovery.parsePacket();
+  if (packetSize) {
+    char buf[255];
+    int len = udpDiscovery.read(buf, 255);
+    if (len > 0) buf[len] = 0;
+    String msg = String(buf);
+    msg.trim();
+    if (msg == "DISCOVER" || msg.indexOf("DISCOVER") != -1) {
+      String response = "{\"ip\":\"" + WiFi.localIP().toString() + "\",\"id\":\"" + mqttClientId + "\",\"name\":\"kitchen_fan\",\"ver\":\"" + SW_VERSION + "\"}";
+      udpDiscovery.beginPacket(udpDiscovery.remoteIP(), udpDiscovery.remotePort());
+      udpDiscovery.print(response);
+      udpDiscovery.endPacket();
+    }
+  }
+}
 
 int currentMqttPortIndex = 0;
 const int mqttPorts[] = { 1883, 8000, 8883, 8884 };
@@ -70,6 +95,7 @@ bool old_mq2DigitalState = false;
 bool ldrValue = 0;
 bool old_ldrValue = 0;
 bool smokeDetected = false;
+unsigned long lastHeartbeatTime = 0;
 
 // Web Logging
 String webLogs = "";
@@ -177,10 +203,12 @@ void publishStatus() {
   }
 
   if (Firebase.ready()) {
-    FirebaseJson json;
-    json.setJsonData(buffer.c_str());
-    if (!Firebase.RTDB.setJSON(&fbdo, String(FB_OUTBOX) + "/status", &json)) {
-      addWebLog("FB Err: " + fbdo.errorReason());
+    if (millis() - lastHeartbeatTime < 60000) {
+      FirebaseJson json;
+      json.setJsonData(buffer.c_str());
+      if (!Firebase.RTDB.setJSON(&fbdo, String(FB_OUTBOX) + "/status", &json)) {
+        addWebLog("FB Err: " + fbdo.errorReason());
+      }
     }
   }
 }
@@ -207,9 +235,11 @@ void logData(String eventType) {
   f.close();
 
   if (Firebase.ready()) {
-    String trimmedEntry = entry;
-    trimmedEntry.trim();
-    Firebase.RTDB.pushString(&fbdo, String(FB_OUTBOX) + "/history", trimmedEntry);
+    if (millis() - lastHeartbeatTime < 60000) {
+      String trimmedEntry = entry;
+      trimmedEntry.trim();
+      Firebase.RTDB.pushString(&fbdo, String(FB_OUTBOX) + "/history", trimmedEntry);
+    }
   }
 }
 
@@ -271,6 +301,8 @@ void runPendingOTA() {
   addWebLog(url);
   delay(2000);
 
+  ESP.wdtEnable(20000);
+
   WiFiClientSecure sClient;
   sClient.setInsecure();
   sClient.setBufferSizes(16384, 1024);
@@ -289,6 +321,13 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
 
   if (msg == "SYNC") {
     publishStatus();
+  } else if (msg == "HEARTBEAT") {
+    lastHeartbeatTime = millis();
+    publishStatus();
+  } else if (msg == "REBOOT") {
+    addWebLog("Rebooting...");
+    delay(500);
+    ESP.restart();
   } else if (msg.startsWith("OTA:")) {
     handleRemoteOTA(msg.substring(4));
   } else if (msg.startsWith("OTA_FULL:")) {
@@ -538,17 +577,19 @@ void setup() {
     server.sendContent(F("<div class='log'>"));
     server.sendContent(webLogs);
     server.sendContent(F("</div>"));
-    server.sendContent(F("<hr><p style='text-align:center;display:block;'><a href='/update'>Firmware Update</a></p>"));
+    server.sendContent(F("<hr><p style='text-align:center;display:block;'><a href='/update'>Firmware Update</a> | <a href='/reboot' onclick=\"return confirm('Reboot device?')\">Reboot</a></p>"));
     server.sendContent(F("</div></body></html>"));
     server.sendContent("");
   });
 
   server.on("/status", []() {
-    StaticJsonDocument<256> doc;
+    StaticJsonDocument<512> doc;
     doc["fan"] = fanActive ? "ON" : "OFF";
     doc["manual"] = manualOverride ? "ON" : "OFF";
     doc["mq2_a"] = mq2AnalogValue;
     doc["ver"] = SW_VERSION;
+    doc["ip"] = WiFi.localIP().toString();
+    doc["id"] = mqttClientId;
 
     time_t now = time(nullptr);
     struct tm timeinfo;
@@ -564,6 +605,7 @@ void setup() {
 
   server.on("/update", []() {
     updateMode = true;
+    ESP.wdtEnable(20000);
     String html = "<html><head><meta name='viewport' content='width=device-width, initial-scale=1'>"
                   "<style>body{font-family:sans-serif;text-align:center;padding:20px;background:#f4f7f6;}"
                   ".c{background:white;padding:30px;border-radius:10px;display:inline-block;box-shadow:0 4px 6px rgba(0,0,0,0.1);max-width:90%;}"
@@ -578,7 +620,14 @@ void setup() {
     server.send(200, "text/html", html);
   });
 
-httpUpdater.setup(&server, "/update_now");
+  server.on("/reboot", []() {
+    server.send(200, "text/html", "<html><head><meta http-equiv='refresh' content='10;url=/'></head><body><h3>Rebooting...</h3><p>Redirecting to home in 10s...</p></body></html>");
+    addWebLog("Web Reboot Init");
+    delay(500);
+    ESP.restart();
+  });
+
+  httpUpdater.setup(&server, "/update_now");
 
 if (WiFi.status() == WL_CONNECTED) {
   MDNS.begin(mqttClientId.c_str());
@@ -586,16 +635,20 @@ if (WiFi.status() == WL_CONNECTED) {
 
 server.begin();
 MDNS.addService("http", "tcp", 80);
+setupUdpDiscovery();
 
 mqttClient.setServer(mqttBroker.c_str(), mqttPort);
 mqttClient.setCallback(mqttCallback);
 mqttClient.setBufferSize(1024);
+ESP.wdtEnable(WDTO_8S);
 publishStatus();
 }
 
 void loop() {
+  ESP.wdtFeed();
   server.handleClient();
   MDNS.update();
+  checkUdpDiscovery();
 
   if (updateMode) {
     delay(10);

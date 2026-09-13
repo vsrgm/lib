@@ -43,17 +43,68 @@
 
     <!-- Fixed Video Stream -->
     <com.google.android.material.card.MaterialCardView
+        android:id="@+id/video_card"
         android:layout_width="match_parent"
         android:layout_height="240dp"
         app:cardCornerRadius="12dp"
         android:layout_marginBottom="12dp">
 
-        <WebView
-            android:id="@+id/video_stream"
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="#000000" />
+            android:layout_height="match_parent">
+
+            <WebView
+                android:id="@+id/video_stream"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#000000" />
+
+            <SurfaceView
+                android:id="@+id/video_surface"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/iv_captured_image"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="fitCenter"
+                android:background="#000000"
+                android:visibility="gone" />
+
+        </FrameLayout>
     </com.google.android.material.card.MaterialCardView>
+
+    <!-- Throughput and FPS Stats Area -->
+    <LinearLayout
+        android:id="@+id/layout_stream_stats"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="4dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/tv_stream_throughput"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Rate: 0.0 kbps"
+            android:textColor="#4CAF50"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:layout_marginEnd="16dp" />
+
+        <TextView
+            android:id="@+id/tv_stream_fps"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="FPS: 0.0"
+            android:textColor="#4CAF50"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 
     <!-- Connected Nodes Section -->
     <LinearLayout
@@ -119,38 +170,7 @@
                 android:text="Connecting..."
                 android:padding="8dp" />
 
-            <!-- Quick Controls -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center"
-                android:layout_marginBottom="12dp">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_quick_relay"
-                    style="@style/Widget.MaterialComponents.Button.TextButton.Icon"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Relay"
-                    app:icon="@android:drawable/ic_lock_power_off" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_quick_buzzer"
-                    style="@style/Widget.MaterialComponents.Button.TextButton.Icon"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Buzzer"
-                    app:icon="@android:drawable/ic_lock_silent_mode" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_quick_flash"
-                    style="@style/Widget.MaterialComponents.Button.TextButton.Icon"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Flash"
-                    app:icon="@android:drawable/ic_menu_day" />
-            </LinearLayout>
 
             <!-- Logs Section -->
             <com.google.android.material.card.MaterialCardView
@@ -208,8 +228,30 @@
             android:id="@+id/btn_capture"
             android:layout_width="0dp"
             android:layout_height="60dp"
-            android:layout_weight="2"
+            android:layout_weight="1.5"
             android:text="Capture"
+            app:cornerRadius="12dp"
+            android:layout_marginEnd="8dp"
+            app:icon="@android:drawable/ic_menu_camera" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_reboot"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="60dp"
+            android:layout_weight="1"
+            android:text="Reboot"
+            app:cornerRadius="12dp"
+            android:layout_marginEnd="8dp"
+            app:icon="@android:drawable/ic_lock_power_off" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_cam_config"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="60dp"
+            android:layout_weight="1"
+            android:text="Cam"
             app:cornerRadius="12dp"
             android:layout_marginEnd="8dp"
             app:icon="@android:drawable/ic_menu_camera" />

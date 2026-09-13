@@ -1,4 +1,5 @@
 #include <ESP8266WiFi.h>
+#include <WiFiUdp.h>
 #include <ESP8266WebServer.h>
 #include <ArduinoJson.h>
 #include <LittleFS.h>
@@ -46,10 +47,34 @@ const int mqttPorts[] = {1883, 8000, 8883, 8884};
 const int numMqttPorts = 4;
 
 String mqttClientId = "ToiletAssistance_" + String(ESP.getChipId(), HEX);
-String statusTopic = "frmesp32/toilet/status";
-String cmdTopic = "frmmobile/toilet/command";
+String statusTopic = "FrmEsp32/toilet/status";
+String cmdTopic = "FrmMobile/toilet/command";
 
-const String SW_VERSION = "1.0.328";
+const String SW_VERSION = "1.0.416";
+
+WiFiUDP udpDiscovery;
+const int UDP_DISCOVERY_PORT = 8888;
+
+void setupUdpDiscovery() {
+  udpDiscovery.begin(UDP_DISCOVERY_PORT);
+}
+
+void checkUdpDiscovery() {
+  int packetSize = udpDiscovery.parsePacket();
+  if (packetSize) {
+    char buf[255];
+    int len = udpDiscovery.read(buf, 255);
+    if (len > 0) buf[len] = 0;
+    String msg = String(buf);
+    msg.trim();
+    if (msg == "DISCOVER" || msg.indexOf("DISCOVER") != -1) {
+      String response = "{\"ip\":\"" + WiFi.localIP().toString() + "\",\"id\":\"" + mqttClientId + "\",\"name\":\"toilet\",\"ver\":\"" + SW_VERSION + "\"}";
+      udpDiscovery.beginPacket(udpDiscovery.remoteIP(), udpDiscovery.remotePort());
+      udpDiscovery.print(response);
+      udpDiscovery.endPacket();
+    }
+  }
+}
 
 // System State
 float temperature = 0.0;
@@ -64,6 +89,7 @@ unsigned long lastPirMovement = 0;
 unsigned long fanTurnOnTime = 0;
 unsigned long lightTurnOnTime = 0;
 bool buzzerActive = false;
+unsigned long lastHeartbeatTime = 0;
 
 const char* logFile = "/toilet_log.csv";
 
@@ -84,7 +110,7 @@ void setupFirebase() {
     Firebase.begin(&fbConfig, &fbAuth);
     Firebase.reconnectWiFi(true);
 
-    if (!Firebase.RTDB.beginStream(&fbdo, "frmmobile/toilet")) {
+    if (!Firebase.RTDB.beginStream(&fbdo, "FrmMobile/toilet")) {
         Serial.printf("Firebase Stream begin error, %s\n\n", fbdo.errorReason().c_str());
     }
     Firebase.RTDB.setStreamCallback(&fbdo, handleFirebaseStream, [](bool timeout) {
@@ -125,9 +151,15 @@ void setup() {
     httpUpdater.setup(&server);
     setupRoutes();
     server.begin();
+    setupUdpDiscovery();
 
     ArduinoOTA.setHostname("ToiletNode");
+    ArduinoOTA.onStart([]() {
+        ESP.wdtEnable(20000);
+    });
     ArduinoOTA.begin();
+
+    ESP.wdtEnable(WDTO_8S);
 
     logData("System Boot");
 }
@@ -166,6 +198,8 @@ void setupRoutes() {
         doc["temp"] = temperature;
         doc["hum"] = humidity;
         doc["ver"] = SW_VERSION;
+        doc["ip"] = WiFi.localIP().toString();
+        doc["id"] = mqttClientId;
 
         FSInfo fs_info;
         if (LittleFS.info(fs_info)) {
@@ -202,7 +236,8 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
 }
 
 void handleCommand(String cmd) {
-    if (cmd == "FAN_ON") { fanState = true; digitalWrite(FAN_PIN, HIGH); }
+    if (cmd == "HEARTBEAT") { lastHeartbeatTime = millis(); return; }
+    else if (cmd == "FAN_ON") { fanState = true; digitalWrite(FAN_PIN, HIGH); }
     else if (cmd == "FAN_OFF") { fanState = false; digitalWrite(FAN_PIN, LOW); }
     else if (cmd == "LIGHT_ON") { lightState = true; digitalWrite(LIGHT_PIN, HIGH); }
     else if (cmd == "LIGHT_OFF") { lightState = false; digitalWrite(LIGHT_PIN, LOW); }
@@ -223,6 +258,8 @@ void publishStatus() {
     doc["temp"] = temperature;
     doc["hum"] = humidity;
     doc["ver"] = SW_VERSION;
+    doc["ip"] = WiFi.localIP().toString();
+    doc["id"] = mqttClientId;
 
     FSInfo fs_info;
     if (LittleFS.info(fs_info)) {
@@ -240,7 +277,9 @@ void publishStatus() {
 
     // Parallel Push to Firebase
     if (Firebase.ready()) {
-        Firebase.RTDB.setString(&fbdo, "frmesp32/toilet/status", buffer);
+        if (millis() - lastHeartbeatTime < 60000) {
+            Firebase.RTDB.setString(&fbdo, "FrmEsp32/toilet/status", buffer);
+        }
     }
 }
 
@@ -259,12 +298,16 @@ void logData(String reason) {
 
     // Parallel Push to Firebase History
     if (Firebase.ready()) {
-        String entry = String(timestamp) + "," + reason;
-        Firebase.RTDB.pushString(&fbdo, "frmesp32/toilet/history", entry);
+        if (millis() - lastHeartbeatTime < 60000) {
+            String entry = String(timestamp) + "," + reason;
+            Firebase.RTDB.pushString(&fbdo, "FrmEsp32/toilet/history", entry);
+        }
     }
 }
 
 void loop() {
+    ESP.wdtFeed();
+    checkUdpDiscovery();
     server.handleClient();
 #ifdef ENABLE_MQTT
     mqttClient.loop();

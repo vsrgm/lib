@@ -1,4 +1,5 @@
 #include <ESP8266WiFi.h>
+#include <WiFiUdp.h>
 #include <ESP8266WebServer.h>
 #include <ArduinoJson.h>
 #include <LittleFS.h>
@@ -11,6 +12,9 @@
 #include <ESP8266httpUpdate.h>
 #include <DHT.h>
 #include <Firebase_ESP_Client.h>
+#include <IRremoteESP8266.h>
+#include <IRrecv.h>
+#include <IRutils.h>
 #include "credentials.h"
 
 // Compile-time option to enable/disable MQTT
@@ -18,10 +22,14 @@
 
 #define LDR_PIN A0
 #define EMERGENCY_LIGHT_PIN D2
-#define DHTPIN D3
+#define IR_RECEIVER_PIN D4
+#define DHTPIN D6
 #define DHTTYPE DHT11
+#define BUZZER_PIN D8
 
 DHT dht(DHTPIN, DHTTYPE);
+IRrecv irrecv(IR_RECEIVER_PIN);
+decode_results irResults;
 
 // Network credentials
 const char* ssid = HOME_NETWORK_SSID;
@@ -49,7 +57,31 @@ String globalCmdTopic = baseTopic + "all/commands";
 String discoveryTopic = baseTopic + "nodes/discovery";
 String historyTopic = baseTopic + mqttClientId + "/history";
 
-const String SW_VERSION = "1.0.328";
+const String SW_VERSION = "1.0.416";
+
+WiFiUDP udpDiscovery;
+const int UDP_DISCOVERY_PORT = 8888;
+
+void setupUdpDiscovery() {
+  udpDiscovery.begin(UDP_DISCOVERY_PORT);
+}
+
+void checkUdpDiscovery() {
+  int packetSize = udpDiscovery.parsePacket();
+  if (packetSize) {
+    char buf[255];
+    int len = udpDiscovery.read(buf, 255);
+    if (len > 0) buf[len] = 0;
+    String msg = String(buf);
+    msg.trim();
+    if (msg == "DISCOVER" || msg.indexOf("DISCOVER") != -1) {
+      String response = "{\"ip\":\"" + WiFi.localIP().toString() + "\",\"id\":\"" + mqttClientId + "\",\"name\":\"study\",\"ver\":\"" + SW_VERSION + "\"}";
+      udpDiscovery.beginPacket(udpDiscovery.remoteIP(), udpDiscovery.remotePort());
+      udpDiscovery.print(response);
+      udpDiscovery.endPacket();
+    }
+  }
+}
 
 int currentMqttPortIndex = 0;
 const int mqttPorts[] = {1883, 8000, 8883, 8884};
@@ -61,6 +93,10 @@ float dhtHum = 0.0;
 int lightRawValue = 0;
 bool emergencyLightOn = false;
 bool manualOverride = false;
+bool buzzerOn = false;
+int buzzerFreq = 2000;
+bool irReceiveMode = false;
+unsigned long lastHeartbeatTime = 0;
 
 // Sensor Enable/Disable Flags
 bool enDht = true;
@@ -90,6 +126,8 @@ void loadSettings() {
       if (doc.containsKey("en_light")) enLight = doc["en_light"].as<bool>();
       if (doc.containsKey("en_emer")) enEmer = doc["en_emer"].as<bool>();
       if (doc.containsKey("manual_override")) manualOverride = doc["manual_override"].as<bool>();
+      if (doc.containsKey("buzzer_freq")) buzzerFreq = doc["buzzer_freq"].as<int>();
+      if (doc.containsKey("ir_receive_mode")) irReceiveMode = doc["ir_receive_mode"].as<bool>();
       f.close();
     }
   }
@@ -105,18 +143,23 @@ void saveSettings() {
     doc["en_light"] = enLight;
     doc["en_emer"] = enEmer;
     doc["manual_override"] = manualOverride;
+    doc["buzzer_freq"] = buzzerFreq;
+    doc["ir_receive_mode"] = irReceiveMode;
     serializeJson(doc, f);
     f.close();
   }
 }
 
 void publishStatus() {
-  StaticJsonDocument<512> doc; // Increased size to accommodate IP and ID
+  StaticJsonDocument<512> doc;
   doc["dht_temp"] = String(dhtTemp, 1);
   doc["dht_hum"] = String(dhtHum, 1);
   doc["light_raw"] = lightRawValue;
   doc["emer"] = emergencyLightOn ? "ON" : "OFF";
+  doc["buzzer"] = buzzerOn ? "ON" : "OFF";
+  doc["buzzer_freq"] = buzzerFreq;
   doc["manual_override"] = manualOverride ? "ON" : "OFF";
+  doc["ir_receive_mode"] = irReceiveMode ? "ON" : "OFF";
   doc["heap"] = ESP.getFreeHeap();
   doc["ver"] = SW_VERSION;
   doc["ip"] = WiFi.localIP().toString();
@@ -132,10 +175,11 @@ void publishStatus() {
 #endif
 
   if (Firebase.ready()) {
-    FirebaseJson json;
-    json.setJsonData(buffer);
-    // Write to the OUTBOX
-    Firebase.RTDB.setJSON(&fbdo, String(FB_OUTBOX) + "/status", &json);
+    if (millis() - lastHeartbeatTime < 60000) {
+      FirebaseJson json;
+      json.setJsonData(buffer);
+      Firebase.RTDB.setJSON(&fbdo, String(FB_OUTBOX) + "/status", &json);
+    }
   }
 }
 
@@ -173,35 +217,25 @@ void logData(String eventType) {
   f.print(entry);
   f.close();
 
-  // Parallel Push to Firebase History
   if (Firebase.ready()) {
-    String trimmedEntry = entry;
-    trimmedEntry.trim();
-    // Write history to OUTBOX
-    Firebase.RTDB.pushString(&fbdo, String(FB_OUTBOX) + "/history", trimmedEntry);
+    if (millis() - lastHeartbeatTime < 60000) {
+      String trimmedEntry = entry;
+      trimmedEntry.trim();
+      Firebase.RTDB.pushString(&fbdo, String(FB_OUTBOX) + "/history", trimmedEntry);
+    }
   }
 }
 
 void handleRemoteOTA(String url) {
   url.trim();
   addWebLog("OTA Pending. Restarting...");
-
-  // Report to Firebase before restarting
-  if (Firebase.ready()) {
-    Firebase.RTDB.setString(&fbdo, String(FB_OUTBOX) + "/ota_status", "COMMAND_RECEIVED");
-  }
-
-  // Dropbox Direct Download Fix
   if (url.indexOf("www.dropbox.com") != -1) {
       url.replace("www.dropbox.com", "dl.dropboxusercontent.com");
   }
-
-  // GitHub Direct Download Fix
   if (url.indexOf("github.com") != -1 && url.indexOf("raw.githubusercontent.com") == -1) {
       url.replace("github.com", "raw.githubusercontent.com");
       url.replace("/blob/", "/");
   }
-
   url.replace("?dl=1", "");
   url.replace("&dl=1", "");
   url.replace("?dl=0", "");
@@ -213,56 +247,32 @@ void handleRemoteOTA(String url) {
     f.close();
     delay(1000);
     ESP.restart();
-  } else {
-    addWebLog("FS Error: Could not save OTA");
   }
 }
 
 void runPendingOTA() {
   String url = "";
-  bool isFull = false;
-
   if (LittleFS.exists("/ota.txt")) {
     File f = LittleFS.open("/ota.txt", "r");
     url = f.readString();
     f.close();
     LittleFS.remove("/ota.txt");
-  } else if (LittleFS.exists("/full_ota.txt")) {
-    File f = LittleFS.open("/full_ota.txt", "r");
-    url = f.readString();
-    f.close();
-    LittleFS.remove("/full_ota.txt");
-    isFull = true;
   }
-
   url.trim();
   if (url.length() < 10) return;
 
-  Serial.println("Starting OTA: " + url);
-  addWebLog(isFull ? "Stage 2 OTA: " : "Stage 1 OTA: ");
-  addWebLog(url);
-
-  // CRITICAL: Wait for network to be fully stable
   delay(5000);
-
-  // Boost CPU speed to 160MHz for the heavy download
   system_update_cpu_freq(160);
+  ESP.wdtEnable(20000);
 
   WiFiClientSecure sClient;
   sClient.setInsecure();
-  // 16384 (16KB) is the absolute max SSL fragment size.
   sClient.setBufferSizes(16384, 1024);
 
   ESPhttpUpdate.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
-  ESPhttpUpdate.rebootOnUpdate(true); // Standard mode: reboot immediately on success
-
-  t_httpUpdate_return ret = ESPhttpUpdate.update(sClient, url);
-
-  // If we reach here, update failed (otherwise it would have rebooted)
+  ESPhttpUpdate.rebootOnUpdate(true);
+  ESPhttpUpdate.update(sClient, url);
   system_update_cpu_freq(80);
-
-  String err = "OTA Fail: " + ESPhttpUpdate.getLastErrorString();
-  addWebLog(err);
 }
 
 void mqttCallback(char* topic, byte* payload, unsigned int length) {
@@ -271,16 +281,11 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
 
   if (msg == "SYNC") {
     publishStatus();
+  } else if (msg == "HEARTBEAT") {
+    lastHeartbeatTime = millis();
+    publishStatus();
   } else if (msg.startsWith("OTA:")) {
     handleRemoteOTA(msg.substring(4));
-  } else if (msg.startsWith("OTA_FULL:")) {
-    String url = msg.substring(9);
-    File f = LittleFS.open("/full_ota.txt", "w");
-    if (f) {
-      f.print(url);
-      f.close();
-      addWebLog("Full OTA URL Saved");
-    }
   } else if (msg == "DISCOVER") {
     String discoveryMsg = "{\"ip\":\"" + WiFi.localIP().toString() + "\", \"id\":\"" + mqttClientId + "\", \"ver\":\"" + SW_VERSION + "\"}";
 #ifdef ENABLE_MQTT
@@ -294,16 +299,31 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     }
   } else if (msg.startsWith("CONFIG:")) {
     String jsonStr = msg.substring(7);
-    StaticJsonDocument<128> doc; // Reduced from 256
+    StaticJsonDocument<128> doc;
     deserializeJson(doc, jsonStr);
 
     if (doc.containsKey("manual_override")) {
         manualOverride = doc["manual_override"].as<bool>();
     }
-
     if (doc.containsKey("en_emer")) {
         emergencyLightOn = doc["en_emer"].as<bool>();
         digitalWrite(EMERGENCY_LIGHT_PIN, emergencyLightOn ? HIGH : LOW);
+    }
+    if (doc.containsKey("buzzer")) {
+        buzzerOn = doc["buzzer"].as<bool>();
+    }
+    if (doc.containsKey("buzzer_freq")) {
+        buzzerFreq = doc["buzzer_freq"].as<int>();
+    }
+    if (doc.containsKey("ir_receive_mode")) {
+        irReceiveMode = doc["ir_receive_mode"].as<bool>();
+        if (irReceiveMode) {
+            irrecv.enableIRIn();
+            addWebLog("IR Receive Enabled");
+        } else {
+            irrecv.disableIRIn();
+            addWebLog("IR Receive Disabled");
+        }
     }
 
     logData("App Config Update");
@@ -328,82 +348,27 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   }
 }
 
-void reconnectWiFi() {
-  static unsigned long lastWiFiRetry = 0;
-  if (millis() - lastWiFiRetry > 10000) {
-    lastWiFiRetry = millis();
-    WiFi.begin(ssid, password);
-    Serial.println("Retrying WiFi connection...");
-  }
-}
-
-#ifdef ENABLE_MQTT
-void reconnectMqtt() {
-  static unsigned long lastReconnectAttempt = 0;
-  if (millis() - lastReconnectAttempt > 5000) {
-    lastReconnectAttempt = millis();
-
-    mqttPort = mqttPorts[currentMqttPortIndex];
-    currentMqttPortIndex = (currentMqttPortIndex + 1) % numMqttPorts;
-
-    if (mqttPort == 1883) {
-      mqttClient.setClient(wifiClient);
-    } else {
-      secureClient.setInsecure();
-      mqttClient.setClient(secureClient);
-    }
-    mqttClient.setClient(mqttPort == 1883 ? wifiClient : secureClient);
-    mqttClient.setServer(mqttBroker.c_str(), mqttPort);
-
-    if (mqttClient.connect(mqttClientId.c_str())) {
-      mqttClient.subscribe(cmdTopic.c_str());
-      mqttClient.subscribe(globalCmdTopic.c_str());
-      String discoveryMsg = "{\"ip\":\"" + WiFi.localIP().toString() + "\", \"id\":\"" + mqttClientId + "\", \"ver\":\"" + SW_VERSION + "\"}";
-      mqttClient.publish(discoveryTopic.c_str(), discoveryMsg.c_str());
-    }
-  }
-}
-#endif
-
 void checkCloudCommands() {
   if (Firebase.ready()) {
-    // Read from the INBOX
     String commandPath = String(FB_INBOX) + "/command";
-
-    // Clear fbdo before request to ensure fresh data
     fbdo.clear();
-
     if (Firebase.RTDB.getString(&fbdo, commandPath)) {
       String msg = fbdo.stringData();
-
-      // FIX 1: Remove double-escaping and quotes
       msg.replace("\\\"", "\"");
       if (msg.startsWith("\"")) msg = msg.substring(1);
       if (msg.endsWith("\"")) msg = msg.substring(0, msg.length() - 1);
 
       if (msg.length() > 0 && msg != "null" && msg != "IDLE") {
         addWebLog("Cmd Recv: " + msg);
-
-        // Auto-detect OTA URLs if they don't have the prefix
-        if ((msg.startsWith("http://") || msg.startsWith("https://")) &&
-            !msg.startsWith("OTA:") && !msg.startsWith("CONFIG:")) {
+        if ((msg.startsWith("http://") || msg.startsWith("https://")) && !msg.startsWith("OTA:") && !msg.startsWith("CONFIG:")) {
             msg = "OTA:" + msg;
-            addWebLog("Auto-prefixed OTA");
         }
-
-        // Detect JSON and prefix with CONFIG: if missing
         if (msg.startsWith("{") && !msg.startsWith("CONFIG:")) {
             msg = "CONFIG:" + msg;
         }
-
-        // Reset the INBOX to IDLE *before* executing, so user sees the "transaction"
         Firebase.RTDB.setString(&fbdo, commandPath, "IDLE");
-
         mqttCallback((char*)cmdTopic.c_str(), (byte*)msg.c_str(), msg.length());
       }
-    } else {
-      // Optional: log error if getString failed
-      // Serial.println("FB Error: " + fbdo.errorReason());
     }
   }
 }
@@ -413,11 +378,6 @@ void setupFirebase() {
   fbConfig.api_key = FIREBASE_API_KEY;
   fbAuth.user.email = FIREBASE_USER_EMAIL;
   fbAuth.user.password = FIREBASE_USER_PASSWORD;
-
-  // OPTIMIZATION: Use larger buffers to handle long URLs and metadata
-  fbConfig.signer.test_mode = false;
-  // Buffers are now set per-context (Boot vs Main) to save RAM
-
   Firebase.begin(&fbConfig, &fbAuth);
   Firebase.reconnectWiFi(true);
   addWebLog("Firebase Ready");
@@ -427,66 +387,36 @@ void setup() {
   Serial.begin(115200);
   pinMode(EMERGENCY_LIGHT_PIN, OUTPUT);
   digitalWrite(EMERGENCY_LIGHT_PIN, LOW);
+  pinMode(BUZZER_PIN, OUTPUT);
+  digitalWrite(BUZZER_PIN, LOW);
 
   if (!LittleFS.begin()) Serial.println("LittleFS Failed");
   loadSettings();
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
-  Serial.print("Connecting to WiFi");
+
   int timeout = 0;
   while (WiFi.status() != WL_CONNECTED && timeout < 40) {
     delay(500);
-    Serial.print(".");
     timeout++;
   }
 
-  if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("\nWiFi Connected. IP: " + WiFi.localIP().toString());
-  }
-
-  // CRUCIAL: Wait for NTP Time Sync (Required for Firebase SSL)
   configTime(5.5 * 3600, 0, "pool.ntp.org", "time.nist.gov");
-  Serial.print("Waiting for NTP time sync: ");
   time_t now = time(nullptr);
   int retry = 0;
   while (now < 8 * 3600 * 2 && retry < 40) {
     delay(500);
-    Serial.print(".");
     now = time(nullptr);
     retry++;
   }
-  if (now < 8 * 3600 * 2) addWebLog("Time sync FAILED!");
-  else {
-    addWebLog("Time Synchronized.");
-    runPendingOTA(); // Execute any update saved before restart
+  if (now >= 8 * 3600 * 2) {
+    runPendingOTA();
   }
 
   setupFirebase();
-  // Reduced buffers for normal operation to keep HTTP server stable
   fbdo.setBSSLBufferSize(2048, 512);
   fbdo.setResponseSize(1024);
-
-  // VERSION TRACKER: Detect if we just booted into a new version
-  const char* verFile = "/last_ver.txt";
-  String lastVer = "";
-  if (LittleFS.exists(verFile)) {
-    File f = LittleFS.open(verFile, "r");
-    lastVer = f.readString();
-    f.close();
-  }
-
-  if (lastVer != SW_VERSION) {
-    // New version detected! Report success
-    if (Firebase.ready()) {
-      Firebase.RTDB.setString(&fbdo, String(FB_OUTBOX) + "/ota_status", "SUCCESS: " + SW_VERSION);
-      addWebLog("New Firmware Detected: " + SW_VERSION);
-    }
-    // Save current version for next boot
-    File f = LittleFS.open(verFile, "w");
-    f.print(SW_VERSION);
-    f.close();
-  }
 
   server.on("/", []() {
     server.sendHeader("Cache-Control", "no-cache");
@@ -499,7 +429,7 @@ void setup() {
     server.sendContent("p{margin:8px 0;display:flex;justify-content:space-between; font-size: 0.9em;}");
     server.sendContent(".s{font-weight:bold;padding:2px 8px;border-radius:10px;font-size:0.8em;background:#2ecc71;color:white;}");
     server.sendContent(".log{background:#2c3e50;color:#0f0;padding:10px;border-radius:5px;font-family:monospace;font-size:0.75em;margin-top:10px;max-height:100px;overflow:auto;word-wrap:break-word;}");
-    server.sendContent("</style></head><body><div class='c'><h3>Study Monitor</h3>");
+    server.sendContent("</style></head><body><div class='c'><h3>Study Room Monitor</h3>");
 
     server.sendContent("<p>Ver: <span>" + SW_VERSION + "</span></p>");
     server.sendContent("<p>Heap: <span>" + String(ESP.getFreeHeap()) + "</span></p>");
@@ -508,37 +438,60 @@ void setup() {
     server.sendContent("<p>Hum: <span>" + String(dhtHum, 1) + " %</span></p>");
     server.sendContent("<p>Light: <span>" + String(lightRawValue) + "</span></p>");
     server.sendContent("<p>Manual: <span>" + String(manualOverride ? "ON" : "OFF") + "</span></p>");
+    server.sendContent("<p>IR Receive: <span>" + String(irReceiveMode ? "ON" : "OFF") + "</span></p>");
+    server.sendContent("<p>Buzzer: <span>" + String(buzzerOn ? "ON" : "OFF") + " (" + String(buzzerFreq) + " Hz)</span></p>");
     server.sendContent("<div class='log'>" + webLogs + "</div>");
     server.sendContent("<hr><p style='text-align:center;display:block;'><a href='/update'>Firmware Update</a></p>");
     server.sendContent("</div></body></html>");
     server.sendContent("");
   });
 
-  // REST OF SETUP
   server.on("/status", []() {
     StaticJsonDocument<400> doc;
     doc["dht_temp"] = String(dhtTemp, 1);
     doc["dht_hum"] = String(dhtHum, 1);
     doc["light_raw"] = lightRawValue;
     doc["emer"] = emergencyLightOn ? "ON" : "OFF";
+    doc["buzzer"] = buzzerOn ? "ON" : "OFF";
+    doc["buzzer_freq"] = buzzerFreq;
     doc["manual_override"] = manualOverride ? "ON" : "OFF";
+    doc["ir_receive_mode"] = irReceiveMode ? "ON" : "OFF";
     doc["heap"] = ESP.getFreeHeap();
-    FSInfo fs_info;
-    if (LittleFS.info(fs_info)) doc["fs_free"] = fs_info.totalBytes - fs_info.usedBytes;
     doc["ver"] = SW_VERSION;
+    doc["ip"] = WiFi.localIP().toString();
+    doc["id"] = mqttClientId;
     String response;
     serializeJson(doc, response);
     server.send(200, "application/json", response);
   });
-  server.on("/sync", []() {
-    if (!LittleFS.exists(logFile)) {
-      server.send(200, "text/plain", "No history available\n");
-      return;
+
+  server.on("/control", []() {
+    if (server.hasArg("cmd")) {
+      String cmd = server.arg("cmd");
+      if (cmd == "HEARTBEAT") {
+        lastHeartbeatTime = millis();
+      }
+      StaticJsonDocument<400> doc;
+      doc["dht_temp"] = String(dhtTemp, 1);
+      doc["dht_hum"] = String(dhtHum, 1);
+      doc["light_raw"] = lightRawValue;
+      doc["emer"] = emergencyLightOn ? "ON" : "OFF";
+      doc["buzzer"] = buzzerOn ? "ON" : "OFF";
+      doc["buzzer_freq"] = buzzerFreq;
+      doc["manual_override"] = manualOverride ? "ON" : "OFF";
+      doc["ir_receive_mode"] = irReceiveMode ? "ON" : "OFF";
+      doc["heap"] = ESP.getFreeHeap();
+      doc["ver"] = SW_VERSION;
+      doc["ip"] = WiFi.localIP().toString();
+      doc["id"] = mqttClientId;
+      String response;
+      serializeJson(doc, response);
+      server.send(200, "application/json", response);
+    } else {
+      server.send(400, "text/plain", "Bad Request");
     }
-    File f = LittleFS.open(logFile, "r");
-    server.streamFile(f, "text/csv");
-    f.close();
   });
+
   server.on("/clear", []() {
     LittleFS.remove(logFile);
     addWebLog("History Cleared via IP");
@@ -547,6 +500,7 @@ void setup() {
     }
     server.send(200, "text/plain", "History Cleared");
   });
+
   server.on("/config", HTTP_POST, []() {
     if (server.hasArg("plain")) {
       String body = server.arg("plain");
@@ -561,13 +515,10 @@ void setup() {
     }
   });
 
-  // PREPARE FOR UPDATE: Stop background tasks to free RAM before updating
   server.on("/update", HTTP_GET, []() {
     addWebLog("System entering update mode...");
-    // Stop memory-intensive services
-    mqttClient.disconnect();
+    ESP.wdtEnable(20000);
     fbdo.clear();
-    
     String html = "<html><head><style>body{font-family:sans-serif;text-align:center;padding:50px;} .btn{background:#3498db;color:white;padding:15px 30px;text-decoration:none;border-radius:5px;font-weight:bold;}</style></head><body>";
     html += "<h1>Firmware Update Mode</h1><p>RAM has been freed for a stable update.</p>";
     html += "<br><br><a class='btn' href='/update_now'>Proceed to Upload Page &rarr;</a>";
@@ -577,45 +528,63 @@ void setup() {
 
   httpUpdater.setup(&server, "/update_now");
 
-  if (WiFi.status() == WL_CONNECTED) {
-    if (MDNS.begin(mqttClientId.c_str())) {
-      Serial.println("mDNS responder started: http://" + mqttClientId + ".local");
-    }
-  }
-
   server.begin();
-  MDNS.addService("http", "tcp", 80);
-
-#ifdef ENABLE_MQTT
-  mqttClient.setServer(mqttBroker.c_str(), mqttPort);
-  mqttClient.setCallback(mqttCallback);
-  mqttClient.setBufferSize(512); // Increased to 512 to avoid truncation of long URLs
-#endif
-
+  setupUdpDiscovery();
   dht.begin();
-
-  // Publish initial status
+  if (irReceiveMode) {
+    irrecv.enableIRIn();
+  }
+  ESP.wdtEnable(WDTO_8S);
   publishStatus();
 }
 
-void loop()
-{
-  static float old_dhtTemp = 0, old_dhtHum = 0;
-  static int old_lightRawValue = 0;
+void loop() {
+  static unsigned long lastIrCaptureTime = 0;
+  if (irReceiveMode) {
+    if (irrecv.decode(&irResults)) {
+      String hexStr = resultToHexidecimal(&irResults);
+      String protocol = typeToString(irResults.decode_type);
 
-  server.handleClient();
-  MDNS.update();
+      // Filter out common ambient noise or partial trash, and rate limit captures (minimum 300ms gap)
+      if (irResults.bits >= 8 && (millis() - lastIrCaptureTime > 300)) {
+          lastIrCaptureTime = millis();
+          String logMsg = "IR: " + hexStr + " (" + protocol + " " + String(irResults.bits) + "b)";
 
-  if (WiFi.status() != WL_CONNECTED) {
-    reconnectWiFi();
-  } else {
-#ifdef ENABLE_MQTT
-    if (!mqttClient.connected()) {
-      reconnectMqtt();
-    } else {
-      mqttClient.loop();
+          if (irResults.decode_type == UNKNOWN) {
+              // Add raw timings for debugging UNKNOWN signals
+              logMsg += " RAW[" + String(irResults.rawlen) + "]: ";
+              for (uint16_t i = 1; i < irResults.rawlen; i++) {
+                  logMsg += String(irResults.rawbuf[i] * kRawTick) + ",";
+                  if (i > 10) { logMsg += "..."; break; }
+              }
+          }
+          addWebLog(logMsg);
+
+          if (Firebase.ready()) {
+            FirebaseJson json;
+            json.set("hex", hexStr);
+            json.set("protocol", protocol);
+            json.set("bits", irResults.bits);
+            String rawStr = "";
+            for (uint16_t i = 1; i < irResults.rawlen; i++) {
+                rawStr += String(rawStr.length() > 0 ? "," : "") + String(irResults.rawbuf[i] * kRawTick);
+            }
+            json.set("raw", rawStr);
+            Firebase.RTDB.pushJSON(&fbdo, String(FB_OUTBOX) + "/captured_ir", &json);
+          }
+      }
+      irrecv.resume();
     }
-#endif
+  }
+
+  ESP.wdtFeed();
+  checkUdpDiscovery();
+  server.handleClient();
+
+  if (buzzerOn) {
+    tone(BUZZER_PIN, buzzerFreq);
+  } else {
+    noTone(BUZZER_PIN);
   }
 
   static unsigned long lastSensorRead = 0;
@@ -623,46 +592,41 @@ void loop()
 
   if (millis() - lastSensorRead > 2000) {
     lastSensorRead = millis();
+    float new_dhtTemp = dht.readTemperature();
+    float new_dhtHum = dht.readHumidity();
+    int new_lightRawValue = analogRead(LDR_PIN);
 
-    if (enDht) {
-      dhtTemp = dht.readTemperature();
-      dhtHum = dht.readHumidity();
+    bool changed = false;
+    if (abs(new_dhtTemp - dhtTemp) >= 0.2 ||
+        abs(new_dhtHum - dhtHum) >= 1.0 ||
+        abs(new_lightRawValue - lightRawValue) > 20) {
+      changed = true;
     }
-  }
-  checkCloudCommands();
 
-  if (enLight) {
-    lightRawValue = analogRead(LDR_PIN);
+    dhtTemp = new_dhtTemp;
+    dhtHum = new_dhtHum;
+    lightRawValue = new_lightRawValue;
+
     if (!manualOverride) {
-      bool shouldBeOn = (lightRawValue < 500);  // Threshold for dark
+      bool shouldBeOn = (lightRawValue < 500);
       if (shouldBeOn != emergencyLightOn) {
         emergencyLightOn = shouldBeOn;
         digitalWrite(EMERGENCY_LIGHT_PIN, emergencyLightOn ? HIGH : LOW);
         addWebLog(emergencyLightOn ? "Auto Light ON" : "Auto Light OFF");
         logData("Auto Light Change");
+        changed = true;
       }
+    }
+
+    if (changed) {
+      publishStatus();
     }
   }
 
-  static unsigned long lastLog = 0;
-  if (millis() - lastLog > 3600000) {
-    lastLog = millis();
-    logData("Hourly Log");
-  }
+  checkCloudCommands();
 
   if (millis() - lastPeriodicPublish > 30000) {
     lastPeriodicPublish = millis();
     publishStatus();
-  }
-
-  // Only publish on significant changes to avoid spamming the app
-  if (abs(old_dhtTemp - dhtTemp) >= 0.2 ||
-      abs(old_dhtHum - dhtHum) >= 1.0 ||
-      abs(old_lightRawValue - lightRawValue) > 15) {
-    old_lightRawValue = lightRawValue;
-    old_dhtTemp = dhtTemp;
-    old_dhtHum = dhtHum;
-    publishStatus();
-    lastPeriodicPublish = millis();
   }
 }

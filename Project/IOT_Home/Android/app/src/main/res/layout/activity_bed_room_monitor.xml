@@ -1,0 +1,477 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="?android:attr/colorBackground"
+    tools:context=".BedRoomMonitorActivity">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp">
+
+        <ImageButton
+            android:id="@+id/btn_back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_revert"
+            android:contentDescription="@string/content_desc_back"
+            app:tint="?android:attr/textColorPrimary" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="@string/title_bed_room"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <ImageButton
+            android:id="@+id/btn_settings"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_alignParentEnd="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_preferences"
+            android:contentDescription="Settings"
+            app:tint="?android:attr/textColorPrimary" />
+    </RelativeLayout>
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/card_ip_sync"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        android:layout_marginBottom="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/label_node_ip"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/available_nodes_info"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=" (Searching...)"
+                    android:textSize="12sp"
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:layout_marginEnd="8dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="4dp">
+
+                <Spinner
+                    android:id="@+id/node_selector"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:spinnerMode="dropdown" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="12dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_sync"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:text="@string/btn_sync"
+                    android:textSize="11sp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:padding="0dp"
+                    app:cornerRadius="8dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_sync_history"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    android:text="Sync History"
+                    android:textSize="11sp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:padding="0dp"
+                    app:cornerRadius="8dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_clear_history"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    android:text="Clear History"
+                    android:textSize="11sp"
+                    app:backgroundTint="#FF5252"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:padding="0dp"
+                    app:cornerRadius="8dp" />
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <TextView
+        android:id="@+id/history_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/history_expand"
+        android:textStyle="bold"
+        android:textColor="?android:attr/textColorPrimary"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackground"
+        android:padding="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp" />
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/history_container"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone"
+        app:cardCornerRadius="8dp">
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <ScrollView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:background="#000000">
+
+                <TableLayout
+                    android:id="@+id/history_table"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="8dp">
+
+                    <!-- Header Row -->
+                    <TableRow android:background="#333333" android:padding="4dp">
+                        <TextView android:text="Date" android:textColor="#FFFFFF" android:padding="8dp" android:textStyle="bold"/>
+                        <TextView android:text="Time" android:textColor="#FFFFFF" android:padding="8dp" android:textStyle="bold"/>
+                        <TextView android:text="MQ135 A" android:textColor="#FFFFFF" android:padding="8dp" android:textStyle="bold"/>
+                        <TextView android:text="MQ135 D" android:textColor="#FFFFFF" android:padding="8dp" android:textStyle="bold"/>
+                        <TextView android:text="DHT_T" android:textColor="#FFFFFF" android:padding="8dp" android:textStyle="bold"/>
+                        <TextView android:text="DHT_H" android:textColor="#FFFFFF" android:padding="8dp" android:textStyle="bold"/>
+                        <TextView android:text="Light" android:textColor="#FFFFFF" android:padding="8dp" android:textStyle="bold"/>
+                        <TextView android:text="PIR" android:textColor="#FFFFFF" android:padding="8dp" android:textStyle="bold"/>
+                        <TextView android:text="Buzzer" android:textColor="#FFFFFF" android:padding="8dp" android:textStyle="bold"/>
+                    </TableRow>
+
+                </TableLayout>
+            </ScrollView>
+        </HorizontalScrollView>
+    </androidx.cardview.widget.CardView>
+
+    <ScrollView
+        android:id="@+id/status_scroll_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <include layout="@layout/item_status_row" android:id="@+id/row_mq135_analog" />
+            <include layout="@layout/item_status_row" android:id="@+id/row_mq135_digital" />
+            <include layout="@layout/item_status_row" android:id="@+id/row_dht_temp" />
+            <include layout="@layout/item_status_row" android:id="@+id/row_dht_hum" />
+            <include layout="@layout/item_status_row" android:id="@+id/row_ambient" />
+            <include layout="@layout/item_status_row" android:id="@+id/row_pir" />
+            <include layout="@layout/item_status_row" android:id="@+id/row_buzzer" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="2dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Buzzer Frequency"
+                        android:textStyle="bold"
+                        android:textSize="14sp" />
+
+                    <SeekBar
+                        android:id="@+id/sb_buzzer_freq"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:max="5000"
+                        android:progress="2000" />
+
+                    <TextView
+                        android:id="@+id/tv_buzzer_freq_val"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="2000 Hz"
+                        android:gravity="center"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <include layout="@layout/item_status_row" android:id="@+id/row_manual_override" />
+            <include layout="@layout/item_status_row" android:id="@+id/row_ir_transmitter_mode" />
+
+            <TextView
+                android:id="@+id/remotes_header"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Remote Controls ▼ (Click to Expand)"
+                android:textStyle="bold"
+                android:textColor="?android:attr/textColorPrimary"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground"
+                android:padding="8dp"
+                android:layout_marginTop="8dp"
+                android:visibility="gone" />
+
+            <androidx.core.widget.NestedScrollView
+                android:id="@+id/remotes_container"
+                android:layout_width="match_parent"
+                android:layout_height="400dp"
+                android:visibility="gone"
+                android:background="#121212"
+                android:padding="8dp"
+                android:layout_marginBottom="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <!-- Sony TV Remote -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Sony TV (RMT-TX100P)"
+                        android:textColor="#FFFFFF"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"/>
+
+                    <GridLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:columnCount="3"
+                        android:alignmentMode="alignMargins"
+                        android:columnOrderPreserved="false">
+
+                        <Button android:id="@+id/btn_tv_power" android:text="PWR" android:backgroundTint="#FF0000" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_tv_input" android:text="INP" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_tv_exit" android:text="EXT" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+
+                        <Button android:id="@+id/btn_tv_vol_up" android:text="V+" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_tv_ch_up" android:text="P+" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_tv_mute" android:text="MUT" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+
+                        <Button android:id="@+id/btn_tv_vol_down" android:text="V-" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_tv_ch_down" android:text="P-" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_tv_home" android:text="HOM" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                    </GridLayout>
+
+                    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#333333" android:layout_marginVertical="16dp"/>
+
+                    <!-- Sony Soundbar Remote -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Sony Soundbar (RMT-AH412U)"
+                        android:textColor="#FFFFFF"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"/>
+
+                    <GridLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:columnCount="3">
+                        <Button android:id="@+id/btn_sb_power" android:text="PWR" android:backgroundTint="#00FF00" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_sb_input" android:text="INP" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_sb_mute" android:text="MUT" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+
+                        <Button android:id="@+id/btn_sb_vol_up" android:text="V+" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_sb_sw_up" android:text="SW+" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_sb_night" android:text="NGT" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+
+                        <Button android:id="@+id/btn_sb_vol_down" android:text="V-" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_sb_sw_down" android:text="SW-" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_sb_music" android:text="MSC" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                    </GridLayout>
+
+                    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#333333" android:layout_marginVertical="16dp"/>
+
+                    <!-- Sarru Automation Remote -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Sarru Automation"
+                        android:textColor="#FFFFFF"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"/>
+
+                    <GridLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:columnCount="3">
+                        <Button android:id="@+id/btn_sa_power" android:text="ON/OFF" android:backgroundTint="#FF8800" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <View android:layout_width="0dp" android:layout_height="0dp"/>
+                        <View android:layout_width="0dp" android:layout_height="0dp"/>
+
+                        <Button android:id="@+id/btn_sa_1" android:text="1" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_sa_2" android:text="2" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_sa_3" android:text="3" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+
+                        <Button android:id="@+id/btn_sa_4" android:text="4" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_sa_5" android:text="5" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_sa_6" android:text="6" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+
+                        <Button android:id="@+id/btn_sa_7" android:text="7" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_sa_8" android:text="8" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_sa_9" android:text="9" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                    </GridLayout>
+
+                    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#333333" android:layout_marginVertical="16dp"/>
+
+                    <!-- Air Conditioner (AC) Remote -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Air Conditioner (AC)"
+                        android:textColor="#FFFFFF"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"/>
+
+                    <GridLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:columnCount="3">
+                        <Button android:id="@+id/btn_ac_power_on" android:text="AC ON" android:backgroundTint="#00E676" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_ac_power_off" android:text="AC OFF" android:backgroundTint="#FF5252" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_ac_26c" android:text="26°C" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                    </GridLayout>
+
+                    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#333333" android:layout_marginVertical="16dp"/>
+
+                    <!-- Fan Remote -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Fan Remote"
+                        android:textColor="#FFFFFF"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"/>
+
+                    <GridLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:columnCount="3">
+                        <Button android:id="@+id/btn_fan_power" android:text="OFF" android:backgroundTint="#FF0000" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_fan_speed_up" android:text="SPD+" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_fan_speed_down" android:text="SPD-" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+
+                        <Button android:id="@+id/btn_fan_speed_1" android:text="SPD 1" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_fan_speed_2" android:text="SPD 2" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_fan_speed_3" android:text="SPD 3" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+
+                        <Button android:id="@+id/btn_fan_speed_4" android:text="SPD 4" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_fan_speed_5" android:text="SPD 5" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_fan_on" android:text="FAN ON" android:backgroundTint="#00E676" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                    </GridLayout>
+
+                </LinearLayout>
+            </androidx.core.widget.NestedScrollView>
+
+            <include layout="@layout/item_status_row" android:id="@+id/row_heap_free" />
+
+            <TextView
+                android:id="@+id/sync_status"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/status_never_synced"
+                android:gravity="center"
+                android:textColor="?android:attr/textColorSecondary" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="System Connection Logs"
+                android:textStyle="bold"
+                android:textColor="?android:attr/textColorPrimary" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="150dp"
+                android:layout_marginTop="8dp"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="1dp">
+
+                <ScrollView
+                    android:id="@+id/log_scroll_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#1E1E1E"
+                    android:padding="8dp">
+
+                    <TextView
+                        android:id="@+id/tv_connection_logs"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="monospace"
+                        android:text="Logs will appear here..."
+                        android:textColor="#00FF00"
+                        android:textSize="12sp" />
+                </ScrollView>
+            </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>

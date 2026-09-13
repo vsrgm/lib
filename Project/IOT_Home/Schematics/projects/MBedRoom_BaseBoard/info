@@ -1,0 +1,606 @@
+{
+  "uuid": "8b13ade50049b11fb554de0ab29f1798",
+  "path": "Offline/MBedRoom_BaseBoard",
+  "name": "MBedRoom_BaseBoard",
+  "content": "",
+  "created_at": "2026-09-19 11:25:04",
+  "updated_at": "2026-09-19 13:04:33",
+  "stick": "",
+  "documents": [
+    {
+      "uuid": "0ed5e218f506f35588fc4cfcd2c2bd01",
+      "title": "BaseBoard",
+      "description": "",
+      "docType": "1",
+      "master": "",
+      "thumb": "/images/thumb-default.png",
+      "components": {
+        "a68dc5e6a9944c46b7604648a43dcd65": 5,
+        "f5b1d9403e49471cab43bc5a1bec336f": 3,
+        "d1967012734640e5b2f2cc1ea764740b": 5,
+        "8850ffcdb9d242a1b431d4a3e2209db1": 1,
+        "5a9ec2085ad6436d86701332d4451b76": 2,
+        "baae9fa8b17b4747bac36d31655279b9": 1,
+        "12d287b9ead04ae1904768dab9b44d67": 1,
+        "404aa9221ff94de597b8734806e7c74f": 2,
+        "3ec77201bbcd4ecd8722658d581a4e60": 1,
+        "a1a68e8402b9461199345d2cae776c3f": 1
+      },
+      "BOM": [
+        [
+          "Value",
+          "Quantity",
+          "Package",
+          "Components",
+          "CustomPara"
+        ],
+        [
+          "ARDUINO NANO",
+          2,
+          "ARDUINONANOV30_ARDUINO_NANO",
+          "ARDUINO_NANO1,ARDUINO_NANO1",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "BUZZER",
+          1,
+          "BUZ-TH_BD12.0-P6.00-D0.9-RD",
+          "BUZZER1",
+          {
+            "Manufacturer Part": "buzzer",
+            "Manufacturer": "null",
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900014030"
+          }
+        ],
+        [
+          "NodeMcuL",
+          1,
+          "HDR-F-2.54_1X15",
+          "H1",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C124408"
+          }
+        ],
+        [
+          "LDR",
+          3,
+          "LDR (LDRSC058S)",
+          "H2,U2,U2",
+          {
+            "Manufacturer Part": "RD3480",
+            "Manufacturer": "Jaycar",
+            "Supplier": "Jaycar",
+            "Supplier Part": "RD3480"
+          }
+        ],
+        [
+          "NodeMcuR",
+          1,
+          "HDR-F-2.54_1X15",
+          "H4",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C124408"
+          }
+        ],
+        [
+          "BC547",
+          12,
+          "HDR-M-2.54_1X3",
+          "J2,J3,J7,J8,J13,J16,J20,J23,J24,J25,J26,J27",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
+          "BC560",
+          8,
+          "HDR-M-2.54_1X3",
+          "J3,J4,J5,J6,J9,J10,J11,J12",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
+          "PIR",
+          1,
+          "HDR-M-2.54_1X3",
+          "J14",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
+          "DHT11",
+          1,
+          "HDR-M-2.54_1X3",
+          "J15",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
+          "MQ135",
+          1,
+          "HDR-M-2.54_1X4",
+          "J17",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C124378"
+          }
+        ],
+        [
+          "HDR-M-2.54_1x4",
+          1,
+          "HDR-M-2.54_1X4",
+          "J18",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C124378"
+          }
+        ],
+        [
+          "IR Receiver",
+          1,
+          "HDR-M-2.54_1X3",
+          "J19",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
+          "Connector",
+          3,
+          "HDR-M-2.54_1X4",
+          "J21,J22,J22",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C124378"
+          }
+        ],
+        [
+          "HDR-M-2.54_1x1",
+          2,
+          "HDR-M-2.54_1X1",
+          "J28,J29",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "IR LED",
+          1,
+          "LED-TH_BD5.0_RED",
+          "LED2",
+          {
+            "Manufacturer Part": "333-2SURD/S530-A3",
+            "Manufacturer": "EVERLIGHT(台湾亿光)",
+            "Supplier": "LCSC",
+            "Supplier Part": "C87271"
+          }
+        ],
+        [
+          "5k",
+          20,
+          "R_AXIAL-0.4",
+          "R1,R2,R2,R6,R14,R14,R15,R15,R16,R16,R17,R17,R18,R18,R19,R19,R20,R20,R21,R22",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "200",
+          14,
+          "R_AXIAL-0.4",
+          "R3,R3,R4,R4,R5,R5,R9,R9,R10,R10,R11,R11,R12,R12",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "5K",
+          1,
+          "R_AXIAL-0.4",
+          "R7",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "10k",
+          3,
+          "R_AXIAL-0.4",
+          "R8,R8,R24",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "100",
+          2,
+          "R_AXIAL-0.4",
+          "R13,R13",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "150",
+          1,
+          "R_AXIAL-0.4",
+          "R23",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "SEG-TH_0.56×1_Anode",
+          16,
+          "LED-SEG-TH_10P-L12.6-W19.0-P2.54-S15.24-BL",
+          "SEG1,SEG1,SEG2,SEG2,SEG3,SEG3,SEG4,SEG4,SEG5,SEG5,SEG6,SEG6,SEG7,SEG7,SEG8,SEG8",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "志浩",
+            "Supplier": "LCSC",
+            "Supplier Part": "C8092"
+          }
+        ],
+        [
+          "74HC138N",
+          2,
+          "DIP-16_L19.2-W6.6-P2.54-LS7.6-BL",
+          "U1,U1",
+          {
+            "Manufacturer Part": "74HC138N",
+            "Manufacturer": "HGSEMI(华冠)",
+            "Supplier": "LCSC",
+            "Supplier Part": "C507188"
+          }
+        ],
+        [
+          "SN74LS47N",
+          2,
+          "DIP-16_L19.3-W6.4-P2.54-LS7.6-BL",
+          "U3,U3",
+          {
+            "Manufacturer Part": "SN74LS47N",
+            "Manufacturer": "TI(德州仪器)",
+            "Supplier": "LCSC",
+            "Supplier Part": "C129379"
+          }
+        ],
+        [
+          "USB-TYPE-C-011",
+          1,
+          "USB-C-SMD_TYC-252D-CB160",
+          "U4",
+          {
+            "Manufacturer Part": "USB-TYPE-C-011",
+            "Manufacturer": "DEALON(德艺隆)",
+            "Supplier": "LCSC",
+            "Supplier Part": "C2927031"
+          }
+        ]
+      ],
+      "updateTime": 1789797219,
+      "createTime": 1788680041,
+      "histories": [],
+      "created_at": "2026-09-06 13:04:01",
+      "updated_at": "2026-09-19 11:23:39"
+    },
+    {
+      "uuid": "8d454699cb8e5205a6e9792e58ca07a4",
+      "puuid": "8b13ade50049b11fb554de0ab29f1798",
+      "title": "PCB_MBedRoom_BaseBoard",
+      "filename": "PCB_MBedRoom_BaseBoard.json",
+      "description": "",
+      "docType": "3",
+      "master": "",
+      "thumb": "/images/thumb-default.png",
+      "components": {
+        "c90898a9dafe4317aa5bee6716d3b9a2": 1,
+        "2739dcdf8a8e413a8b48191b26682f31": 1,
+        "bce4bcfcccfb42a296f7a392ab0b7199": 2,
+        "36b1306a115341f4b4d9407fb34974e0": 1,
+        "9f77654394344f25b3de138e0fe05ff6": 5,
+        "282f7786cb6144d097ae00194c3e3fb3": 3,
+        "19c77e72422b43b59c26b9fa67af5de4": 2,
+        "ce0ed154d45b41508e0debca8473ba07": 1,
+        "5905db98cde4487fbb177070aa85bbe1": 5,
+        "3eb1249f3ebb4284ae221b0379016582": 1
+      },
+      "BOM": [
+        [
+          "Value",
+          "Quantity",
+          "Package",
+          "Components",
+          "CustomPara"
+        ],
+        [
+          "BUZZER",
+          1,
+          "BUZ-TH_BD12.0-P6.00-D0.9-RD",
+          "BUZZER1",
+          {
+            "Manufacturer Part": "buzzer",
+            "Manufacturer": "null",
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900014030"
+          }
+        ],
+        [
+          "NodeMcuL",
+          1,
+          "HDR-F-2.54_1X15",
+          "H1",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C124408"
+          }
+        ],
+        [
+          "NodeMcuR",
+          1,
+          "HDR-F-2.54_1X15",
+          "H4",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C124408"
+          }
+        ],
+        [
+          "LDR",
+          1,
+          "HDR-F-2.54_1X2",
+          "H2",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C49661"
+          }
+        ],
+        [
+          "PIR",
+          1,
+          "HDR-M-2.54_1X3",
+          "J14",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
+          "DHT11",
+          1,
+          "HDR-M-2.54_1X3",
+          "J15",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
+          "IR Receiver",
+          1,
+          "HDR-M-2.54_1X3",
+          "J19",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
+          "BC547",
+          2,
+          "HDR-M-2.54_1X3",
+          "J20,J27",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
+          "MQ135",
+          1,
+          "HDR-M-2.54_1X4",
+          "J17",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C124378"
+          }
+        ],
+        [
+          "HDR-M-2.54_1x4",
+          1,
+          "HDR-M-2.54_1X4",
+          "J18",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C124378"
+          }
+        ],
+        [
+          "Connector",
+          1,
+          "HDR-M-2.54_1X4",
+          "J21",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C124378"
+          }
+        ],
+        [
+          "HDR-M-2.54_1x1",
+          2,
+          "HDR-M-2.54_1X1",
+          "J28,J29",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "IR LED",
+          1,
+          "LED-TH_BD5.0_RED",
+          "LED2",
+          {
+            "Manufacturer Part": "333-2SURD/S530-A3",
+            "Manufacturer": "EVERLIGHT(台湾亿光)",
+            "Supplier": "LCSC",
+            "Supplier Part": "C87271"
+          }
+        ],
+        [
+          "5k",
+          3,
+          "R_AXIAL-0.4",
+          "R6,R21,R22",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "5K",
+          1,
+          "R_AXIAL-0.4",
+          "R7",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "150",
+          1,
+          "R_AXIAL-0.4",
+          "R23",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "10k",
+          1,
+          "R_AXIAL-0.3",
+          "R24",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "USB-TYPE-C-011",
+          1,
+          "USB-C-SMD_TYC-252D-CB160",
+          "U4",
+          {
+            "Manufacturer Part": "USB-TYPE-C-011",
+            "Manufacturer": "DEALON(德艺隆)",
+            "Supplier": "LCSC",
+            "Supplier Part": "C2927031"
+          }
+        ]
+      ],
+      "updateTime": 1789803273,
+      "createTime": 1789797830,
+      "histories": [],
+      "created_at": "2026-09-19 11:33:50",
+      "updated_at": "2026-09-19 13:04:33"
+    }
+  ],
+  "sort": [
+    "6959f45363b03db4580d111178d9eae0",
+    "0ed5e218f506f35588fc4cfcd2c2bd01",
+    "34dd7f867114e458b4367d68c53c18f6"
+  ],
+  "title": "MBedRoom_BaseBoard",
+  "foldername": "MBedRoom_BaseBoard",
+  "schfilename": "MBedRoom_BaseBoard.json",
+  "schfilemtime": 1789797304633.27
+}

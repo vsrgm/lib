@@ -526,9 +526,21 @@ public class PiKitchenMonitorActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        int syncMode = prefs.getInt("sync_mode", 0);
         piIp = prefs.getString("pi_kitchen_ip", AppDefaults.DEFAULT_PI_IP);
         fetchServerVersion();
         fetchControls();
+        if (syncMode == 1) {
+            LocalDiscoveryManager.discoverDevices(this, (key, deviceName, ipAddress) -> {
+                if ("pi_kitchen_ip".equals(key)) {
+                    runOnUiThread(() -> {
+                        piIp = ipAddress;
+                        fetchServerVersion();
+                        fetchControls();
+                    });
+                }
+            });
+        }
     }
 
     private void fetchServerVersion() {

@@ -52,5 +52,19 @@ public class SmartHomeActivity extends AppCompatActivity {
         binding.cardPiKitchen.setOnClickListener(v -> {
             startActivity(new Intent(this, PiKitchenMonitorActivity.class));
         });
+
+        binding.cardBedRoom.setOnClickListener(v -> {
+            startActivity(new Intent(this, BedRoomMonitorActivity.class));
+        });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        android.content.SharedPreferences prefs = getSharedPreferences("SmartHomePrefs", MODE_PRIVATE);
+        int syncMode = prefs.getInt("sync_mode", 0);
+        if (syncMode == 1) {
+            LocalDiscoveryManager.discoverDevices(this, null);
+        }
     }
 }

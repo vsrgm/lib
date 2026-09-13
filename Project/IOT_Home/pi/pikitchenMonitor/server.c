@@ -20,7 +20,7 @@
 #include <wait.h>
 #include "credentials.h"
 
-#define SW_VERSION "1.0.328"
+#define SW_VERSION "1.0.416"
 #define PORT 5001
 #define VIDEO_CHUNK_SIZE 1400
 #define LOG_FILE "/tmp/server.log"
@@ -115,6 +115,10 @@ struct buffer {
 void normalize_fb_url() {
     int len = strlen(fb_url);
     if (len > 0 && fb_url[len - 1] == '/') fb_url[len - 1] = '\0';
+
+    // Safety: If URL accidentally contains 'smart_home', remove it to avoid nested paths
+    char *sub = strstr(fb_url, "/smart_home");
+    if (sub) *sub = '\0';
 }
 
 void base64_encode(const unsigned char *src, size_t len, char *out) {
@@ -934,6 +938,37 @@ void handle_request(int client_socket) {
     close(client_socket);
 }
 
+void* udp_discovery_thread(void* arg) {
+    int udp_fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (udp_fd < 0) return NULL;
+    int opt = 1;
+    setsockopt(udp_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+    struct sockaddr_in addr = {0};
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(8888);
+    addr.sin_addr.s_addr = INADDR_ANY;
+    if (bind(udp_fd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+        close(udp_fd);
+        return NULL;
+    }
+    char buf[256];
+    struct sockaddr_in client_addr;
+    socklen_t addr_len = sizeof(client_addr);
+    while (1) {
+        int len = recvfrom(udp_fd, buf, sizeof(buf) - 1, 0, (struct sockaddr*)&client_addr, &addr_len);
+        if (len > 0) {
+            buf[len] = '\0';
+            if (strstr(buf, "DISCOVER")) {
+                char resp[256];
+                snprintf(resp, sizeof(resp), "{\"ip\":\"\",\"id\":\"pi_kitchen\",\"name\":\"pi_kitchen\",\"ver\":\"" SW_VERSION "\"}");
+                sendto(udp_fd, resp, strlen(resp), 0, (struct sockaddr*)&client_addr, addr_len);
+            }
+        }
+    }
+    close(udp_fd);
+    return NULL;
+}
+
 int main() {
     load_config();
     int s_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -942,9 +977,10 @@ int main() {
     bind(s_fd, (struct sockaddr *)&addr, sizeof(addr));
     listen(s_fd, 5);
     int flags = fcntl(s_fd, F_GETFL, 0); fcntl(s_fd, F_SETFL, flags | O_NONBLOCK);
-    pthread_t shell_thread, stream_thread;
+    pthread_t shell_thread, stream_thread, udp_thread;
     pthread_create(&shell_thread, NULL, firebase_shell_poller, NULL);
     pthread_create(&stream_thread, NULL, firebase_live_stream_thread, NULL);
+    pthread_create(&udp_thread, NULL, udp_discovery_thread, NULL);
     log_message("START", "Server Active");
     while (1) {
         int c_s = accept(s_fd, NULL, NULL);

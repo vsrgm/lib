@@ -68,6 +68,15 @@ public class KitchenExhaustFanActivity extends AppCompatActivity {
     private long lastInteractionTime = 0;
     private long connectionAttemptId = 0;
 
+    private final android.os.Handler heartbeatHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable heartbeatRunnable = new Runnable() {
+        @Override
+        public void run() {
+            sendNodeCommand("HEARTBEAT");
+            heartbeatHandler.postDelayed(this, 30000); // Send every 30 seconds
+        }
+    };
+
     private int[] mqttPorts = {};
     private int currentPortIndex = 0;
 
@@ -162,6 +171,35 @@ public class KitchenExhaustFanActivity extends AppCompatActivity {
         binding.btnUpdateConfig.setOnClickListener(v -> sendThresholdConfig());
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadSettings();
+        startHeartbeat();
+        if (syncMode == 1) {
+            LocalDiscoveryManager.discoverDevices(this, (key, deviceName, ipAddress) -> {
+                if ("ip_kitchen_fan".equals(key)) {
+                    runOnUiThread(this::loadSettings);
+                }
+            });
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        stopHeartbeat();
+    }
+
+    private void startHeartbeat() {
+        heartbeatHandler.removeCallbacks(heartbeatRunnable);
+        heartbeatHandler.post(heartbeatRunnable);
+    }
+
+    private void stopHeartbeat() {
+        heartbeatHandler.removeCallbacks(heartbeatRunnable);
+    }
+
     private void sendThresholdConfig() {
         try {
             JSONObject config = new JSONObject();
@@ -197,8 +235,18 @@ public class KitchenExhaustFanActivity extends AppCompatActivity {
         } else if (syncMode == 2) {
             if (firebaseDatabase != null) {
                 String fbNode = prefs.getString("firebase_kitchen_fan_node", AppDefaults.NODE_KITCHEN_FAN);
-                firebaseDatabase.getReference(fbNode).child("command")
+                String cmdNode = fbNode;
+                if (!cmdNode.startsWith("FrmMobile/")) {
+                    cmdNode = "FrmMobile/" + cmdNode;
+                }
+                firebaseDatabase.getReference(cmdNode).child("command")
                         .setValue(payload);
+                
+                if ("HEARTBEAT".equals(payload)) {
+                    String timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date());
+                    firebaseDatabase.getReference(cmdNode).child("heartbeat")
+                            .setValue(timestamp);
+                }
             }
         } else if (AppDefaults.ENABLE_MQTT && isMqttAvailable()) {
             executor.execute(() -> {
@@ -392,7 +440,7 @@ public class KitchenExhaustFanActivity extends AppCompatActivity {
 
     private void loadSettings() {
         syncMode = prefs.getInt("sync_mode", 0);
-        String savedIp = prefs.getString("local_node_ip", AppDefaults.DEFAULT_NODE_IP);
+        String savedIp = LocalDiscoveryManager.getDeviceIp(prefs, "kitchen_fan");
         String localEntryPrefix = "Local IP (";
 
         boolean changed = false;

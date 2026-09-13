@@ -132,8 +132,10 @@ void convert::paintimage()
     fp = fopen((const char*)(ui->file_path->text().toStdString().c_str()), "r+");
     if(fp == NULL)
     {
+        char string[200];
         QMessageBox msgBox;
-        msgBox.setText("Please mention the input file name.");
+        sprintf(string, "Please mention the input file name. %s not exits",ui->file_path->text().toStdString().c_str());
+        msgBox.setText(string);
         msgBox.exec();
         goto exit;
     }

@@ -134,13 +134,19 @@ public class SmartHomeSettingsActivity extends AppCompatActivity {
             case "ro_pump": return binding.firebaseRoPumpNode.getText().toString().trim().isEmpty() ? prefs.getString("firebase_ro_pump_node", "") : binding.firebaseRoPumpNode.getText().toString().trim();
             case "kitchen_fan": return binding.firebaseKitchenFanNode.getText().toString().trim().isEmpty() ? prefs.getString("firebase_kitchen_fan_node", "") : binding.firebaseKitchenFanNode.getText().toString().trim();
             case "pi_kitchen": return binding.firebasePiKitchenNode.getText().toString().trim().isEmpty() ? prefs.getString("firebase_pi_kitchen_node", "") : binding.firebasePiKitchenNode.getText().toString().trim();
+            case "bedroom": return fbBedroomNodeOrDefault();
             default: return prefs.getString("firebase_study_node", "");
         }
     }
 
+    private String fbBedroomNodeOrDefault() {
+        return prefs.getString("firebase_bedroom_node", "bedroom");
+    }
+
     private void syncSettingsToNode() {
         boolean isPi = "pi_kitchen".equals(callerContext);
-        String ip = isPi ? prefs.getString("pi_kitchen_ip", "") : prefs.getString("local_node_ip", "");
+        String ipKey = LocalDiscoveryManager.getIpKeyForContext(callerContext);
+        String ip = prefs.getString(ipKey, prefs.getString(isPi ? "pi_kitchen_ip" : "local_node_ip", ""));
         if (ip.isEmpty()) {
             Toast.makeText(this, "Device IP not set", Toast.LENGTH_SHORT).show();
             return;
@@ -214,7 +220,8 @@ public class SmartHomeSettingsActivity extends AppCompatActivity {
         binding.mqttPort.setText(prefs.getString("mqtt_ports", AppDefaults.MQTT_PORTS));
         
         boolean isPi = "pi_kitchen".equals(callerContext);
-        binding.localIp.setText(prefs.getString(isPi ? "pi_kitchen_ip" : "local_node_ip", isPi ? AppDefaults.DEFAULT_PI_IP : AppDefaults.DEFAULT_NODE_IP));
+        String ipKey = LocalDiscoveryManager.getIpKeyForContext(callerContext);
+        binding.localIp.setText(prefs.getString(ipKey, prefs.getString("local_node_ip", isPi ? AppDefaults.DEFAULT_PI_IP : AppDefaults.DEFAULT_NODE_IP)));
         
         binding.csvPath.setText(prefs.getString("csv_path", "IOT_HOME/StudyRoom/StudyRoomMonitor.csv"));
         binding.kitchenPath.setText(prefs.getString("kitchen_path", "IOT_HOME/Kitchen"));
@@ -371,12 +378,16 @@ public class SmartHomeSettingsActivity extends AppCompatActivity {
             .putString("stream_target_ip", targetIp)
             .putInt("sync_mode", mode);
 
-        if ("pi_kitchen".equals(callerContext)) {
-            editor.putString("pi_kitchen_ip", localIp);
-        } else {
+        String ipKey = LocalDiscoveryManager.getIpKeyForContext(callerContext);
+        editor.putString(ipKey, localIp);
+        if (!"pi_kitchen".equals(callerContext)) {
             editor.putString("local_node_ip", localIp);
         }
         
         editor.apply();
+
+        if (mode == 1) {
+            LocalDiscoveryManager.discoverDevices(this, null);
+        }
     }
 }

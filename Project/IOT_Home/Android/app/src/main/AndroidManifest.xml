@@ -159,6 +159,16 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".SmartHomeActivity" />
         </activity>
+
+        <activity
+            android:name=".BedRoomMonitorActivity"
+            android:exported="false"
+            android:label="Bed Room Monitor"
+            android:parentActivityName=".SmartHomeActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".SmartHomeActivity" />
+        </activity>
     </application>
 
 </manifest>

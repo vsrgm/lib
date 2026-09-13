@@ -26,7 +26,6 @@ Android/app/src/main/java/com/example/sample/Credentials.java
 **/.venv/
 **/venv/
 **/env/
-pi/pikitchenMonitor/credentials.h
 
 # NodeMcu / Arduino
 **/*.hex
@@ -36,21 +35,24 @@ pi/pikitchenMonitor/credentials.h
 **/*.a
 **/*.la
 **/*.lo
-NodeMcu/Rccar/credentials.h
-NodeMcu/StudyRoomMonitor/credentials.h
-NodeMcu/ToiletAssistance/credentials.h
-NodeMcu/RO_Waste_WaterPump/credentials.h
-NodeMcu/Kitchen_Exhaust_Fan/credentials.h
-#ESP32
-ESP32/ESP32_CAM_Kitchen/credentials.h
-ESP32/ESP32_CAM_MainDoor/credentials.h
-ESP8266/RO_Waste_WaterPump/Source/credentials.h
-ESP8266/Kitchen_Exhaust_Fan/Minimal_OTA/credentials.h
-ESP8266/Kitchen_Exhaust_Fan/credentials.h
+
 # General
 .DS_Store
 Thumbs.db
 *.bak
 *.swp
 *~
+NodeMcu/StudyRoomMonitor/build
 Schematics/offline_projects_backup
+ESP32/ESP32_CAM_MainDoor/build-arduino-esp32-3.3.11
+ESP32/ESP32_CAM_MainDoor/esp32-camera
+
+ESP32/ESP32_CAM_Kitchen/credentials.h
+ESP32/ESP32_CAM_MainDoor/credentials.h
+NodeMcu/BedRoomMonitor/credentials.h
+NodeMcu/Kitchen_Exhaust_Fan/credentials.h
+NodeMcu/Rccar/credentials.h
+NodeMcu/RO_Waste_WaterPump/credentials.h
+NodeMcu/StudyRoomMonitor/credentials.h
+NodeMcu/ToiletAssistance/credentials.h
+pi/pikitchenMonitor/credentials.h
