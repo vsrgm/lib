@@ -53,6 +53,7 @@
 
             <!-- Camera / Captured Image View -->
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/video_card"
                 android:layout_width="match_parent"
                 android:layout_height="300dp"
                 app:cardCornerRadius="12dp"
@@ -68,6 +69,12 @@
                         android:layout_height="match_parent"
                         android:background="#000000" />
 
+                    <SurfaceView
+                        android:id="@+id/video_surface"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:visibility="gone" />
+
                     <ImageView
                         android:id="@+id/iv_captured_image"
                         android:layout_width="match_parent"
@@ -75,6 +82,35 @@
                         android:scaleType="fitCenter"
                         android:background="#000000"
                         android:visibility="gone" />
+
+                    <!-- Stats Overlay -->
+                    <LinearLayout
+                        android:id="@+id/layout_stats"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_gravity="bottom|start"
+                        android:layout_margin="8dp"
+                        android:padding="4dp"
+                        android:background="#80000000"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/tv_throughput"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Rate: 0.0 kbps"
+                            android:textColor="#00FF00"
+                            android:textSize="10sp" />
+
+                        <TextView
+                            android:id="@+id/tv_fps"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="FPS: 0.0"
+                            android:textColor="#00FF00"
+                            android:textSize="10sp" />
+                    </LinearLayout>
                 </FrameLayout>
             </com.google.android.material.card.MaterialCardView>
 

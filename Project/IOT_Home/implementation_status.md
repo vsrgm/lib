@@ -1,5 +1,5 @@
 # Implementation Status - IOT Home Automation
-**Current Version: 1.0.175** (Updated on 18-07-2026)
+**Current Version: 1.0.176** (Updated on 18-07-2026)
 
 ## Requirement 0: Toilet Assistance (NodeMcu) - [DONE]
 - [x] Create `ToiletAssistanceActivity`.
@@ -11,8 +11,13 @@
 - [x] Implement Android UI.
 
 ## Requirement 2: Security Main Door (ESP32-CAM) - [DONE]
-- [x] Implement ESP32-CAM firmware for Main Door.
-- [x] Implement Android UI.
+- [x] Repurpose PCF8574 I2C LCD Adapter module as general-purpose I/O expander.
+- [x] Implement feasible GPIO layout (I2C on GPIO 13/12) keeping Serial debugging (GPIO 1/3) fully functional.
+- [x] Configure SD Card in 1-bit mode (GPIO 2, 14, 15) to prevent pin resource conflict.
+- [x] Implement BMP280 temperature and barometric pressure reading.
+- [x] Fully activate SD Card logging with a robust log-prepending algorithm (newest event on row 1) and capture images upon sensor event change.
+- [x] Implement parallel MQTT and Firebase Realtime Database status updates, including Base64-encoded SVGA picture synchronization via `last_image`.
+- [x] Standardize Android app integration (`SecurityMainDoorActivity`) supporting Local IP, MQTT multi-port failover, and Firebase mode.
 
 ## Requirement 3: Kitchen Monitor (ESP32-CAM) - [DONE]
 - [x] Implement ESP32-CAM firmware for Kitchen.

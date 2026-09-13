@@ -11,8 +11,8 @@ android {
         applicationId = "com.smarthome.iot"
         minSdk = 24
         targetSdk = 33
-        versionCode = 328
-        versionName = "1.0.328"
+        versionCode = 376
+        versionName = "1.0.376"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

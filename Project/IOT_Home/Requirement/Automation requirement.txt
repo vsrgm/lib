@@ -15,7 +15,7 @@ Date              - Time    - Description                                       
 		├── D3 - DHT11 (input)
 		└── D4 - Buzzer (output)
 	0.1. System level expectations
-		0.1.0. NodeMcu should send live status via MQTT protocol on request from Mobile application (or) any change in event occured in the system state and preserve each status .csv format internally.
+		0.1.0. NodeMcu should send live status via Firebase protocol on request from Mobile application (or) any change in event occured in the system state and preserve each status .csv format internally.
 			0.1.0.0. Date and Time (UTC + 5.30 corrected time)
 			0.1.0.1. Light state
 			0.1.0.2. Relay on/off state
@@ -29,7 +29,7 @@ Date              - Time    - Description                                       
 		0.1.6. Android application
 			0.1.6.0. For all output sensor at android user interface have "Label - Enable/Disable slider button - Value"
 			0.1.6.1. For all input sensor at android user interface have "Label - Value"
-			0.1.6.2. Settings to select MQtt (or) Local ip based sync like in "Study Room monitor"
+			0.1.6.2. Settings to select Firebase (or) Local ip based sync like in "Study Room monitor"
 	
 1. Study Room monitor - default ip address in settings menu should be (192.168.0.107 - MAC address should be DC:4F:22:75:7F:C4)
 	1.0. Requirement : Create a view in Smart Home monitor -> Study Room  monitor
@@ -43,7 +43,7 @@ Date              - Time    - Description                                       
 		Create a NodeMcu folder and furnish code relate to NodeMcu and also Android side code.
 
 	1.1. System level expectations
-		1.1.0. NodeMcu should send live status via MQTT protocol on request from Mobile application (or) any change in event occured in the system state and preserve each status .csv format internally.
+		1.1.0. NodeMcu should send live status via Firebase protocol on request from Mobile application (or) any change in event occured in the system state and preserve each status .csv format internally.
 			1.1.0.0. Date and Time (UTC + 5.30 corrected time)
 			1.1.0.1. Manual override status ON/OFF
 			1.1.0.2. Light state
@@ -55,10 +55,10 @@ Date              - Time    - Description                                       
 		1.1.3. In Android application
 			1.1.3.0. For all output sensor at android user interface have "Label - Enable/Disable slider button - Value"
 			1.1.3.1. For all input sensor at android user interface have "Label - Value"
-			1.1.3.2. In Settings to select MQtt (or) Local ip based sync like in "Study Room monitor"
+			1.1.3.2. In Settings to select Firebase (or) Local ip based sync like in "Study Room monitor"
 				1.1.3.2.0. If local ip selected, then sync contents should view via local ip
-				1.1.3.2.1. If Mqtt based sync selected then event based update is expected over Mqtt (Based on bandwidht, even compramized in mjpeg resolution also fine)
-			1.1.3.3. In Mqtt by default "broker.hivemq.com" and in port field "1883, 8000, 8883, 8884".
+				1.1.3.2.1. If Firebase based sync selected then event based update is expected over Firebase (Based on bandwidht, even compramized in mjpeg resolution also fine)
+			1.1.3.3. In Firebase by default "broker.hivemq.com" and in port field "1883, 8000, 8883, 8884".
 					 Mobile app can do try to establish connection each port, if not able to find targeted client then switch to other port mention in the list seperated by ",". 
 					 A scrollable status log area should be there and latest status log first basis need to display.
 		`	1.1.3.4. when manual override is on, then Android ui allow to enable/disable all the output buttons.
@@ -67,27 +67,36 @@ Date              - Time    - Description                                       
 2. Security Main Door - default ip address in settings menu should be (192.168.0.105 - MAC address should be XX:XX:XX:XX:XX:XX)
 	2.0. Requirement : Create a view in Smart Home monitor -> Security Main Door.
 		ESP32-CAM (Main Door Security camera)
-		├── GPIO33 -> Spare
-		├── GPIO16 -> PCF8574 INT
-		├── I2C (GPIO1  -> SDA, GPIO3  -> SCL)
-		│	├── PCF8574
-		│	│	├── P0 -> PIR (input)
-		│	│	├── P1 -> Door Sensor (input)
-		│	│	├── P2 -> Calling bell (input)
-		│	│	├── P3 -> LDR Light sensor (input) (For Hardware Eng.: Fix with logic 0 and logic 1 based on needed light sensisity) 
-		│	│	├── P4 -> External Power On/OFF (input)
-		│	│	├── P5 -> Relay (output)
-		│	│	├── P6 -> Buzzer (output) 
-		│	│	└── P7 -> Spare
-		│	└── BMP280
-		├── SD Card
-		└── Camera
+		├── GPIO33 -> Onboard Red LED (Status Indicator)
+		├── GPIO4  -> PCF8574 INT (Interrupt pin to wake up/trigger events)
+		├── UART (Serial Debug/Programming)
+		│   ├── GPIO1 -> TXD
+		│   └── GPIO3 -> RXD
+		├── I2C (External Sensor Bus)
+		│   ├── GPIO13 -> SDA (Data)
+		│   ├── GPIO12 -> SCL (Clock)
+		│   ├── PCF8574 (LCD Adapter Module)
+		│   │   ├── P0 -> PIR Motion Sensor (Input)
+		│   │   ├── P1 -> Door Magnetic Switch (Input)
+		│   │   ├── P2 -> Calling Bell Button (Input)
+		│   │   ├── P4 -> LDR Light Sensor (Input - requires logic 0/1)
+		│   │   ├── P5 -> External Power ON/OFF (Input)
+		│   │   ├── P6 -> Door Lock Relay (Output)
+		│   │   ├── P7 -> Alarm Buzzer (Output)
+		│   │   └── P3 -> Spare / Indicator LED
+		│   └── BMP280 (Temperature & Pressure)
+		├── SD Card (1-Bit Mode)
+		│   ├── GPIO14 -> CLK
+		│   ├── GPIO15 -> CMD
+		│   └── GPIO2  -> D0
+		└── Camera (OV3660)
+			└── Standard Camera Header Pins (GPIO 32, 0, 26, 27, etc.)
 
 		Create a ESP32 folder and furnish code relate to ESP32 and also Android side code.
 	2.1 System level expectations
-		2.1.0 ESP32 CAM should send live status via MQTT protocol on request from Mobile application (or) any change in event occured in the system state
+		2.1.0 ESP32 CAM should send live status via Firebase protocol on request from Mobile application (or) any change in event occured in the system state
 			2.1.0.0. Date and Time (UTC + 5.30 corrected time)					 
-			2.1.0.1. MJPEG Picture
+			2.1.0.1. MJPEG Picture (Base64 Fmt)
 			2.1.0.2. PIR Status
 			2.1.0.3. Door Sensor status
 			2.1.0.4. Calling bell status
@@ -107,9 +116,9 @@ Date              - Time    - Description                                       
 			2.1.3.0. A view to display received .jpg images (Like in RC car imager viewer view)
 			2.1.3.1. A view to live and history of events (Like in Study room monitor based view)
 			2.1.3.2. Manaul turn on/off control support for all outputs interfaced with ESP-32CAM (like Buzzer, Relay, ..)
-		2.1.4. Settings to select MQtt (or) Local ip based sync like in "Study Room monitor"
+		2.1.4. Settings to select Firebase (or) Local ip based sync like in "Study Room monitor"
 			2.1.4.0. If local ip selected, then live streaming of mjpeg contents should view via local ip and all the controls
-			2.1.4.1. If Mqtt based sync selected then event based update is expected over Mqtt (Based on bandwidht, even compramized in mjpeg resolution also fine)
+			2.1.4.1. If Firebase based sync selected then event based update is expected over Firebase (Based on bandwidht, even compramized in mjpeg resolution also fine)
 		2.1.5. Android application view specific
 			2.1.5.0. All the status view with enable/disable where ever applicable should be similar to "Study Room monitor" Label, enable/disable button, Value.
 	
@@ -137,7 +146,7 @@ Implement both ESP32CAM side and Android side code
 		├── SD Card
 		└── Camera
 	3.1. System level expectations
-		3.1.0. ESP32 CAM should send live status via MQTT protocol on request from Mobile application (or) any change in event occured in the system state
+		3.1.0. ESP32 CAM should send live status via Firebase protocol on request from Mobile application (or) any change in event occured in the system state
 			3.1.0.0. Date and Time (UTC + 5.30 corrected time)
 			3.1.0.1. MJPEG Picture
 			3.1.0.2. PIR Status
@@ -159,9 +168,9 @@ Implement both ESP32CAM side and Android side code
 			3.1.3.0. A view to display received .jpg images (Like in RC car imager viewer view)
 			3.1.3.1. A view to live and history of events (Like in Study room monitor based view)
 			3.1.3.2. Manaul turn on/off control support for all outputs interfaced with ESP-32CAM (like Buzzer, Relay, ..).
-		3.1.4. Settings to select MQtt (or) Local ip based sync like in "Study Room monitor"
+		3.1.4. Settings to select Firebase (or) Local ip based sync like in "Study Room monitor"
 			3.1.4.0. If local ip selected, then live streaming of mjpeg contents should view via local ip and all the controls
-			3.1.4.1. If Mqtt based sync selected then event based update is expected over Mqtt (Based on bandwidht, even compramized in mjpeg resolution also fine)
+			3.1.4.1. If Firebase based sync selected then event based update is expected over Firebase (Based on bandwidht, even compramized in mjpeg resolution also fine)
 		3.1.5. Android application view specific
 			3.1.5.0. All the status view with enable/disable where ever applicable should be similar to "Study Room monitor" Label, enable/disable button, Value.
 		Implement both ESP32CAM side and Android side code
@@ -177,15 +186,15 @@ Implement both ESP32CAM side and Android side code
 	└──	D6 - Float (input)
 	
 	4.1. System level expectations
-		4.1.0. NodeMcu should send live status via MQTT protocol on request from Mobile application (or) any change in event occured in the system state
+		4.1.0. NodeMcu should send live status via Firebase protocol on request from Mobile application (or) any change in event occured in the system state
 			4.1.0.0. Date and Time (UTC + 5.30 corrected time)
 			4.1.0.1. Relay ON/OFF status
 			4.1.0.2. Safe Water level Float status (Yes / No).
-		4.1.1. On Receiving command from Mqtt (or) from local network,  NodeMcu should turn on the Relay (via GPIO0) ensuring the Water Float status as Yes.
+		4.1.1. On Receiving command from Firebase (or) from local network,  NodeMcu should turn on the Relay (via GPIO0) ensuring the Water Float status as Yes.
 		4.1.2. When Water level Float status is Low, NodeMcu should turn off the Relay.
-		4.1.3. Settings to select MQtt (or) Local ip based sync like in "Study Room monitor"
+		4.1.3. Settings to select Firebase (or) Local ip based sync like in "Study Room monitor"
 			4.1.3.0. If local ip selected, then all the control live status should happen be reflected to mobile  
-			4.1.3.1. If Mqtt based sync selected then event based update is expected over Mqtt (Based on change in water level status and Relay ON/OFF state).
+			4.1.3.1. If Firebase based sync selected then event based update is expected over Firebase (Based on change in water level status and Relay ON/OFF state).
 		4.1.4. Android application view specific
 			4.1.4.0. All the interface status with NodeMcu should reflect lively in the application
 			4.1.4.1. If we have output pints then manual mode of enable/disable should be possible, where ever applicable should be similar to "Study Room monitor" Label, enable/disable button, Value.
@@ -200,14 +209,14 @@ Implement both ESP32CAM side and Android side code
 	└── D3 - Manual Toggle Switch to Turn on Relay (input)
 
 	5.1. System level expectations
-		5.1.0. NodeMcu should send live status via MQTT protocol on request from Mobile application (or) any change in event occured in the system state
+		5.1.0. NodeMcu should send live status via Firebase protocol on request from Mobile application (or) any change in event occured in the system state
 			5.1.0.0. Date and Time (UTC + 5.30 corrected time)
 			5.1.0.1. Relay ON/OFF status
 			5.1.0.2. User Toggle current state (State 1 / State 2).
-		5.1.1. On Receiving command from Mqtt (or) from local network,  NodeMcu should turn on the Relay (via GPIO0).
-		5.1.2. Settings to select MQtt (or) Local ip based sync like in "Study Room monitor"
+		5.1.1. On Receiving command from Firebase (or) from local network,  NodeMcu should turn on the Relay (via GPIO0).
+		5.1.2. Settings to select Firebase (or) Local ip based sync like in "Study Room monitor"
 			5.1.2.0. If local ip selected, then all the control live status should happen be reflected to mobile
-			5.1.2.1. If Mqtt based sync selected then event based update is expected over Mqtt (Based on change in water level status and Relay ON/OFF state).
+			5.1.2.1. If Firebase based sync selected then event based update is expected over Firebase (Based on change in water level status and Relay ON/OFF state).
 		5.1.3. Android application view specific
 			5.1.3.0. All the interface status with NodeMcu should reflect lively in the application
 			5.1.3.1. If we have output pints then manual mode of enable/disable should be possible, where ever applicable should be similar to "Study Room monitor" Label, enable/disable button, Value.
@@ -226,7 +235,7 @@ To further improve the robustness of the system, I suggest the following enhance
 4. Deep Sleep Support: If any of these NodeMcu units are to be battery-powered, requirements for Deep Sleep (waking up only on PIR interrupt or timer) should be added to extend battery life.
 5. Log Rotation/Management: Since NodeMcu has limited internal flash memory (LittleFS), a requirement for "Circular Logging" (deleting oldest entries when full) or an "Export to Email/Cloud" feature would be beneficial for long-term data preservation.
 6. Calibration Interface: Add a requirement for a "Calibration Mode" in the Android App settings to adjust sensor offsets (like DHT11 temperature correction) without reflashing the firmware.
-1. MQTT Image Compression: Since MJPEG over MQTT can be bandwidth-intensive, consider adding a requirement for the ESP32 to reduce JPEG quality (e.g., from 10 to 20) or frame size when using MQTT mode.
-2. Credential Management: Move WiFi and MQTT credentials into the SharedPreferences-backed configuration on the NodeMcu/ESP32 so they can be updated via the Android app without reflashing the devices.
+1. Firebase Image Compression: Since MJPEG over Firebase can be bandwidth-intensive, consider adding a requirement for the ESP32 to reduce JPEG quality (e.g., from 10 to 20) or frame size when using Firebase mode.
+2. Credential Management: Move WiFi and Firebase credentials into the SharedPreferences-backed configuration on the NodeMcu/ESP32 so they can be updated via the Android app without reflashing the devices.
 3. Heartbeat Monitoring: Add a "Last Seen" timestamp for each node in the intermediate SmartHomeActivity menu so the user can see which devices are offline at a glance.
-4. WebSocket vs TCP: Note that while the Android app supports WebSockets (ports 8000/8884), the standard ESP8266/ESP32 PubSubClient library uses TCP/SSL. For full failover to WebSocket ports on the hardware side, a different MQTT client library may be required.
+4. WebSocket vs TCP: Note that while the Android app supports WebSockets (ports 8000/8884), the standard ESP8266/ESP32 PubSubClient library uses TCP/SSL. For full failover to WebSocket ports on the hardware side, a different Firebase client library may be required.

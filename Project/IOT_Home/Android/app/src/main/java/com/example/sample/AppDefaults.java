@@ -18,7 +18,7 @@ public class AppDefaults {
 
     public static final String NODE_KITCHEN = "FrmEsp32/kitchen";
     public static final String NODE_STUDY = "study";
-    public static final String NODE_DOOR = "FrmEsp32/Securitymaindoor";
+    public static final String NODE_DOOR = "main_door";
     public static final String NODE_TOILET = "FrmEsp32/toilet";
     public static final String NODE_RO_PUMP = "ro_pump";
     public static final String NODE_KITCHEN_FAN = "kitchen_fan";

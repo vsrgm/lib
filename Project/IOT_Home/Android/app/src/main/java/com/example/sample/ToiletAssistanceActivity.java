@@ -47,11 +47,12 @@ public class ToiletAssistanceActivity extends AppCompatActivity {
 
     private ActivityToiletAssistanceBinding binding;
     private MqttClient mqttClient;
+    private FirebaseDatabase firebaseDatabase;
     private DatabaseReference firebaseRef;
     private ValueEventListener firebaseListener;
     private final ExecutorService executor = Executors.newFixedThreadPool(2);
-    private final String statusTopic = "frmesp32/toilet/status";
-    private final String cmdTopic = "frmmobile/toilet/command";
+    private final String statusTopic = "FrmEsp32/toilet/status";
+    private final String cmdTopic = "FrmMobile/toilet/command";
     private SharedPreferences prefs;
     private int syncMode = 0; // 0: MQTT, 1: IP, 2: Firebase
     private final StringBuilder logBuilder = new StringBuilder();
@@ -136,14 +137,15 @@ public class ToiletAssistanceActivity extends AppCompatActivity {
                     connectToFirebase(url, node);
                 } else {
                     addLog("Auth Failed: " + (task.getException() != null ? task.getException().getMessage() : "Unknown"));
+                    connectToFirebase(url, node);
                 }
             });
     }
 
     private void connectToFirebase(String url, String node) {
         try {
-            FirebaseDatabase database = FirebaseDatabase.getInstance(url);
-            firebaseRef = database.getReference(node);
+            firebaseDatabase = FirebaseDatabase.getInstance(url);
+            firebaseRef = firebaseDatabase.getReference(node);
             
             firebaseListener = new ValueEventListener() {
                 @Override
@@ -388,8 +390,17 @@ public class ToiletAssistanceActivity extends AppCompatActivity {
                 } catch (Exception e) {}
             });
         } else if (syncMode == 2) {
-            String commandNode = "frmmobile/toilet";
-            FirebaseDatabase.getInstance().getReference(commandNode).child("command").setValue(cmd);
+            String fbNode = prefs.getString("firebase_toilet_node", AppDefaults.NODE_TOILET);
+            String room = fbNode;
+            if (room.contains("/")) room = room.substring(room.lastIndexOf("/") + 1);
+            room = room.toLowerCase();
+            String commandNode = "FrmMobile/" + room;
+            
+            if (firebaseDatabase != null) {
+                firebaseDatabase.getReference(commandNode).child("command").setValue(cmd);
+            } else {
+                FirebaseDatabase.getInstance().getReference(commandNode).child("command").setValue(cmd);
+            }
         } else if (AppDefaults.ENABLE_MQTT) {
             executor.execute(() -> {
                 try {

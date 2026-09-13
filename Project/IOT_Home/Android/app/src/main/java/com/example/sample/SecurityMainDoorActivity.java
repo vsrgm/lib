@@ -49,17 +49,28 @@ import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkRequest;
 import android.net.NetworkCapabilities;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Rect;
+import androidx.annotation.NonNull;
+import java.io.InputStream;
+import java.io.ByteArrayOutputStream;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SecurityMainDoorActivity extends AppCompatActivity {
 
     private ActivitySecurityMainDoorBinding binding;
     private MqttClient mqttClient;
-    private DatabaseReference firebaseRef;
+    private FirebaseDatabase firebaseDatabase;
+    private DatabaseReference outboxRef;
     private ValueEventListener firebaseListener;
     private final ExecutorService executor = Executors.newFixedThreadPool(2);
-    private final String statusTopic = "FrmEsp32/Securitymaindoor/status";
-    private final String cmdTopic = "FrmMobile/esp32cam/Securitymaindoor/command";
-    private final String imageTopic = "FrmEsp32/Securitymaindoor/image";
+    private final String statusTopic = "FrmEsp32/main_door/status";
+    private final String cmdTopic = "FrmMobile/main_door/command";
+    private final String imageTopic = "FrmEsp32/main_door/image";
     private SharedPreferences prefs;
     private int syncMode = 0; // 0: MQTT, 1: IP, 2: Firebase
     private final List<String> discoveredNodes = new ArrayList<>();
@@ -71,6 +82,16 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
     private int currentPortIndex = 0;
     private ConnectivityManager connectivityManager;
     private ConnectivityManager.NetworkCallback networkCallback;
+    private boolean isLocalAvailable = false;
+    private long lastCommandTime = 0;
+    
+    // MJPEG Native Stats
+    private final AtomicBoolean isNativeStreaming = new AtomicBoolean(false);
+    private android.view.Surface savedSurface;
+    private long totalBytesReceived = 0;
+    private long frameCount = 0;
+    private long lastStatsTime = 0;
+    private long lastByteCount = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,6 +102,18 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
         prefs = getSharedPreferences("SmartHomePrefs", MODE_PRIVATE);
         syncMode = prefs.getInt("sync_mode", 0);
 
+        binding.videoSurface.getHolder().addCallback(new SurfaceHolder.Callback() {
+            @Override
+            public void surfaceCreated(@NonNull SurfaceHolder holder) {
+                savedSurface = holder.getSurface();
+            }
+            @Override public void surfaceChanged(@NonNull SurfaceHolder h, int f, int w, int h1) {}
+            @Override public void surfaceDestroyed(@NonNull SurfaceHolder h) { 
+                savedSurface = null;
+                stopNativeStream(); 
+            }
+        });
+
         binding.btnBack.setOnClickListener(v -> finish());
         binding.btnSettings.setOnClickListener(v -> {
             Intent intent = new Intent(this, SmartHomeSettingsActivity.class);
@@ -89,6 +122,15 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
         });
         
         binding.btnCapture.setOnClickListener(v -> sendCommand("CAPTURE"));
+        binding.btnCamConfig.setOnClickListener(v -> showCameraConfigDialog());
+        binding.btnReboot.setOnClickListener(v -> {
+            new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Reboot Device")
+                .setMessage("Are you sure you want to reboot the ESP32-CAM?")
+                .setPositiveButton("Yes", (dialog, which) -> sendCommand("REBOOT"))
+                .setNegativeButton("No", null)
+                .show();
+        });
         binding.btnGallery.setOnClickListener(v -> {
             startActivity(new android.content.Intent(this, ImageViewerActivity.class));
         });
@@ -109,19 +151,7 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
             @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
         });
 
-        // Quick Controls
-        binding.btnQuickRelay.setOnClickListener(v -> {
-            boolean currentState = binding.rowRelay.sensorSwitch.isChecked();
-            sendCommand(currentState ? "RELAY_OFF" : "RELAY_ON");
-        });
-        binding.btnQuickBuzzer.setOnClickListener(v -> {
-            boolean currentState = binding.rowBuzzer.sensorSwitch.isChecked();
-            sendCommand(currentState ? "BUZZER_OFF" : "BUZZER_ON");
-        });
-        binding.btnQuickFlash.setOnClickListener(v -> {
-            boolean currentState = binding.rowFlash.sensorSwitch.isChecked();
-            sendCommand(currentState ? "FLASH_OFF" : "FLASH_ON");
-        });
+
 
         // Initialize labels and switches
         binding.rowPir.label.setText("PIR Motion");
@@ -153,6 +183,8 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
         binding.rowTemp.label.setText("Temperature");
         binding.rowPres.label.setText("Pressure");
 
+        binding.videoCard.setOnClickListener(v -> toggleLiveFirebase());
+
         setupWebView();
         
         if (syncMode == 1) {
@@ -167,50 +199,124 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
 
     private void initFirebase() {
         String url = prefs.getString("firebase_url", AppDefaults.FIREBASE_URL);
-        String node = prefs.getString("firebase_door_node", AppDefaults.NODE_DOOR);
+        String doorNode = prefs.getString("firebase_door_node", AppDefaults.NODE_DOOR);
+        String room = doorNode;
+        if (room.contains("/")) room = room.substring(room.lastIndexOf("/") + 1);
         
-        addLog("Authenticating Firebase...");
+        final String finalRoom = room;
+        addLog("Authenticating Firebase: " + url);
         String email = prefs.getString("firebase_email", Credentials.FIREBASE_EMAIL);
         String password = prefs.getString("firebase_password", Credentials.FIREBASE_PASSWORD);
         
-        if (email.isEmpty() || password.isEmpty()) {
-            connectToFirebase(url, node);
+        FirebaseAuth auth = FirebaseAuth.getInstance();
+        if (auth.getCurrentUser() != null) {
+            addLog("Firebase: Already Authenticated as " + auth.getCurrentUser().getEmail());
+            connectToFirebase(url, finalRoom);
             return;
         }
 
-        FirebaseAuth.getInstance().signInWithEmailAndPassword(email, password)
+        auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
-                    addLog("Auth Success. Connecting to Database...");
-                    connectToFirebase(url, node);
+                    addLog("Firebase Auth: SUCCESS");
+                    connectToFirebase(url, finalRoom);
                 } else {
-                    addLog("Auth Failed: " + (task.getException() != null ? task.getException().getMessage() : "Unknown"));
+                    String error = task.getException() != null ? task.getException().getMessage() : "Unknown Auth Error";
+                    addLog("Firebase Auth FAILED: " + error);
+                    Toast.makeText(this, "Firebase Auth Failed: " + error, Toast.LENGTH_LONG).show();
+                    connectToFirebase(url, finalRoom);
                 }
             });
     }
 
-    private void connectToFirebase(String url, String node) {
+    private boolean isLiveFirebaseActive = false;
+    private void toggleLiveFirebase() {
+        isLiveFirebaseActive = !isLiveFirebaseActive;
+        String doorNode = prefs.getString("firebase_door_node", AppDefaults.NODE_DOOR);
+        String room = doorNode;
+        if (room.contains("/")) room = room.substring(room.lastIndexOf("/") + 1);
+        
+        String commandNode = "FrmMobile/" + room; 
+        
+        String url = prefs.getString("firebase_url", AppDefaults.FIREBASE_URL);
+        FirebaseDatabase database = firebaseDatabase != null ? firebaseDatabase : FirebaseDatabase.getInstance(url);
+        
+        database.getReference(commandNode).child("live_request")
+                .setValue(isLiveFirebaseActive)
+                .addOnFailureListener(e -> addLog("LiveReq Failed: " + e.getMessage()));
+        
+        addLog("Firebase Live Mode: " + (isLiveFirebaseActive ? "ON" : "OFF"));
+        Toast.makeText(this, "Live Mode " + (isLiveFirebaseActive ? "Active" : "Stopped"), Toast.LENGTH_SHORT).show();
+        
+        if (isLiveFirebaseActive) {
+            stopNativeStream(); // Stop local stream to show Firebase images
+        } else if (isLocalAvailable) {
+            // Restore local stream if available and Firebase mode turned off
+            startNativeStream(selectedNodeIp.isEmpty() ? prefs.getString("local_node_ip", AppDefaults.DEFAULT_NODE_IP) : selectedNodeIp);
+        }
+    }
+
+    private void connectToFirebase(String url, String room) {
         try {
-            FirebaseDatabase database = FirebaseDatabase.getInstance(url);
-            firebaseRef = database.getReference(node);
+            firebaseDatabase = FirebaseDatabase.getInstance(url);
+            // LISTEN to the OUTBOX under FrmEsp32
+            outboxRef = firebaseDatabase.getReference("FrmEsp32").child(room);
+            addLog("Listening to Node: FrmEsp32/" + room);
             
             firebaseListener = new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot dataSnapshot) {
                     if (dataSnapshot.exists()) {
-                        Object value = dataSnapshot.child("status").getValue();
-                        if (value != null) {
-                            handleStatus(value.toString());
-                            
-                            // Dynamically extract ESP32 Cam IP from Firebase status
+                        // 1. Handle Status
+                        DataSnapshot statusSnap = dataSnapshot.child("status");
+                        if (statusSnap.exists()) {
+                            Object value = statusSnap.getValue();
                             try {
-                                JSONObject json = new JSONObject(value.toString());
-                                if (json.has("ip")) {
-                                    String espIp = json.getString("ip");
-                                    checkLocalConnectivityAndSetupStream(espIp);
+                                JSONObject json;
+                                if (value instanceof java.util.Map) {
+                                    json = new JSONObject((java.util.Map) value);
+                                } else {
+                                    json = new JSONObject(value.toString());
+                                }
+                                handleStatus(json.toString());
+                                if (json.has("ip") && !isLiveFirebaseActive) {
+                                    checkLocalConnectivityAndSetupStream(json.getString("ip"));
                                 }
                             } catch (Exception ignored) {}
                         }
+
+                        // 2. Handle History
+                        DataSnapshot historyNode = dataSnapshot.child("history");
+                        if (historyNode.exists()) {
+                            for (DataSnapshot child : historyNode.getChildren()) {
+                                try {
+                                    Object val = child.getValue();
+                                    if (val != null) {
+                                        JSONObject json = new JSONObject(val.toString());
+                                        handleStatus(json.toString());
+                                    }
+                                } catch (Exception ignored) {}
+                            }
+                        }
+
+                        // 3. Handle Live Images (PRIORITY: Show in WebView if active)
+                        if (isLiveFirebaseActive || !isLocalAvailable) {
+                            Object imgValue = dataSnapshot.child("last_image").getValue();
+                            if (imgValue != null) {
+                                String base64Image = imgValue.toString();
+                                runOnUiThread(() -> {
+                                    if (binding.videoStream.getVisibility() != View.VISIBLE) {
+                                        binding.videoStream.setVisibility(View.VISIBLE);
+                                        binding.videoSurface.setVisibility(View.GONE);
+                                        binding.layoutStreamStats.setVisibility(View.GONE);
+                                    }
+                                    String html = "<html><body style='margin:0;padding:0;background:black;display:flex;justify-content:center;align-items:center;'><img src='data:image/jpeg;base64," + base64Image + "' style='width:100%;height:auto;max-height:100%;object-fit:contain;'/></body></html>";
+                                    binding.videoStream.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null);
+                                });
+                            }
+                        }
+                    } else {
+                        addLog("Node not found: " + room);
                     }
                 }
 
@@ -219,10 +325,10 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
                     addLog("Firebase Error: " + databaseError.getMessage());
                 }
             };
-            firebaseRef.addValueEventListener(firebaseListener);
+            outboxRef.addValueEventListener(firebaseListener);
             
             runOnUiThread(() -> {
-                binding.syncStatus.setText("Firebase Connected");
+                binding.syncStatus.setText("Cloud Sync: Active");
                 binding.syncStatus.setTextColor(Color.parseColor("#4CAF50"));
             });
         } catch (Exception e) {
@@ -232,7 +338,7 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
 
     private void checkLocalConnectivityAndSetupStream(String ipAddress) {
         executor.execute(() -> {
-            boolean isLocalAvailable = false;
+            boolean available = false;
             try {
                 URL url = new URL("http://" + ipAddress + "/status");
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -240,23 +346,163 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
                 conn.setReadTimeout(1500);
                 int code = conn.getResponseCode();
                 if (code == 200) {
-                    isLocalAvailable = true;
+                    available = true;
                 }
                 conn.disconnect();
             } catch (Exception e) {
-                isLocalAvailable = false;
+                available = false;
             }
 
-            final boolean useLocal = isLocalAvailable;
+            isLocalAvailable = available;
             runOnUiThread(() -> {
-                if (useLocal) {
-                    addLog("Local connectivity verified. Starting local stream...");
-                    binding.videoStream.loadUrl("http://" + ipAddress + "/stream");
+                if (isLocalAvailable) {
+                    addLog("Local connectivity verified. Starting native stream...");
+                    startNativeStream(ipAddress);
+                    startLocalHeartbeat(ipAddress);
                 } else {
-                    addLog("Local connectivity unavailable. Showing Firebase placeholder stream.");
-                    binding.videoStream.loadData("<html><body style='background:black;color:white;display:flex;justify-content:center;align-items:center;'>Streaming over cloud via Firebase node status active.</body></html>", "text/html", "UTF-8");
+                    addLog("Local connectivity unavailable. Checking Firebase image...");
+                    stopNativeStream();
                 }
             });
+        });
+    }
+
+    private void startNativeStream(String ip) {
+        if (isNativeStreaming.get()) return;
+        isNativeStreaming.set(true);
+        totalBytesReceived = 0;
+        frameCount = 0;
+        lastStatsTime = System.currentTimeMillis();
+        lastByteCount = 0;
+
+        runOnUiThread(() -> {
+            binding.videoStream.setVisibility(View.GONE);
+            binding.videoSurface.setVisibility(View.VISIBLE);
+            binding.layoutStreamStats.setVisibility(View.VISIBLE);
+        });
+
+        executor.execute(() -> {
+            HttpURLConnection conn = null;
+            try {
+                URL url = new URL("http://" + ip + ":81/stream");
+                conn = (HttpURLConnection) url.openConnection();
+                conn.setConnectTimeout(5000);
+                conn.setReadTimeout(5000);
+                
+                InputStream is = conn.getInputStream();
+                byte[] buffer = new byte[16384];
+                ByteArrayOutputStream frameBuffer = new ByteArrayOutputStream();
+                boolean inFrame = false;
+                int lastByte = -1;
+                
+                while (isNativeStreaming.get()) {
+                    int bytesRead = is.read(buffer);
+                    if (bytesRead <= 0) break;
+                    
+                    totalBytesReceived += bytesRead;
+                    
+                    for (int i = 0; i < bytesRead; i++) {
+                        int b = buffer[i] & 0xFF;
+                        
+                        if (!inFrame) {
+                            if (lastByte == 0xFF && b == 0xD8) {
+                                inFrame = true;
+                                frameBuffer.reset();
+                                frameBuffer.write(0xFF);
+                                frameBuffer.write(0xD8);
+                            }
+                        } else {
+                            frameBuffer.write(b);
+                            if (lastByte == 0xFF && b == 0xD9) {
+                                renderFrame(frameBuffer.toByteArray());
+                                frameCount++;
+                                inFrame = false;
+                                updateStats();
+                            }
+                        }
+                        lastByte = b;
+                    }
+                }
+            } catch (Exception e) {
+                Log.e("MainDoor", "Native stream error", e);
+                addLog("Stream Error: " + e.getMessage());
+            } finally {
+                if (conn != null) conn.disconnect();
+                isNativeStreaming.set(false);
+            }
+        });
+    }
+
+    private void stopNativeStream() {
+        isNativeStreaming.set(false);
+        runOnUiThread(() -> {
+            binding.videoSurface.setVisibility(View.GONE);
+            binding.layoutStreamStats.setVisibility(View.GONE);
+            binding.videoStream.setVisibility(View.VISIBLE);
+        });
+    }
+
+    private void renderFrame(byte[] data) {
+        if (savedSurface == null) return;
+        try {
+            Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
+            if (bitmap == null) return;
+
+            Canvas canvas = binding.videoSurface.getHolder().lockCanvas();
+            if (canvas != null) {
+                canvas.drawColor(Color.BLACK);
+                float scale = Math.min((float)canvas.getWidth() / bitmap.getWidth(), 
+                                     (float)canvas.getHeight() / bitmap.getHeight());
+                int w = (int)(bitmap.getWidth() * scale);
+                int h = (int)(bitmap.getHeight() * scale);
+                int left = (canvas.getWidth() - w) / 2;
+                int top = (canvas.getHeight() - h) / 2;
+                Rect scaledDest = new Rect(left, top, left + w, top + h);
+                canvas.drawBitmap(bitmap, null, scaledDest, null);
+                binding.videoSurface.getHolder().unlockCanvasAndPost(canvas);
+            }
+            bitmap.recycle();
+        } catch (Exception e) {
+            Log.e("MainDoor", "Render error", e);
+        }
+    }
+
+    private void updateStats() {
+        long now = System.currentTimeMillis();
+        long delta = now - lastStatsTime;
+        if (delta >= 1000) {
+            double fps = (double) frameCount * 1000.0 / delta;
+            double kbps = (double) (totalBytesReceived - lastByteCount) * 8.0 / delta;
+            
+            lastStatsTime = now;
+            lastByteCount = totalBytesReceived;
+            frameCount = 0;
+
+            runOnUiThread(() -> {
+                binding.tvStreamThroughput.setText(String.format(Locale.US, "Rate: %.1f kbps", kbps));
+                binding.tvStreamFps.setText(String.format(Locale.US, "FPS: %.1f", fps));
+            });
+        }
+    }
+
+    private void startLocalHeartbeat(String ipAddress) {
+        executor.execute(() -> {
+            addLog("Local Heartbeat Active");
+            while (!isFinishing() && isLocalAvailable) {
+                try {
+                    URL url = new URL("http://" + ipAddress + "/status");
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    conn.setConnectTimeout(2000);
+                    int code = conn.getResponseCode();
+                    conn.disconnect();
+                    if (code != 200) {
+                        Log.w("MainDoor", "Heartbeat missed: " + code);
+                    }
+                } catch (Exception e) {
+                    Log.e("MainDoor", "Heartbeat error", e);
+                }
+                try { Thread.sleep(5000); } catch (InterruptedException ignored) {}
+            }
         });
     }
 
@@ -294,7 +540,26 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
         webSettings.setJavaScriptEnabled(true);
         webSettings.setUseWideViewPort(true);
         webSettings.setLoadWithOverviewMode(true);
-        binding.videoStream.setWebViewClient(new WebViewClient());
+        
+        binding.videoStream.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onReceivedError(WebView view, android.webkit.WebResourceRequest request, android.webkit.WebResourceError error) {
+                super.onReceivedError(view, request, error);
+                if (request.isForMainFrame() && request.getUrl().toString().contains("/stream")) {
+                    addLog("Stream Error: " + error.getDescription());
+                    showRebootDialog("Stream connection failed. Would you like to reboot the camera?");
+                }
+            }
+
+            @Override
+            public void onReceivedHttpError(WebView view, android.webkit.WebResourceRequest request, android.webkit.WebResourceResponse errorResponse) {
+                super.onReceivedHttpError(view, request, errorResponse);
+                if (request.isForMainFrame() && request.getUrl().toString().contains("/stream")) {
+                    addLog("Stream HTTP Error: " + errorResponse.getStatusCode());
+                    showRebootDialog("Stream server returned error " + errorResponse.getStatusCode() + ". Reboot camera?");
+                }
+            }
+        });
         
         if (syncMode == 1) {
             String ip = prefs.getString("local_node_ip", AppDefaults.DEFAULT_NODE_IP);
@@ -304,6 +569,17 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
             // In a real app, we'd use a custom view to decode MJPEG from MQTT.
             binding.videoStream.loadData("<html><body style='background:black;color:white;display:flex;justify-content:center;align-items:center;'>MJPEG via MQTT not implemented in WebView</body></html>", "text/html", "UTF-8");
         }
+    }
+
+    private void showRebootDialog(String message) {
+        runOnUiThread(() -> {
+            new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Camera Issue Detected")
+                .setMessage(message)
+                .setPositiveButton("Reboot Now", (dialog, which) -> sendCommand("REBOOT"))
+                .setNegativeButton("Ignore", null)
+                .show();
+        });
     }
 
     private void startIpSync() {
@@ -476,17 +752,20 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
                 binding.rowBell.value.setText(json.getBoolean("bell") ? "Pressed" : "Idle");
                 binding.rowLdr.value.setText(json.getBoolean("ldr") ? "Low" : "Good");
                 
-                boolean relay = json.getBoolean("relay");
-                binding.rowRelay.value.setText(relay ? "ON" : "OFF");
-                binding.rowRelay.sensorSwitch.setChecked(relay);
+                // Only update switches AND text values if not recently interacted with (within 5 seconds)
+                if (System.currentTimeMillis() - lastCommandTime > 5000) {
+                    boolean relay = json.getBoolean("relay");
+                    binding.rowRelay.value.setText(relay ? "ON" : "OFF");
+                    binding.rowRelay.sensorSwitch.setChecked(relay);
 
-                boolean buzzer = json.getBoolean("buzzer");
-                binding.rowBuzzer.value.setText(buzzer ? "ON" : "OFF");
-                binding.rowBuzzer.sensorSwitch.setChecked(buzzer);
+                    boolean buzzer = json.getBoolean("buzzer");
+                    binding.rowBuzzer.value.setText(buzzer ? "ON" : "OFF");
+                    binding.rowBuzzer.sensorSwitch.setChecked(buzzer);
 
-                boolean flash = json.getBoolean("flash");
-                binding.rowFlash.value.setText(flash ? "ON" : "OFF");
-                binding.rowFlash.sensorSwitch.setChecked(flash);
+                    boolean flash = json.getBoolean("flash");
+                    binding.rowFlash.value.setText(flash ? "ON" : "OFF");
+                    binding.rowFlash.sensorSwitch.setChecked(flash);
+                }
                 
                 binding.rowTemp.value.setText(String.format("%.1f °C", json.getDouble("temp")));
                 binding.rowPres.value.setText(String.format("%.1f hPa", json.getDouble("pres")));
@@ -525,21 +804,44 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
     }
 
     private void sendCommand(String cmd) {
+        lastCommandTime = System.currentTimeMillis();
         if (syncMode == 1) {
             executor.execute(() -> {
                 try {
-                    String ip = prefs.getString("local_node_ip", AppDefaults.DEFAULT_NODE_IP);
+                    String ip = selectedNodeIp.isEmpty() ? prefs.getString("local_node_ip", AppDefaults.DEFAULT_NODE_IP) : selectedNodeIp;
+                    addLog("Sending IP Cmd [" + cmd + "] to " + ip);
                     URL url = new URL("http://" + ip + "/control?cmd=" + cmd);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                    conn.getResponseCode();
+                    conn.setConnectTimeout(2000);
+                    int resp = conn.getResponseCode();
                     conn.disconnect();
+                    if (resp == 200) {
+                        addLog("IP Cmd Success");
+                    } else {
+                        addLog("IP Cmd Failed: " + resp);
+                    }
                 } catch (Exception e) {
                     runOnUiThread(() -> Toast.makeText(this, "Failed to send IP command", Toast.LENGTH_SHORT).show());
                 }
             });
         } else if (syncMode == 2) {
-            String commandNode = "FrmMobile/esp32cam/Securitymaindoor";
-            FirebaseDatabase.getInstance().getReference(commandNode).child("command").setValue(cmd);
+            String doorNode = prefs.getString("firebase_door_node", AppDefaults.NODE_DOOR);
+            String room = doorNode;
+            if (room.contains("/")) room = room.substring(room.lastIndexOf("/") + 1);
+
+            String commandNode = "FrmMobile/" + room;
+
+            if (firebaseDatabase != null) {
+                firebaseDatabase.getReference(commandNode).child("command")
+                        .setValue(cmd)
+                        .addOnCompleteListener(task -> {
+                            if (task.isSuccessful()) addLog("Firebase Cmd [" + cmd + "] Sent");
+                            else addLog("Firebase Cmd FAILED: " + (task.getException() != null ? task.getException().getMessage() : "Unknown"));
+                        });
+            } else {
+                FirebaseDatabase.getInstance().getReference(commandNode).child("command")
+                        .setValue(cmd);
+            }
         } else {
             executor.execute(() -> {
                 try {
@@ -553,12 +855,93 @@ public class SecurityMainDoorActivity extends AppCompatActivity {
         }
     }
 
+    private void showCameraConfigDialog() {
+        android.widget.ScrollView scrollView = new android.widget.ScrollView(this);
+        android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
+        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
+        layout.setPadding(50, 40, 50, 40);
+        scrollView.addView(layout);
+
+        // 1. Resolution Picker
+        addDialogLabel(layout, "Video Resolution (Frame Size):");
+        String[] resolutions = {"CIF (400x296)", "QVGA (320x240)", "VGA (640x480)", "SVGA (800x600)", "XGA (1024x768)", "HD (1280x720)", "UXGA (1600x1200)"};
+        int[] resValues = {4, 5, 8, 9, 10, 11, 13};
+        android.widget.Spinner resSpinner = new android.widget.Spinner(this);
+        resSpinner.setAdapter(new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, resolutions));
+        layout.addView(resSpinner);
+
+        // 2. JPEG Quality
+        addDialogLabel(layout, "\nJPEG Quality (10=Best, 63=Worst):");
+        com.google.android.material.slider.Slider qSlider = createDialogSlider(layout, 10, 63, 1, 12);
+
+        // 3. Brightness & Contrast
+        addDialogLabel(layout, "\nBrightness (-2 to 2):");
+        com.google.android.material.slider.Slider brSlider = createDialogSlider(layout, -2, 2, 1, 0);
+
+        addDialogLabel(layout, "\nContrast (-2 to 2):");
+        com.google.android.material.slider.Slider ctSlider = createDialogSlider(layout, -2, 2, 1, 0);
+
+        // 4. Orientation
+        android.widget.Switch swMirror = new android.widget.Switch(this);
+        swMirror.setText("Horizontal Mirror");
+        swMirror.setPadding(0, 20, 0, 20);
+        layout.addView(swMirror);
+
+        android.widget.Switch swFlip = new android.widget.Switch(this);
+        swFlip.setText("Vertical Flip");
+        swFlip.setPadding(0, 20, 0, 20);
+        layout.addView(swFlip);
+
+        // 5. Special Effects
+        addDialogLabel(layout, "\nSpecial Effect:");
+        String[] effects = {"None", "Negative", "Grayscale", "Red Tint", "Green Tint", "Blue Tint", "Sepia"};
+        android.widget.Spinner fxSpinner = new android.widget.Spinner(this);
+        fxSpinner.setAdapter(new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, effects));
+        layout.addView(fxSpinner);
+
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Professional Camera Controls")
+            .setView(scrollView)
+            .setPositiveButton("Apply All", (dialog, which) -> {
+                int resIdx = resSpinner.getSelectedItemPosition();
+                sendCommand("CAM_SET:framesize:" + resValues[resIdx]);
+                sendCommand("CAM_SET:quality:" + (int)qSlider.getValue());
+                sendCommand("CAM_SET:brightness:" + (int)brSlider.getValue());
+                sendCommand("CAM_SET:contrast:" + (int)ctSlider.getValue());
+                sendCommand("CAM_SET:hmirror:" + (swMirror.isChecked() ? 1 : 0));
+                sendCommand("CAM_SET:vflip:" + (swFlip.isChecked() ? 1 : 0));
+                sendCommand("CAM_SET:special_effect:" + fxSpinner.getSelectedItemPosition());
+                
+                Toast.makeText(this, "Batch configuration sent to camera", Toast.LENGTH_SHORT).show();
+            })
+            .setNegativeButton("Cancel", null)
+            .show();
+    }
+
+    private void addDialogLabel(android.widget.LinearLayout layout, String text) {
+        android.widget.TextView label = new android.widget.TextView(this);
+        label.setText(text);
+        label.setTextColor(Color.DKGRAY);
+        label.setTextSize(14);
+        layout.addView(label);
+    }
+
+    private com.google.android.material.slider.Slider createDialogSlider(android.widget.LinearLayout layout, float min, float max, float step, float val) {
+        com.google.android.material.slider.Slider slider = new com.google.android.material.slider.Slider(this);
+        slider.setValueFrom(min);
+        slider.setValueTo(max);
+        slider.setStepSize(step);
+        slider.setValue(val);
+        layout.addView(slider);
+        return slider;
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
         unregisterNetworkListener();
-        if (firebaseRef != null && firebaseListener != null) {
-            firebaseRef.removeEventListener(firebaseListener);
+        if (outboxRef != null && firebaseListener != null) {
+            outboxRef.removeEventListener(firebaseListener);
         }
         executor.shutdown();
         closeMqtt();

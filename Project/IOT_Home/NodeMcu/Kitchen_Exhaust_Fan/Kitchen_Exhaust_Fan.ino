@@ -51,7 +51,7 @@ String globalCmdTopic = baseTopic + "all/commands";
 String discoveryTopic = baseTopic + "nodes/discovery";
 String historyTopic = baseTopic + mqttClientId + "/history";
 
-const String SW_VERSION = "1.0.328";
+const String SW_VERSION = "1.0.376";
 
 int currentMqttPortIndex = 0;
 const int mqttPorts[] = { 1883, 8000, 8883, 8884 };
@@ -271,6 +271,8 @@ void runPendingOTA() {
   addWebLog(url);
   delay(2000);
 
+  ESP.wdtEnable(20000);
+
   WiFiClientSecure sClient;
   sClient.setInsecure();
   sClient.setBufferSizes(16384, 1024);
@@ -289,6 +291,10 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
 
   if (msg == "SYNC") {
     publishStatus();
+  } else if (msg == "REBOOT") {
+    addWebLog("Rebooting...");
+    delay(500);
+    ESP.restart();
   } else if (msg.startsWith("OTA:")) {
     handleRemoteOTA(msg.substring(4));
   } else if (msg.startsWith("OTA_FULL:")) {
@@ -538,17 +544,19 @@ void setup() {
     server.sendContent(F("<div class='log'>"));
     server.sendContent(webLogs);
     server.sendContent(F("</div>"));
-    server.sendContent(F("<hr><p style='text-align:center;display:block;'><a href='/update'>Firmware Update</a></p>"));
+    server.sendContent(F("<hr><p style='text-align:center;display:block;'><a href='/update'>Firmware Update</a> | <a href='/reboot' onclick=\"return confirm('Reboot device?')\">Reboot</a></p>"));
     server.sendContent(F("</div></body></html>"));
     server.sendContent("");
   });
 
   server.on("/status", []() {
-    StaticJsonDocument<256> doc;
+    StaticJsonDocument<512> doc;
     doc["fan"] = fanActive ? "ON" : "OFF";
     doc["manual"] = manualOverride ? "ON" : "OFF";
     doc["mq2_a"] = mq2AnalogValue;
     doc["ver"] = SW_VERSION;
+    doc["ip"] = WiFi.localIP().toString();
+    doc["id"] = mqttClientId;
 
     time_t now = time(nullptr);
     struct tm timeinfo;
@@ -564,7 +572,8 @@ void setup() {
 
   server.on("/update", []() {
     updateMode = true;
-    String html = "<html><head><meta name='viewport' content='width=device-width, initial-scale=1'>"
+    ESP.wdtEnable(20000);
+    String html = "<html><head><meta name='viewport' content='width=device-width, initial-scale=1'>",targetContent:
                   "<style>body{font-family:sans-serif;text-align:center;padding:20px;background:#f4f7f6;}"
                   ".c{background:white;padding:30px;border-radius:10px;display:inline-block;box-shadow:0 4px 6px rgba(0,0,0,0.1);max-width:90%;}"
                   "h2{color:#d35400;} .btn{background:#27ae60;color:white;padding:12px 24px;text-decoration:none;border-radius:5px;display:inline-block;margin-top:20px;}"
@@ -578,7 +587,14 @@ void setup() {
     server.send(200, "text/html", html);
   });
 
-httpUpdater.setup(&server, "/update_now");
+  server.on("/reboot", []() {
+    server.send(200, "text/html", "<html><head><meta http-equiv='refresh' content='10;url=/'></head><body><h3>Rebooting...</h3><p>Redirecting to home in 10s...</p></body></html>");
+    addWebLog("Web Reboot Init");
+    delay(500);
+    ESP.restart();
+  });
+
+  httpUpdater.setup(&server, "/update_now");
 
 if (WiFi.status() == WL_CONNECTED) {
   MDNS.begin(mqttClientId.c_str());
@@ -590,10 +606,12 @@ MDNS.addService("http", "tcp", 80);
 mqttClient.setServer(mqttBroker.c_str(), mqttPort);
 mqttClient.setCallback(mqttCallback);
 mqttClient.setBufferSize(1024);
+ESP.wdtEnable(WDTO_8S);
 publishStatus();
 }
 
 void loop() {
+  ESP.wdtFeed();
   server.handleClient();
   MDNS.update();
 

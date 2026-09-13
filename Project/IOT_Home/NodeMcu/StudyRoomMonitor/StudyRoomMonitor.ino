@@ -49,7 +49,7 @@ String globalCmdTopic = baseTopic + "all/commands";
 String discoveryTopic = baseTopic + "nodes/discovery";
 String historyTopic = baseTopic + mqttClientId + "/history";
 
-const String SW_VERSION = "1.0.328";
+const String SW_VERSION = "1.0.376";
 
 int currentMqttPortIndex = 0;
 const int mqttPorts[] = {1883, 8000, 8883, 8884};
@@ -248,6 +248,8 @@ void runPendingOTA() {
   // Boost CPU speed to 160MHz for the heavy download
   system_update_cpu_freq(160);
 
+  ESP.wdtEnable(20000);
+
   WiFiClientSecure sClient;
   sClient.setInsecure();
   // 16384 (16KB) is the absolute max SSL fragment size.
@@ -433,6 +435,9 @@ void setup() {
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
+  ArduinoOTA.onStart([]() {
+    ESP.wdtEnable(20000);
+  });
   Serial.print("Connecting to WiFi");
   int timeout = 0;
   while (WiFi.status() != WL_CONNECTED && timeout < 40) {
@@ -526,6 +531,8 @@ void setup() {
     FSInfo fs_info;
     if (LittleFS.info(fs_info)) doc["fs_free"] = fs_info.totalBytes - fs_info.usedBytes;
     doc["ver"] = SW_VERSION;
+    doc["ip"] = WiFi.localIP().toString();
+    doc["id"] = mqttClientId;
     String response;
     serializeJson(doc, response);
     server.send(200, "application/json", response);
@@ -564,6 +571,7 @@ void setup() {
   // PREPARE FOR UPDATE: Stop background tasks to free RAM before updating
   server.on("/update", HTTP_GET, []() {
     addWebLog("System entering update mode...");
+    ESP.wdtEnable(20000);
     // Stop memory-intensive services
     mqttClient.disconnect();
     fbdo.clear();
@@ -594,12 +602,15 @@ void setup() {
 
   dht.begin();
 
+  ESP.wdtEnable(WDTO_8S);
+
   // Publish initial status
   publishStatus();
 }
 
 void loop()
 {
+  ESP.wdtFeed();
   static float old_dhtTemp = 0, old_dhtHum = 0;
   static int old_lightRawValue = 0;
 

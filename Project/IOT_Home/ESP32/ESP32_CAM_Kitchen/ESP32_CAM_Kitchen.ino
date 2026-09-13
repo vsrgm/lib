@@ -12,6 +12,7 @@
 #include "credentials.h"
 #include <time.h>
 #include <WebServer.h>
+#include <esp_task_wdt.h>
 
 // ESP32-CAM Pin definitions
 #define PWDN_GPIO_NUM     32
@@ -66,7 +67,7 @@ String statusTopic = "FrmEsp32/kitchen/status";
 String cmdTopic = "FrmMobile/esp32cam/kitchen/command";
 String imageTopic = "FrmEsp32/kitchen/image";
 
-const String SW_VERSION = "1.0.328";
+const String SW_VERSION = "1.0.376";
 
 // State Variables
 bool lastPIR = false;
@@ -342,6 +343,14 @@ void setup() {
   setupFirebase();
   Serial.println("Firebase setup initiated");
 
+  esp_task_wdt_config_t twdt_config = {
+      .timeout_ms = 8000,
+      .idle_core_mask = 0,
+      .trigger_panic = true,
+  };
+  esp_task_wdt_reconfigure(&twdt_config);
+  esp_task_wdt_add(NULL);
+
   server.on("/", []() {
     String html = "<html><head><title>ESP32-CAM Kitchen</title>";
     html += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
@@ -365,6 +374,7 @@ void setup() {
 }
 
 void loop() {
+  esp_task_wdt_reset();
   server.handleClient();
   if (WiFi.status() == WL_CONNECTED && !mqttClient.connected()) reconnectMqtt();
   mqttClient.loop();

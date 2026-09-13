@@ -46,7 +46,7 @@ String globalCmdTopic = baseTopic + "all/commands";
 String discoveryTopic = baseTopic + "nodes/discovery";
 String historyTopic = baseTopic + mqttClientId + "/history";
 
-const String SW_VERSION = "1.0.328";
+const String SW_VERSION = "1.0.376";
 
 int currentMqttPortIndex = 0;
 const int mqttPorts[] = {1883, 8000, 8883, 8884};
@@ -231,6 +231,7 @@ void runPendingOTA() {
   addWebLog(url);
 
   delay(5000);
+  ESP.wdtEnable(20000);
   system_update_cpu_freq(160);
 
   WiFiClientSecure sClient;
@@ -469,12 +470,14 @@ void setup() {
   });
 
   server.on("/status", []() {
-    StaticJsonDocument<256> doc;
+    StaticJsonDocument<512> doc;
     doc["pump"] = pumpActive ? "ON" : "OFF";
     doc["level"] = waterLevelOk ? "OK" : "LOW";
     doc["manual"] = manualOverride ? "ON" : "OFF";
     doc["heap"] = ESP.getFreeHeap();
     doc["ver"] = SW_VERSION;
+    doc["ip"] = WiFi.localIP().toString();
+    doc["id"] = mqttClientId;
     String response;
     serializeJson(doc, response);
     server.send(200, "application/json", response);
@@ -493,6 +496,7 @@ void setup() {
   server.on("/update", HTTP_GET, []() {
     mqttClient.disconnect();
     fbdo.clear();
+    ESP.wdtEnable(20000);
     server.send(200, "text/html", "Update Mode. <a href='/update_now'>Upload</a>");
   });
 
@@ -511,10 +515,13 @@ void setup() {
   mqttClient.setBufferSize(512);
 #endif
 
+  ESP.wdtEnable(WDTO_8S);
+
   publishStatus();
 }
 
 void loop() {
+  ESP.wdtFeed();
   server.handleClient();
   MDNS.update();
 

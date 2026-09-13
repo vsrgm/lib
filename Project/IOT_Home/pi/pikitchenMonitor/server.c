@@ -20,7 +20,7 @@
 #include <wait.h>
 #include "credentials.h"
 
-#define SW_VERSION "1.0.328"
+#define SW_VERSION "1.0.376"
 #define PORT 5001
 #define VIDEO_CHUNK_SIZE 1400
 #define LOG_FILE "/tmp/server.log"
@@ -115,6 +115,10 @@ struct buffer {
 void normalize_fb_url() {
     int len = strlen(fb_url);
     if (len > 0 && fb_url[len - 1] == '/') fb_url[len - 1] = '\0';
+
+    // Safety: If URL accidentally contains 'smart_home', remove it to avoid nested paths
+    char *sub = strstr(fb_url, "/smart_home");
+    if (sub) *sub = '\0';
 }
 
 void base64_encode(const unsigned char *src, size_t len, char *out) {

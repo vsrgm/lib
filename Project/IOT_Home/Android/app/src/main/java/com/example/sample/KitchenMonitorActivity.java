@@ -34,6 +34,16 @@ import com.google.firebase.database.ValueEventListener;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
+import java.io.InputStream;
+import java.io.ByteArrayOutputStream;
+import java.util.concurrent.atomic.AtomicBoolean;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Rect;
+import androidx.annotation.NonNull;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
@@ -51,6 +61,7 @@ public class KitchenMonitorActivity extends AppCompatActivity {
 
     private ActivityKitchenMonitorBinding binding;
     private MqttClient mqttClient;
+    private FirebaseDatabase firebaseDatabase;
     private DatabaseReference firebaseRef;
     private ValueEventListener firebaseListener;
     private final ExecutorService executor = Executors.newFixedThreadPool(2);
@@ -68,6 +79,15 @@ public class KitchenMonitorActivity extends AppCompatActivity {
     private int currentPortIndex = 0;
     private ConnectivityManager connectivityManager;
     private ConnectivityManager.NetworkCallback networkCallback;
+    private boolean isLocalAvailable = false;
+
+    // MJPEG Native Stats
+    private final AtomicBoolean isNativeStreaming = new AtomicBoolean(false);
+    private android.view.Surface savedSurface;
+    private long totalBytesReceived = 0;
+    private long frameCount = 0;
+    private long lastStatsTime = 0;
+    private long lastByteCount = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,6 +97,18 @@ public class KitchenMonitorActivity extends AppCompatActivity {
 
         prefs = getSharedPreferences("SmartHomePrefs", MODE_PRIVATE);
         syncMode = prefs.getInt("sync_mode", 0);
+
+        binding.videoSurface.getHolder().addCallback(new SurfaceHolder.Callback() {
+            @Override
+            public void surfaceCreated(@NonNull SurfaceHolder holder) {
+                savedSurface = holder.getSurface();
+            }
+            @Override public void surfaceChanged(@NonNull SurfaceHolder h, int f, int w, int h1) {}
+            @Override public void surfaceDestroyed(@NonNull SurfaceHolder h) { 
+                savedSurface = null;
+                stopNativeStream(); 
+            }
+        });
 
         binding.btnBack.setOnClickListener(v -> finish());
         binding.btnSettings.setOnClickListener(v -> {
@@ -173,14 +205,15 @@ public class KitchenMonitorActivity extends AppCompatActivity {
                     connectToFirebase(url, node);
                 } else {
                     addLog("Auth Failed: " + (task.getException() != null ? task.getException().getMessage() : "Unknown"));
+                    connectToFirebase(url, node);
                 }
             });
     }
 
     private void connectToFirebase(String url, String node) {
         try {
-            FirebaseDatabase database = FirebaseDatabase.getInstance(url);
-            firebaseRef = database.getReference(node);
+            firebaseDatabase = FirebaseDatabase.getInstance(url);
+            firebaseRef = firebaseDatabase.getReference(node);
             
             firebaseListener = new ValueEventListener() {
                 @Override
@@ -260,16 +293,154 @@ public class KitchenMonitorActivity extends AppCompatActivity {
         binding.videoStream.setWebViewClient(new WebViewClient());
         
         if (syncMode == 1) {
-            // Local IP: Show MJPEG Stream
-            binding.videoStream.setVisibility(View.VISIBLE);
-            binding.ivCapturedImage.setVisibility(View.GONE);
-            String ip = prefs.getString("local_node_ip", AppDefaults.DEFAULT_NODE_IP);
-            binding.videoStream.loadUrl("http://" + ip + "/stream");
+            // Local IP: Verified via checkLocalConnectivityAndSetupStream
+            String ip = selectedNodeIp.isEmpty() ? prefs.getString("local_node_ip", AppDefaults.DEFAULT_NODE_IP) : selectedNodeIp;
+            checkLocalConnectivityAndSetupStream(ip);
         } else {
             // MQTT/Firebase: Show static images
+            stopNativeStream();
             binding.videoStream.setVisibility(View.GONE);
+            binding.videoSurface.setVisibility(View.GONE);
             binding.ivCapturedImage.setVisibility(View.VISIBLE);
             binding.ivCapturedImage.setImageResource(android.R.drawable.ic_menu_camera);
+        }
+    }
+
+    private void checkLocalConnectivityAndSetupStream(String ipAddress) {
+        executor.execute(() -> {
+            boolean available = false;
+            try {
+                URL url = new URL("http://" + ipAddress + "/status");
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setConnectTimeout(1500);
+                conn.setReadTimeout(1500);
+                int code = conn.getResponseCode();
+                if (code == 200) available = true;
+                conn.disconnect();
+            } catch (Exception e) {
+                available = false;
+            }
+
+            isLocalAvailable = available;
+            runOnUiThread(() -> {
+                if (isLocalAvailable) {
+                    startNativeStream(ipAddress);
+                } else {
+                    stopNativeStream();
+                }
+            });
+        });
+    }
+
+    private void startNativeStream(String ip) {
+        if (isNativeStreaming.get()) return;
+        isNativeStreaming.set(true);
+        totalBytesReceived = 0;
+        frameCount = 0;
+        lastStatsTime = System.currentTimeMillis();
+        lastByteCount = 0;
+
+        runOnUiThread(() -> {
+            binding.videoStream.setVisibility(View.GONE);
+            binding.ivCapturedImage.setVisibility(View.GONE);
+            binding.videoSurface.setVisibility(View.VISIBLE);
+            binding.layoutStats.setVisibility(View.VISIBLE);
+        });
+
+        executor.execute(() -> {
+            HttpURLConnection conn = null;
+            try {
+                URL url = new URL("http://" + ip + ":81/stream");
+                conn = (HttpURLConnection) url.openConnection();
+                conn.setConnectTimeout(5000);
+                conn.setReadTimeout(5000);
+                
+                InputStream is = conn.getInputStream();
+                byte[] buffer = new byte[16384];
+                ByteArrayOutputStream frameBuffer = new ByteArrayOutputStream();
+                
+                while (isNativeStreaming.get()) {
+                    int bytesRead = is.read(buffer);
+                    if (bytesRead <= 0) break;
+                    
+                    totalBytesReceived += bytesRead;
+                    
+                    for (int i = 0; i < bytesRead; i++) {
+                        int b = buffer[i] & 0xFF;
+                        frameBuffer.write(b);
+                        
+                        // Fast search for JPEG end marker (FF D9)
+                        if (b == 0xD9 && frameBuffer.size() > 1) {
+                            byte[] currentData = frameBuffer.toByteArray();
+                            if (currentData[currentData.length - 2] == (byte)0xFF) {
+                                // Validate start marker (FF D8)
+                                if (currentData[0] == (byte)0xFF && currentData[1] == (byte)0xD8) {
+                                    renderFrame(currentData);
+                                    frameCount++;
+                                }
+                                frameBuffer.reset();
+                                updateStats();
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                Log.e("Kitchen", "Native stream error", e);
+            } finally {
+                if (conn != null) conn.disconnect();
+                isNativeStreaming.set(false);
+            }
+        });
+    }
+
+    private void stopNativeStream() {
+        isNativeStreaming.set(false);
+        runOnUiThread(() -> {
+            binding.videoSurface.setVisibility(View.GONE);
+            binding.layoutStats.setVisibility(View.GONE);
+        });
+    }
+
+    private void renderFrame(byte[] data) {
+        if (savedSurface == null) return;
+        try {
+            Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
+            if (bitmap == null) return;
+
+            Canvas canvas = binding.videoSurface.getHolder().lockCanvas();
+            if (canvas != null) {
+                canvas.drawColor(Color.BLACK);
+                float scale = Math.min((float)canvas.getWidth() / bitmap.getWidth(), 
+                                     (float)canvas.getHeight() / bitmap.getHeight());
+                int w = (int)(bitmap.getWidth() * scale);
+                int h = (int)(bitmap.getHeight() * scale);
+                int left = (canvas.getWidth() - w) / 2;
+                int top = (canvas.getHeight() - h) / 2;
+                Rect scaledDest = new Rect(left, top, left + w, top + h);
+                canvas.drawBitmap(bitmap, null, scaledDest, null);
+                binding.videoSurface.getHolder().unlockCanvasAndPost(canvas);
+            }
+            bitmap.recycle();
+        } catch (Exception e) {
+            Log.e("Kitchen", "Render error", e);
+        }
+    }
+
+    private void updateStats() {
+        long now = System.currentTimeMillis();
+        long delta = now - lastStatsTime;
+        if (delta >= 1000) {
+            double fps = (double) frameCount * 1000.0 / delta;
+            double kbps = (double) (totalBytesReceived - lastByteCount) * 8.0 / delta;
+            
+            lastStatsTime = now;
+            lastByteCount = totalBytesReceived;
+            frameCount = 0;
+
+            runOnUiThread(() -> {
+                binding.tvThroughput.setText(String.format(Locale.US, "Rate: %.1f kbps", kbps));
+                binding.tvFps.setText(String.format(Locale.US, "FPS: %.1f", fps));
+            });
         }
     }
 
@@ -521,8 +692,16 @@ public class KitchenMonitorActivity extends AppCompatActivity {
                 } catch (Exception e) {}
             });
         } else if (syncMode == 2) {
-            String commandNode = "FrmMobile/esp32cam/kitchen";
-            FirebaseDatabase.getInstance().getReference(commandNode).child("command").setValue(cmd);
+            String fbNode = prefs.getString("firebase_node", AppDefaults.NODE_KITCHEN);
+            String room = fbNode;
+            if (room.contains("/")) room = room.substring(room.lastIndexOf("/") + 1);
+            String commandNode = "FrmMobile/" + room;
+            
+            if (firebaseDatabase != null) {
+                firebaseDatabase.getReference(commandNode).child("command").setValue(cmd);
+            } else {
+                FirebaseDatabase.getInstance().getReference(commandNode).child("command").setValue(cmd);
+            }
         } else {
             executor.execute(() -> {
                 try {

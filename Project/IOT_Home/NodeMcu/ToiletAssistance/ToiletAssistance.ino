@@ -46,10 +46,10 @@ const int mqttPorts[] = {1883, 8000, 8883, 8884};
 const int numMqttPorts = 4;
 
 String mqttClientId = "ToiletAssistance_" + String(ESP.getChipId(), HEX);
-String statusTopic = "frmesp32/toilet/status";
-String cmdTopic = "frmmobile/toilet/command";
+String statusTopic = "FrmEsp32/toilet/status";
+String cmdTopic = "FrmMobile/toilet/command";
 
-const String SW_VERSION = "1.0.328";
+const String SW_VERSION = "1.0.376";
 
 // System State
 float temperature = 0.0;
@@ -84,7 +84,7 @@ void setupFirebase() {
     Firebase.begin(&fbConfig, &fbAuth);
     Firebase.reconnectWiFi(true);
 
-    if (!Firebase.RTDB.beginStream(&fbdo, "frmmobile/toilet")) {
+    if (!Firebase.RTDB.beginStream(&fbdo, "FrmMobile/toilet")) {
         Serial.printf("Firebase Stream begin error, %s\n\n", fbdo.errorReason().c_str());
     }
     Firebase.RTDB.setStreamCallback(&fbdo, handleFirebaseStream, [](bool timeout) {
@@ -127,7 +127,12 @@ void setup() {
     server.begin();
 
     ArduinoOTA.setHostname("ToiletNode");
+    ArduinoOTA.onStart([]() {
+        ESP.wdtEnable(20000);
+    });
     ArduinoOTA.begin();
+
+    ESP.wdtEnable(WDTO_8S);
 
     logData("System Boot");
 }
@@ -166,6 +171,8 @@ void setupRoutes() {
         doc["temp"] = temperature;
         doc["hum"] = humidity;
         doc["ver"] = SW_VERSION;
+        doc["ip"] = WiFi.localIP().toString();
+        doc["id"] = mqttClientId;
 
         FSInfo fs_info;
         if (LittleFS.info(fs_info)) {
@@ -223,6 +230,8 @@ void publishStatus() {
     doc["temp"] = temperature;
     doc["hum"] = humidity;
     doc["ver"] = SW_VERSION;
+    doc["ip"] = WiFi.localIP().toString();
+    doc["id"] = mqttClientId;
 
     FSInfo fs_info;
     if (LittleFS.info(fs_info)) {
@@ -240,7 +249,7 @@ void publishStatus() {
 
     // Parallel Push to Firebase
     if (Firebase.ready()) {
-        Firebase.RTDB.setString(&fbdo, "frmesp32/toilet/status", buffer);
+        Firebase.RTDB.setString(&fbdo, "FrmEsp32/toilet/status", buffer);
     }
 }
 
@@ -260,11 +269,12 @@ void logData(String reason) {
     // Parallel Push to Firebase History
     if (Firebase.ready()) {
         String entry = String(timestamp) + "," + reason;
-        Firebase.RTDB.pushString(&fbdo, "frmesp32/toilet/history", entry);
+        Firebase.RTDB.pushString(&fbdo, "FrmEsp32/toilet/history", entry);
     }
 }
 
 void loop() {
+    ESP.wdtFeed();
     server.handleClient();
 #ifdef ENABLE_MQTT
     mqttClient.loop();

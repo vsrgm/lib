@@ -54,3 +54,6 @@ Thumbs.db
 *.swp
 *~
 Schematics/offline_projects_backup
+ESP32/ESP32_CAM_MainDoor/build-arduino-esp32-3.3.11
+ESP32/ESP32_CAM_MainDoor/esp32-camera
+
