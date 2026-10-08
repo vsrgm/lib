@@ -1,0 +1,6 @@
+#ifndef QT_CREDENTIALS_H
+#define QT_CREDENTIALS_H
+
+#define FIREBASE_SECRET "1q2w3e4r%T"
+
+#endif // QT_CREDENTIALS_H

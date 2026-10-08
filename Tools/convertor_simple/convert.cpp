@@ -109,8 +109,10 @@ void convert::paintimage()
     char tmp_bufer[50];
     int32_t in_img_frame_count;
     int32_t malloc_length;
+    int32_t frame_size = (pix_fmt == NV12) ?
+            (width * height * 3 / 2) : (width * height * (bpp_container / 8.0f));
 
-    malloc_length = width * height * (bpp_container / 8.0f);    
+    malloc_length = frame_size;
     src_buffer = (uint8_t*)calloc(malloc_length, 1);
     if (src_buffer == NULL)
     {
@@ -151,14 +153,14 @@ void convert::paintimage()
         in_img_frame_count = file_length/frame_stride;
     }else if (file_length)
     {
-        in_img_frame_count = ((file_length-rm_header)/ (int32_t)(height*width*(bpp_container/8.0f)) +
-                (((file_length-rm_header)%(int32_t)(height*width*(bpp_container/8.0f)))?1:0));
+        in_img_frame_count = ((file_length-rm_header) / frame_size +
+            (((file_length-rm_header) % frame_size) ? 1 : 0));
     }
     sprintf(tmp_bufer, "%d", in_img_frame_count);
 
     ui->Source_img_integrity->setText(
             ((file_length-rm_header)%
-             (int32_t)(height*width*(bpp_container/8.0f)))?"Fail":"Pass");
+             frame_size)?"Fail":"Pass");
     ui->src_img_count->setMaximum(in_img_frame_count-1);
     ui->num_frames->setText(tmp_bufer);
 
@@ -167,9 +169,9 @@ void convert::paintimage()
         fseek(fp, frame_stride * ui->src_img_count->value(), SEEK_CUR);
     }else
     {
-        fseek(fp, (height*width*(bpp_container/8.0f) * ui->src_img_count->value()), SEEK_CUR);
+        fseek(fp, (frame_size * ui->src_img_count->value()), SEEK_CUR);
     }
-    size = fread(src_buffer, 1, width * height * (bpp_container/8.0f), fp);
+    size = fread(src_buffer, 1, frame_size, fp);
     switch(pix_fmt)
     {
         case Y8:
