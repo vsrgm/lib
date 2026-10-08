@@ -52,7 +52,7 @@ String globalCmdTopic = baseTopic + "all/commands";
 String discoveryTopic = baseTopic + "nodes/discovery";
 String historyTopic = baseTopic + mqttClientId + "/history";
 
-const String SW_VERSION = "1.0.416";
+const String SW_VERSION = "1.0.436";
 
 WiFiUDP udpDiscovery;
 const int UDP_DISCOVERY_PORT = 8888;

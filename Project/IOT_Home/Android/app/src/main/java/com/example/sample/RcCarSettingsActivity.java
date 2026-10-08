@@ -70,5 +70,9 @@ public class RcCarSettingsActivity extends AppCompatActivity {
             .putString("storage_path", path)
             .putInt("car_sync_mode", mode)
             .apply();
+
+        if (mode == 0) {
+            LocalDiscoveryManager.discoverDevices(this, null);
+        }
     }
 }

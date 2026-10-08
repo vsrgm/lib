@@ -1,5 +1,6 @@
 #include "esp_camera.h"
 #include <WiFi.h>
+#include <WiFiUdp.h>
 #include <PubSubClient.h>
 #include <Wire.h>
 #include <Adafruit_BMP280.h>
@@ -67,7 +68,49 @@ String statusTopic = "FrmEsp32/kitchen/status";
 String cmdTopic = "FrmMobile/esp32cam/kitchen/command";
 String imageTopic = "FrmEsp32/kitchen/image";
 
-const String SW_VERSION = "1.0.416";
+const String SW_VERSION = "1.0.436";
+
+WiFiUDP udpDiscovery;
+const int UDP_DISCOVERY_PORT = 8888;
+
+void setupUdpDiscovery() {
+  udpDiscovery.begin(UDP_DISCOVERY_PORT);
+}
+
+void checkUdpDiscovery() {
+  if (WiFi.status() != WL_CONNECTED) return;
+
+  int packetSize = udpDiscovery.parsePacket();
+  if (packetSize) {
+    char buf[255];
+    int len = udpDiscovery.read(buf, sizeof(buf) - 1);
+    if (len > 0) buf[len] = 0;
+    String msg = String(buf);
+    msg.trim();
+    if (msg.indexOf("DISCOVER") != -1) {
+      IPAddress remoteIp = udpDiscovery.remoteIP();
+      uint16_t remotePort = udpDiscovery.remotePort();
+      if (remotePort == 0) remotePort = UDP_DISCOVERY_PORT;
+
+      String response = "{\"ip\":\"" + WiFi.localIP().toString() + "\",\"id\":\"" + clientId + "\",\"name\":\"kitchen\",\"ver\":\"" + SW_VERSION + "\"}";
+
+      udpDiscovery.beginPacket(remoteIp, remotePort);
+      udpDiscovery.print(response);
+      udpDiscovery.endPacket();
+
+      if (remotePort != UDP_DISCOVERY_PORT) {
+        udpDiscovery.beginPacket(remoteIp, UDP_DISCOVERY_PORT);
+        udpDiscovery.print(response);
+        udpDiscovery.endPacket();
+      }
+
+      IPAddress broadcastIp = WiFi.broadcastIP();
+      udpDiscovery.beginPacket(broadcastIp, UDP_DISCOVERY_PORT);
+      udpDiscovery.print(response);
+      udpDiscovery.endPacket();
+    }
+  }
+}
 
 // State Variables
 bool lastPIR = false;
@@ -371,11 +414,13 @@ void setup() {
     server.send(200, "text/plain", "OK");
   });
   server.begin();
+  setupUdpDiscovery();
 }
 
 void loop() {
   esp_task_wdt_reset();
   server.handleClient();
+  checkUdpDiscovery();
   if (WiFi.status() == WL_CONNECTED && !mqttClient.connected()) reconnectMqtt();
   mqttClient.loop();
 

@@ -273,10 +273,13 @@ public class RoWasteWaterActivity extends AppCompatActivity {
             if (!discoveredNodes.contains(entry)) {
                 discoveredNodes.add(0, entry);
                 changed = true;
-                selectedNodeIp = savedIp;
-                selectedNodeId = "";
-                runOnUiThread(() -> binding.nodeSelector.setSelection(0));
             }
+            selectedNodeIp = savedIp;
+            selectedNodeId = "";
+            runOnUiThread(() -> {
+                binding.availableNodesInfo.setText(" (" + savedIp + ")");
+                binding.nodeSelector.setSelection(0);
+            });
         }
 
         if (changed) {

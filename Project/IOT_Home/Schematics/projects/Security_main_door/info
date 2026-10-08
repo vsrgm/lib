@@ -1,0 +1,647 @@
+{
+  "uuid": "1f2999569e6dddcd6e783588a16906f7",
+  "path": "Offline/Security_main_door",
+  "name": "Security_main_door",
+  "content": "",
+  "created_at": "2026-09-28 18:52:59",
+  "updated_at": "2026-10-10 11:18:56",
+  "stick": "",
+  "documents": [
+    {
+      "uuid": "b859b01622a3d8c5614adc27da496374",
+      "title": "Security_main_door_simple",
+      "description": "",
+      "docType": "1",
+      "master": "",
+      "thumb": "/images/thumb-default.png",
+      "components": {
+        "3b957ebcc9db470dba14484bb2681844": 1,
+        "f5b1d9403e49471cab43bc5a1bec336f": 1,
+        "ef437d5c0bb445fb9cae533e822c927d": 1,
+        "a052559478a14ee2b9e3514bee4ff72d": 1,
+        "d1967012734640e5b2f2cc1ea764740b": 3,
+        "404aa9221ff94de597b8734806e7c74f": 8,
+        "a1a68e8402b9461199345d2cae776c3f": 3,
+        "3ec77201bbcd4ecd8722658d581a4e60": 3,
+        "93b44d62463c4c9c82dd7108c8ee7d73": 1,
+        "92c32ceaaac84139add7ebda884f0a47": 1,
+        "a9aa2b14f188405792fa87ac344499a4": 2,
+        "a68dc5e6a9944c46b7604648a43dcd65": 3,
+        "97a7020bd0ee494abf9feeb3b6a56d6f": 1
+      },
+      "BOM": [
+        [
+          "Value",
+          "Quantity",
+          "Package",
+          "Components",
+          "CustomPara"
+        ],
+        [
+          "Magnetic_Switch",
+          1,
+          "HDR-F-2.54_1X2",
+          "H1",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C49661"
+          }
+        ],
+        [
+          "LDR",
+          1,
+          "HDR-F-2.54_1X2",
+          "H2",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C49661"
+          }
+        ],
+        [
+          "ManualSwitch",
+          1,
+          "HDR-F-2.54_1X2",
+          "H3",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C49661"
+          }
+        ],
+        [
+          "HDR-M-2.54_1x4",
+          1,
+          "HDR-M-2.54_1X4",
+          "J1",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C124378"
+          }
+        ],
+        [
+          "HDR-M-2.54_1x5",
+          1,
+          "HDR-M-2.54_1X5",
+          "J2",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C358687"
+          }
+        ],
+        [
+          "BMP280",
+          1,
+          "HDR-M-2.54_1X6",
+          "J3",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C190819"
+          }
+        ],
+        [
+          "HDR-M-2.54_1x8",
+          1,
+          "HDR-M-2.54_1X8",
+          "J4",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C190820"
+          }
+        ],
+        [
+          "HN",
+          3,
+          "HDR-M-2.54_1X1",
+          "J5,J7,J16",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "HP",
+          3,
+          "HDR-M-2.54_1X1",
+          "J6,J8,J15",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "+",
+          1,
+          "HDR-M-2.54_1X1",
+          "J9",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "-",
+          1,
+          "HDR-M-2.54_1X1",
+          "J10",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "HDR-M-2.54_1x2",
+          2,
+          "HDR-M-2.54_1X2",
+          "J12,J17",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C124375"
+          }
+        ],
+        [
+          "BC547",
+          1,
+          "HDR-M-2.54_1X3",
+          "J13",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
+          "PIR",
+          1,
+          "HDR-M-2.54_1X3",
+          "J14",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
+          "HDR-M-2.54_1x3",
+          1,
+          "HDR-M-2.54_1X3",
+          "J18",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
+          "5K",
+          2,
+          "R_AXIAL-0.4",
+          "R1,R2",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "10k",
+          3,
+          "R_AXIAL-0.3",
+          "R3,R4,R24",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "5k",
+          1,
+          "R_AXIAL-0.4",
+          "R11",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "SWITCH_SMALL",
+          1,
+          "PUSH-SWITCH",
+          "SW1",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "ESP32_CAM",
+          1,
+          "ESP32CAM",
+          "U1",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "RELAY-SPST",
+          1,
+          "RELAY-TH_RELAY-SPST",
+          "U4",
+          {
+            "Manufacturer Part": "Relay-SPST",
+            "Manufacturer": "null",
+            "Supplier": "LCSC",
+            "Supplier Part": "C2941249"
+          }
+        ]
+      ],
+      "updateTime": 1791611336,
+      "createTime": 1790771777,
+      "histories": [],
+      "created_at": "2026-09-30 18:06:17",
+      "updated_at": "2026-10-10 11:18:56"
+    },
+    {
+      "uuid": "6753c2c111f2aa68b2fb10049b55898e",
+      "puuid": "1f2999569e6dddcd6e783588a16906f7",
+      "title": "PCB_Security_main_door_simple",
+      "filename": "PCB_Security_main_door_simple.json",
+      "description": "",
+      "docType": "3",
+      "master": "",
+      "thumb": "/images/thumb-default.png",
+      "components": {
+        "36b1306a115341f4b4d9407fb34974e0": 3,
+        "282f7786cb6144d097ae00194c3e3fb3": 1,
+        "108969f8d9834a9ea23bcec2d43a66e4": 1,
+        "df3ca37cb13d499cb713e9aa6fdd0c7b": 1,
+        "fb11a1cdebf6433b8a3c664a100689e6": 1,
+        "19c77e72422b43b59c26b9fa67af5de4": 8,
+        "70aa5812f21f4991bf427395d51849f4": 2,
+        "9f77654394344f25b3de138e0fe05ff6": 3,
+        "5905db98cde4487fbb177070aa85bbe1": 3,
+        "3eb1249f3ebb4284ae221b0379016582": 3,
+        "40633f48e6174156a4eb56ffef48da25": 1,
+        "dcca659dbf7641e39fb2cc44fdaf5e7b": 1,
+        "b0358ef082e44cf3bf218d24e9c86cfe": 1
+      },
+      "BOM": [
+        [
+          "Value",
+          "Quantity",
+          "Package",
+          "Components",
+          "CustomPara"
+        ],
+        [
+          "BUZZER",
+          1,
+          "BUZ-TH_BD12.0-P6.00-D0.9-RD",
+          "BUZZER1",
+          {
+            "Manufacturer Part": "buzzer",
+            "Manufacturer": "null",
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900014030"
+          }
+        ],
+        [
+          "MSwitch",
+          1,
+          "HDR-F-2.54_1X2",
+          "H1",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C49661"
+          }
+        ],
+        [
+          "LDR",
+          1,
+          "HDR-F-2.54_1X2",
+          "H2",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C49661"
+          }
+        ],
+        [
+          "ManualSwitch",
+          1,
+          "HDR-F-2.54_1X2",
+          "H3",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C49661"
+          }
+        ],
+        [
+          "HDR-M-2.54_1x4",
+          1,
+          "HDR-M-2.54_1X4",
+          "J1",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C124378"
+          }
+        ],
+        [
+          "HDR-M-2.54_1x5",
+          1,
+          "HDR-M-2.54_1X5",
+          "J2",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C358687"
+          }
+        ],
+        [
+          "BMP280",
+          1,
+          "HDR-M-2.54_1X6",
+          "J3",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C190819"
+          }
+        ],
+        [
+          "HDR-M-2.54_1x8",
+          2,
+          "HDR-M-2.54_1X8",
+          "J4,J11",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C190820"
+          }
+        ],
+        [
+          "HN",
+          2,
+          "HDR-M-2.54_1X1",
+          "J5,J7",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "HP",
+          2,
+          "HDR-M-2.54_1X1",
+          "J6,J8",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "+",
+          1,
+          "HDR-M-2.54_1X1",
+          "J9",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "-",
+          1,
+          "HDR-M-2.54_1X1",
+          "J10",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C81276"
+          }
+        ],
+        [
+          "HDR-M-2.54_1x2",
+          1,
+          "HDR-M-2.54_1X2",
+          "J12",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C124375"
+          }
+        ],
+        [
+          "PIR",
+          1,
+          "HDR-M-2.54_1X3",
+          "J14",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
+          "BC547",
+          2,
+          "HDR-M-2.54_1X3",
+          "J20,J27",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
+          "IR LED",
+          1,
+          "LED-TH_BD5.0_RED",
+          "LED2",
+          {
+            "Manufacturer Part": "333-2SURD/S530-A3",
+            "Manufacturer": "EVERLIGHT(台湾亿光)",
+            "Supplier": "LCSC",
+            "Supplier Part": "C87271"
+          }
+        ],
+        [
+          "5K",
+          3,
+          "R_AXIAL-0.4",
+          "R1,R2,R7",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "0",
+          4,
+          "R_AXIAL-0.4",
+          "R5,R6,R8,R9",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "5k",
+          1,
+          "R_AXIAL-0.4",
+          "R10",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "150",
+          1,
+          "R_AXIAL-0.4",
+          "R23",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "10k",
+          3,
+          "R_AXIAL-0.3",
+          "R3,R4,R24",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "SWITCH_SMALL",
+          1,
+          "PUSH-SWITCH",
+          "SW1",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "ESP32_CAM",
+          1,
+          "ESP32CAM",
+          "U1",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ],
+        [
+          "AMS1117-3.3S-EV",
+          1,
+          "SOT-89-3_L4.5-W2.4-P1.50-LS4.0-BR",
+          "U2",
+          {
+            "Manufacturer Part": "AMS1117-3.3S-EV",
+            "Manufacturer": "null",
+            "Supplier": "LCSC",
+            "Supplier Part": "C28642132"
+          }
+        ],
+        [
+          "TRKTRONICS -- I2C LCD Serial Interface Module",
+          1,
+          "TRKTRONICS FOOTPRINT - I2C LCD SERIAL INTERFACE MODULE",
+          "U3",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
+          }
+        ]
+      ],
+      "updateTime": 1790871439,
+      "createTime": 1790782307,
+      "histories": [],
+      "created_at": "2026-09-30 21:01:47",
+      "updated_at": "2026-10-01 21:47:19"
+    }
+  ],
+  "sort": [
+    "e9d2f0b8057538b9ee4169547521430a",
+    "b859b01622a3d8c5614adc27da496374"
+  ],
+  "title": "Security_main_door",
+  "foldername": "Security_main_door",
+  "schfilename": "Security_main_door.json",
+  "schfilemtime": 1791611336045
+}

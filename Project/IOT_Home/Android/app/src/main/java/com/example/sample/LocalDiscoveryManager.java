@@ -10,9 +10,13 @@ import android.util.Log;
 
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.HttpURLConnection;
 import java.net.InetAddress;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -34,6 +38,19 @@ public class LocalDiscoveryManager {
         executor.execute(() -> {
             Map<String, String> discoveredMap = new HashMap<>();
             DatagramSocket socket = null;
+            WifiManager.MulticastLock multicastLock = null;
+
+            WifiManager wifi = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+            if (wifi != null) {
+                try {
+                    multicastLock = wifi.createMulticastLock("LocalDiscoveryMulticastLock");
+                    multicastLock.setReferenceCounted(true);
+                    multicastLock.acquire();
+                } catch (Exception e) {
+                    Log.w(TAG, "Failed to acquire multicast lock: " + e.getMessage());
+                }
+            }
+
             try {
                 socket = new DatagramSocket();
                 socket.setBroadcast(true);
@@ -46,16 +63,21 @@ public class LocalDiscoveryManager {
                 socket.send(sendPacket);
                 Log.d(TAG, "Broadcast DISCOVER sent to " + broadcastAddr.getHostAddress() + ":" + UDP_DISCOVERY_PORT);
 
-                // Also send fallback to 255.255.255.255 in case subnet calculation differs
+                // Also send fallback to 255.255.255.255
                 try {
                     InetAddress globalBroadcast = InetAddress.getByName("255.255.255.255");
                     socket.send(new DatagramPacket(data, data.length, globalBroadcast, UDP_DISCOVERY_PORT));
                 } catch (Exception ignored) {}
 
+                // Parallel HTTP Subnet Probe Scan Fallback
+                String subnetPrefix = getSubnetPrefix(context);
+                if (subnetPrefix != null && !subnetPrefix.isEmpty()) {
+                    runHttpSubnetProbe(context, subnetPrefix, discoveredMap, callback);
+                }
+
                 byte[] recvBuf = new byte[1024];
                 long startTime = System.currentTimeMillis();
                 SharedPreferences prefs = context.getSharedPreferences("SmartHomePrefs", Context.MODE_PRIVATE);
-                SharedPreferences.Editor editor = prefs.edit();
 
                 while (System.currentTimeMillis() - startTime < 3000) {
                     try {
@@ -63,7 +85,7 @@ public class LocalDiscoveryManager {
                         socket.receive(recvPacket);
                         String senderIp = recvPacket.getAddress().getHostAddress();
                         String response = new String(recvPacket.getData(), 0, recvPacket.getLength()).trim();
-                        Log.d(TAG, "Received response from " + senderIp + ": " + response);
+                        Log.d(TAG, "Received UDP response from " + senderIp + ": " + response);
 
                         String deviceName = "";
                         String deviceIp = senderIp;
@@ -79,8 +101,10 @@ public class LocalDiscoveryManager {
 
                         String prefKey = mapDeviceToKey(deviceName);
                         if (prefKey != null) {
-                            editor.putString(prefKey, deviceIp);
-                            discoveredMap.put(prefKey, deviceIp);
+                            prefs.edit().putString(prefKey, deviceIp).commit();
+                            synchronized (discoveredMap) {
+                                discoveredMap.put(prefKey, deviceIp);
+                            }
                             Log.d(TAG, "Mapped device '" + deviceName + "' (" + deviceIp + ") to key: " + prefKey);
 
                             final String fKey = prefKey;
@@ -96,13 +120,17 @@ public class LocalDiscoveryManager {
                         if (socket.isClosed()) break;
                     }
                 }
-                editor.apply();
 
             } catch (Exception e) {
                 Log.e(TAG, "Discovery error", e);
             } finally {
                 if (socket != null && !socket.isClosed()) {
                     socket.close();
+                }
+                if (multicastLock != null && multicastLock.isHeld()) {
+                    try {
+                        multicastLock.release();
+                    } catch (Exception ignored) {}
                 }
             }
 
@@ -112,6 +140,60 @@ public class LocalDiscoveryManager {
                 );
             }
         });
+    }
+
+    private static void runHttpSubnetProbe(Context context, String subnetPrefix, Map<String, String> discoveredMap, DiscoveryCallback callback) {
+        ExecutorService probePool = Executors.newFixedThreadPool(15);
+        SharedPreferences prefs = context.getSharedPreferences("SmartHomePrefs", Context.MODE_PRIVATE);
+
+        for (int host = 1; host <= 254; host++) {
+            final String targetIp = subnetPrefix + host;
+            probePool.execute(() -> {
+                try {
+                    URL url = new URL("http://" + targetIp + "/status");
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    conn.setConnectTimeout(800);
+                    conn.setReadTimeout(800);
+                    if (conn.getResponseCode() == 200) {
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                        StringBuilder sb = new StringBuilder();
+                        String line;
+                        while ((line = reader.readLine()) != null) sb.append(line);
+                        String resp = sb.toString().trim();
+
+                        String deviceName = "";
+                        String deviceIp = targetIp;
+
+                        if (resp.startsWith("{") && resp.endsWith("}")) {
+                            JSONObject json = new JSONObject(resp);
+                            if (json.has("name")) deviceName = json.getString("name");
+                            if (json.has("id") && deviceName.isEmpty()) deviceName = json.getString("id");
+                            if (json.has("ip")) deviceIp = json.getString("ip");
+                        }
+
+                        String prefKey = mapDeviceToKey(deviceName);
+                        if (prefKey != null) {
+                            prefs.edit().putString(prefKey, deviceIp).commit();
+                            synchronized (discoveredMap) {
+                                discoveredMap.put(prefKey, deviceIp);
+                            }
+                            Log.d(TAG, "HTTP Probe Mapped device '" + deviceName + "' (" + deviceIp + ") -> " + prefKey);
+
+                            final String fKey = prefKey;
+                            final String fName = deviceName;
+                            final String fIp = deviceIp;
+                            if (callback != null) {
+                                new Handler(Looper.getMainLooper()).post(() ->
+                                        callback.onDeviceDiscovered(fKey, fName, fIp)
+                                );
+                            }
+                        }
+                    }
+                    conn.disconnect();
+                } catch (Exception ignored) {}
+            });
+        }
+        probePool.shutdown();
     }
 
     public static String mapDeviceToKey(String deviceIdentifier) {
@@ -134,6 +216,8 @@ public class LocalDiscoveryManager {
             return "ip_ro_pump";
         } else if (idLower.contains("bedroom")) {
             return "ip_bedroom";
+        } else if (idLower.contains("rccar") || idLower.contains("rc_car") || idLower.contains("car")) {
+            return "ip_rccar";
         }
         return null;
     }
@@ -149,6 +233,9 @@ public class LocalDiscoveryManager {
             case "kitchen_fan": return "ip_kitchen_fan";
             case "pi_kitchen": return "pi_kitchen_ip";
             case "bedroom": return "ip_bedroom";
+            case "rccar":
+            case "rc_car":
+            case "car": return "ip_rccar";
             default: return "local_node_ip";
         }
     }
@@ -159,7 +246,29 @@ public class LocalDiscoveryManager {
         if ("pi_kitchen".equals(key)) {
             return prefs.getString("pi_kitchen_ip", AppDefaults.DEFAULT_PI_IP);
         }
+        if ("rccar".equals(key) || "rc_car".equals(key) || "car".equals(key)) {
+            return prefs.getString("ip_rccar", AppDefaults.DEFAULT_RCCAR_IP);
+        }
         return prefs.getString(specificKey, fallback);
+    }
+
+    private static String getSubnetPrefix(Context context) {
+        try {
+            WifiManager wifi = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+            if (wifi != null) {
+                DhcpInfo dhcp = wifi.getDhcpInfo();
+                if (dhcp != null && dhcp.ipAddress != 0) {
+                    int ip = dhcp.ipAddress;
+                    String ipStr = String.format(java.util.Locale.US, "%d.%d.%d.%d",
+                            (ip & 0xFF), (ip >> 8 & 0xFF), (ip >> 16 & 0xFF), (ip >> 24 & 0xFF));
+                    int lastDot = ipStr.lastIndexOf('.');
+                    if (lastDot != -1) {
+                        return ipStr.substring(0, lastDot + 1);
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+        return "192.168.0.";
     }
 
     private static InetAddress getBroadcastAddress(Context context) throws Exception {

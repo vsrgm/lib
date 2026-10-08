@@ -11,6 +11,7 @@
 #include <QJsonDocument>
 #include <QMap>
 #include <QList>
+#include "credentials.h"
 
 namespace Ui {
 class MainWindow;
@@ -67,6 +68,8 @@ private slots:
     // Exhaust Fan Slots
     void on_btnExhaustSync_clicked();
     void on_chkExhaustOverride_toggled(bool checked);
+    void on_chkExhaustFan_toggled(bool checked);
+    void on_chkExhaustBuzzer_toggled(bool checked);
     void on_btnExhaustUpdateConfig_clicked();
 
     // Toilet Slots
@@ -116,12 +119,18 @@ private:
     QMap<QString, QString> nodeIps;
     QMap<QString, QString> discoveredNodes;
 
+    bool doorFlashState = false;
+    bool doorBuzzerState = false;
+    bool doorRelayState = false;
+
     void loadSettings();
     void saveSettings();
     void detectAppIp();
     void updateCameraStream(const QString &nodeKey, class QLabel *targetLabel);
     void mapDiscoveredDevice(const QString &name, const QString &ip);
     QString getIpForNode(const QString &nodeKey);
+    QString getFirebaseStatusPath(const QString &nodeKey);
+    QString getFirebaseCommandPath(const QString &nodeKey);
     void sendNodeCommand(const QString &nodeKey, const QString &cmd);
     void fetchNodeStatus(const QString &nodeKey);
     void logMessage(const QString &tag, const QString &msg);

@@ -44,7 +44,7 @@ Thumbs.db
 *~
 NodeMcu/StudyRoomMonitor/build
 Schematics/offline_projects_backup
-ESP32/ESP32_CAM_MainDoor/build-arduino-esp32-3.3.11
+ESP32/ESP32_CAM_MainDoor/build-arduino-esp32-*
 ESP32/ESP32_CAM_MainDoor/esp32-camera
 
 ESP32/ESP32_CAM_Kitchen/credentials.h
@@ -56,3 +56,4 @@ NodeMcu/RO_Waste_WaterPump/credentials.h
 NodeMcu/StudyRoomMonitor/credentials.h
 NodeMcu/ToiletAssistance/credentials.h
 pi/pikitchenMonitor/credentials.h
+Qt/credentials.h

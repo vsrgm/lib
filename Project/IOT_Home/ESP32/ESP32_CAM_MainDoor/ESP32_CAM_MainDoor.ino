@@ -31,7 +31,7 @@
 #include "soc/soc.h"
 #include "soc/rtc_cntl_reg.h"
 
-const String SW_VERSION = "1.0.416";
+const String SW_VERSION = "1.0.436";
 WiFiUDP udpDiscovery;
 const int UDP_DISCOVERY_PORT = 8888;
 
@@ -662,6 +662,234 @@ void setupFirebase() {
   Serial.println("[Firebase] Initialized with BSSL buffers");
 }
 
+void printSerialMenu() {
+  Serial.println("\n========================================");
+  Serial.println("    ESP32 Interactive Serial Interface  ");
+  Serial.println("========================================");
+  Serial.println(" 1. L - Turn on/off onboard led");
+  Serial.println(" 2. D - Detect i2c slave devices (linux style)");
+  Serial.println(" 3. R - Read i2c (R <Slaveaddress> <address> <bytes to read>)");
+  Serial.println(" 4. W - Write i2c (W <Slave address> <address> <data>)");
+  Serial.println("    M - Show this menu");
+  Serial.println("========================================\n");
+}
+
+uint32_t parseNumToken(const String& str) {
+  String s = str;
+  s.trim();
+  if (s.startsWith("0x") || s.startsWith("0X")) {
+    return (uint32_t) strtol(s.c_str(), NULL, 16);
+  }
+  for (size_t i = 0; i < s.length(); i++) {
+    char c = s.charAt(i);
+    if ((c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
+      return (uint32_t) strtol(s.c_str(), NULL, 16);
+    }
+  }
+  return (uint32_t) strtol(s.c_str(), NULL, 10);
+}
+
+int tokenizeLine(const String& str, String tokens[], int maxTokens) {
+  int count = 0;
+  int start = 0;
+  int len = str.length();
+  while (start < len && count < maxTokens) {
+    while (start < len && isspace(str.charAt(start))) start++;
+    if (start >= len) break;
+    int end = start;
+    while (end < len && !isspace(str.charAt(end))) end++;
+    tokens[count++] = str.substring(start, end);
+    start = end;
+  }
+  return count;
+}
+
+void detectI2CDevices() {
+  Serial.println("\n--- I2C Device Scanner (Linux i2cdetect style) ---");
+  Serial.println("     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f");
+  for (uint8_t row = 0; row < 128; row += 16) {
+    Serial.printf("%02x:", row);
+    for (uint8_t col = 0; col < 16; col++) {
+      uint8_t address = row + col;
+      if (address < 0x03 || address > 0x77) {
+        Serial.print("   ");
+        continue;
+      }
+      Wire.beginTransmission(address);
+      byte error = Wire.endTransmission();
+      if (error == 0) {
+        Serial.printf(" %02x", address);
+      } else if (error == 4) {
+        Serial.print(" ER");
+      } else {
+        Serial.print(" --");
+      }
+    }
+    Serial.println();
+  }
+  Serial.println("---------------------------------------------------\n");
+}
+
+void executeI2CRead(const String tokens[], int count) {
+  if (count < 2) {
+    Serial.println("[Usage] R <Slaveaddress> <address> <bytes to read>");
+    Serial.println("        Example: R 0x27 0x00 1   or   R 0x76 0xD0 2");
+    return;
+  }
+
+  uint8_t slaveAddr = parseNumToken(tokens[1]);
+
+  if (count == 2) {
+    uint16_t bytesToRead = 1;
+    Serial.printf("[I2C Direct Read] Slave: 0x%02X (%d), Bytes: %d\n", slaveAddr, slaveAddr, bytesToRead);
+    uint8_t countRead = Wire.requestFrom((uint8_t)slaveAddr, (uint8_t)bytesToRead);
+    if (countRead == 0) {
+      Serial.println("[I2C Error] No bytes received from slave device.");
+      return;
+    }
+    for (uint16_t i = 0; i < countRead; i++) {
+      if (Wire.available()) {
+        uint8_t b = Wire.read();
+        Serial.printf("  [Byte %d] = 0x%02X (%3d, 0b", i, b, b);
+        for (int bit = 7; bit >= 0; bit--) {
+          Serial.print((b & (1 << bit)) ? '1' : '0');
+        }
+        Serial.println(")");
+      }
+    }
+    return;
+  }
+
+  uint8_t regAddr = parseNumToken(tokens[2]);
+  uint16_t bytesToRead = (count >= 4) ? parseNumToken(tokens[3]) : 1;
+
+  Serial.printf("[I2C Read] Slave: 0x%02X (%d), Reg: 0x%02X (%d), Bytes: %d\n",
+                slaveAddr, slaveAddr, regAddr, regAddr, bytesToRead);
+
+  Wire.beginTransmission(slaveAddr);
+  Wire.write(regAddr);
+  byte err = Wire.endTransmission(false);
+  if (err != 0) {
+    Wire.beginTransmission(slaveAddr);
+    Wire.write(regAddr);
+    err = Wire.endTransmission(true);
+  }
+
+  if (err != 0) {
+    Serial.printf("[I2C Error] NACK / Error writing reg 0x%02X (Code %d)\n", regAddr, err);
+    return;
+  }
+
+  uint8_t countRead = Wire.requestFrom((uint8_t)slaveAddr, (uint8_t)bytesToRead);
+  if (countRead == 0) {
+    Serial.println("[I2C Error] No response / 0 bytes received.");
+    return;
+  }
+
+  Serial.printf("Received %d byte(s):\n", countRead);
+  for (uint16_t i = 0; i < countRead; i++) {
+    if (Wire.available()) {
+      uint8_t b = Wire.read();
+      Serial.printf("  [Reg 0x%02X / +%d] = 0x%02X (%3d, 0b", regAddr + i, i, b, b);
+      for (int bit = 7; bit >= 0; bit--) {
+        Serial.print((b & (1 << bit)) ? '1' : '0');
+      }
+      Serial.println(")");
+    }
+  }
+}
+
+void executeI2CWrite(const String tokens[], int count) {
+  if (count < 3) {
+    Serial.println("[Usage] W <Slave address> <address> <data>");
+    Serial.println("        Example: W 0x27 0x00 0xFF   or   W 0x27 0xFF");
+    return;
+  }
+
+  uint8_t slaveAddr = parseNumToken(tokens[1]);
+
+  if (count == 3) {
+    uint8_t dataVal = parseNumToken(tokens[2]);
+    Serial.printf("[I2C Direct Write] Slave: 0x%02X (%d), Data: 0x%02X (%d)\n",
+                  slaveAddr, slaveAddr, dataVal, dataVal);
+    Wire.beginTransmission(slaveAddr);
+    Wire.write(dataVal);
+    byte err = Wire.endTransmission();
+    if (err == 0) {
+      Serial.println("[I2C Success] Direct write completed.");
+    } else {
+      Serial.printf("[I2C Error] Write failed with code %d\n", err);
+    }
+    return;
+  }
+
+  uint8_t regAddr = parseNumToken(tokens[2]);
+  Serial.printf("[I2C Write] Slave: 0x%02X (%d), Reg: 0x%02X (%d), Data:",
+                slaveAddr, slaveAddr, regAddr, regAddr);
+
+  Wire.beginTransmission(slaveAddr);
+  Wire.write(regAddr);
+  for (int i = 3; i < count; i++) {
+    uint8_t val = parseNumToken(tokens[i]);
+    Wire.write(val);
+    Serial.printf(" 0x%02X", val);
+  }
+  Serial.println();
+
+  byte err = Wire.endTransmission();
+  if (err == 0) {
+    Serial.println("[I2C Success] Write completed successfully.");
+  } else {
+    Serial.printf("[I2C Error] Write failed with code %d (1:buffer, 2:addr NACK, 3:data NACK, 4:other)\n", err);
+  }
+}
+
+void processSerialCommand(const String& line) {
+  String tokens[10];
+  int count = tokenizeLine(line, tokens, 10);
+  if (count == 0) return;
+
+  String cmd = tokens[0];
+  cmd.toUpperCase();
+
+  if (cmd == "1" || cmd == "L") {
+    flashState = !flashState;
+    digitalWrite(FLASH_LED_GPIO, flashState ? HIGH : LOW);
+    Serial.printf("[LED] Onboard Flash LED (GPIO %d) turned %s\n", FLASH_LED_GPIO, flashState ? "ON" : "OFF");
+    publishStatus();
+  } else if (cmd == "2" || cmd == "D") {
+    detectI2CDevices();
+  } else if (cmd == "3" || cmd == "R") {
+    executeI2CRead(tokens, count);
+  } else if (cmd == "4" || cmd == "W") {
+    executeI2CWrite(tokens, count);
+  } else if (cmd == "M" || cmd == "HELP" || cmd == "?") {
+    printSerialMenu();
+  } else {
+    Serial.printf("Unknown command: '%s'. Type 'M' for menu.\n", line.c_str());
+  }
+}
+
+void checkSerialCommands() {
+  static String inputBuffer = "";
+  while (Serial.available() > 0) {
+    char c = (char)Serial.read();
+    if (c == '\r') continue;
+    if (c == '\n') {
+      inputBuffer.trim();
+      if (inputBuffer.length() > 0) {
+        processSerialCommand(inputBuffer);
+      }
+      inputBuffer = "";
+    } else {
+      inputBuffer += c;
+      if (inputBuffer.length() > 256) {
+        inputBuffer = "";
+      }
+    }
+  }
+}
+
 void setup() {
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
 
@@ -825,6 +1053,7 @@ void setup() {
   });
   server.begin();
   setupUdpDiscovery();
+  printSerialMenu();
 
 #ifdef ENABLE_WATCHDOG
   esp_task_wdt_config_t wdt_config = {
@@ -846,6 +1075,7 @@ void loop() {
   ArduinoOTA.handle();
   server.handleClient();
   checkUdpDiscovery();
+  checkSerialCommands();
 #ifdef ENABLE_MQTT
   if (WiFi.status() == WL_CONNECTED) {
     if (!mqttClient.connected()) {

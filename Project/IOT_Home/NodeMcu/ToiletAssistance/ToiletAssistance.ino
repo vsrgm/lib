@@ -50,7 +50,7 @@ String mqttClientId = "ToiletAssistance_" + String(ESP.getChipId(), HEX);
 String statusTopic = "FrmEsp32/toilet/status";
 String cmdTopic = "FrmMobile/toilet/command";
 
-const String SW_VERSION = "1.0.416";
+const String SW_VERSION = "1.0.436";
 
 WiFiUDP udpDiscovery;
 const int UDP_DISCOVERY_PORT = 8888;

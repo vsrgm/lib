@@ -453,11 +453,16 @@ else {
 
     private void updateDiscoveryStatus() {
         runOnUiThread(() -> {
-            int count = discoveredNodes.size();
-            if (count == 0) {
-                binding.availableNodesInfo.setText(" (Searching...)");
+            String savedIp = LocalDiscoveryManager.getDeviceIp(prefs, "study");
+            if (syncMode == 1 && !savedIp.isEmpty()) {
+                binding.availableNodesInfo.setText(" (" + savedIp + ")");
             } else {
-                binding.availableNodesInfo.setText(" (" + count + " Available)");
+                int count = discoveredNodes.size();
+                if (count == 0) {
+                    binding.availableNodesInfo.setText(" (Searching...)");
+                } else {
+                    binding.availableNodesInfo.setText(" (" + count + " Available)");
+                }
             }
         });
     }

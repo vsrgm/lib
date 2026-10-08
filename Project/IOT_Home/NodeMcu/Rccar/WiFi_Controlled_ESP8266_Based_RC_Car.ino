@@ -1,8 +1,52 @@
 #include <ESP8266WiFi.h>
+#include <WiFiUdp.h>
 #include <ESP8266WebServer.h>
 #include <ArduinoOTA.h>
 #include <Firebase_ESP_Client.h>
 #include "credentials.h"
+
+const String SW_VERSION = "1.0.416";
+WiFiUDP udpDiscovery;
+const int UDP_DISCOVERY_PORT = 8888;
+
+void setupUdpDiscovery() {
+  udpDiscovery.begin(UDP_DISCOVERY_PORT);
+}
+
+void checkUdpDiscovery() {
+  if (WiFi.status() != WL_CONNECTED) return;
+
+  int packetSize = udpDiscovery.parsePacket();
+  if (packetSize) {
+    char buf[255];
+    int len = udpDiscovery.read(buf, sizeof(buf) - 1);
+    if (len > 0) buf[len] = 0;
+    String msg = String(buf);
+    msg.trim();
+    if (msg == "DISCOVER" || msg.indexOf("DISCOVER") != -1) {
+      IPAddress remoteIp = udpDiscovery.remoteIP();
+      uint16_t remotePort = udpDiscovery.remotePort();
+      if (remotePort == 0) remotePort = UDP_DISCOVERY_PORT;
+
+      String response = "{\"ip\":\"" + WiFi.localIP().toString() + "\",\"id\":\"rccar\",\"name\":\"rccar\",\"ver\":\"" + SW_VERSION + "\"}";
+
+      udpDiscovery.beginPacket(remoteIp, remotePort);
+      udpDiscovery.print(response);
+      udpDiscovery.endPacket();
+
+      if (remotePort != UDP_DISCOVERY_PORT) {
+        udpDiscovery.beginPacket(remoteIp, UDP_DISCOVERY_PORT);
+        udpDiscovery.print(response);
+        udpDiscovery.endPacket();
+      }
+
+      IPAddress broadcastIp = WiFi.broadcastIP();
+      udpDiscovery.beginPacket(broadcastIp, UDP_DISCOVERY_PORT);
+      udpDiscovery.print(response);
+      udpDiscovery.endPacket();
+    }
+  }
+}
 
 int fl = D0;
 int bl = D1;
@@ -50,18 +94,19 @@ void setupFirebase() {
 }
 
 void handleCarCommand(String cmd) {
-  if (cmd == "F") Forward();
-  else if (cmd == "B") Backward();
-  else if (cmd == "R") TurnRight();
-  else if (cmd == "L") TurnLeft();
-  else if (cmd == "G") ForwardLeft();
-  else if (cmd == "H") BackwardLeft();
-  else if (cmd == "I") ForwardRight();
-  else if (cmd == "J") BackwardRight();
-  else if (cmd == "S") Stop();
-  else if (cmd == "V") BeepHorn();
-  else if (cmd == "W") TurnLightOn();
-  else if (cmd == "w") TurnLightOff();
+  cmd.toUpperCase();
+  if (cmd == "F" || cmd == "FORWARD") Forward();
+  else if (cmd == "B" || cmd == "BACKWARD") Backward();
+  else if (cmd == "R" || cmd == "RIGHT" || cmd == "TURNRIGHT") TurnRight();
+  else if (cmd == "L" || cmd == "LEFT" || cmd == "TURNLEFT") TurnLeft();
+  else if (cmd == "G" || cmd == "FORWARDLEFT") ForwardLeft();
+  else if (cmd == "H" || cmd == "BACKWARDLEFT") BackwardLeft();
+  else if (cmd == "I" || cmd == "FORWARDRIGHT") ForwardRight();
+  else if (cmd == "J" || cmd == "BACKWARDRIGHT") BackwardRight();
+  else if (cmd == "S" || cmd == "STOP") Stop();
+  else if (cmd == "V" || cmd == "HORN" || cmd == "BEEP") BeepHorn();
+  else if (cmd == "W" || cmd == "LIGHT_ON") TurnLightOn();
+  else if (cmd == "w" || cmd == "LIGHT_OFF") TurnLightOff();
 }
 
 void setup() {
@@ -138,28 +183,35 @@ void setup() {
 
   ESP.wdtEnable(WDTO_8S);
   setupFirebase();
+  setupUdpDiscovery();
 }
 
 void loop() {
   ESP.wdtFeed();
+  checkUdpDiscovery();
   ArduinoOTA.handle();    // listen for update OTA request from clients
   server.handleClient();  // listen for HTTP requests from clients
-
-  command = server.arg("State");  // check HTPP request, if has arguments "State" then saved the value
-  if (command != "") handleCarCommand(command);
 }
 
 // function prototypes for HTTP handlers
 void HTTP_handleRoot(void) {
-  server.send(200, "text/html", "");  // Send HTTP status 200 (Ok) and send some text to the browser/client
+  String response = "{\"ip\":\"" + WiFi.localIP().toString() + "\",\"id\":\"rccar\",\"name\":\"rccar\",\"ver\":\"" + SW_VERSION + "\"}";
+  server.send(200, "application/json", response);
 
+  String cmd = "";
   if (server.hasArg("State")) {
-    Serial.println(server.arg("State"));
+    cmd = server.arg("State");
+  } else if (server.hasArg("cmd")) {
+    cmd = server.arg("cmd");
+  }
+  if (cmd != "") {
+    Serial.println("HTTP Command Received: " + cmd);
+    handleCarCommand(cmd);
   }
 }
 
 void handleNotFound() {
-  server.send(404, "text/plain", "404: Not found");  // Send HTTP status 404 (Not Found) when there's no handler for the URI in the request
+  HTTP_handleRoot();
 }
 
 // function to move forward

@@ -408,20 +408,41 @@ QTextEdit { background-color: #12121c; color: #00ff66; font-family: monospace; b
         <item>
          <layout class="QVBoxLayout" name="vboxExhaustLeft">
           <item>
-           <widget class="QGroupBox" name="grpExhaustStatus"><property name="title"><string>Exhaust &amp; Smoke Telemetry</string></property>
+           <widget class="QGroupBox" name="grpExhaustStatus"><property name="title"><string>Kitchen Exhaust Fan Telemetry</string></property>
             <layout class="QFormLayout" name="formExhaustSensors">
-             <item row="0" column="0"><widget class="QLabel" name="ex1"><property name="text"><string>MQ2 Smoke Analog:</string></property></widget></item>
-             <item row="0" column="1"><widget class="QLabel" name="lblExhaustSmokeAnalog"><property name="text"><string>0</string></property></widget></item>
-             <item row="1" column="0"><widget class="QLabel" name="ex2"><property name="text"><string>MQ2 Smoke Digital:</string></property></widget></item>
-             <item row="1" column="1"><widget class="QLabel" name="lblExhaustSmokeDigital"><property name="text"><string>NORMAL</string></property></widget></item>
-             <item row="2" column="0"><widget class="QLabel" name="ex3"><property name="text"><string>Fan Relay Status:</string></property></widget></item>
-             <item row="2" column="1"><widget class="QLabel" name="lblExhaustFanStatus"><property name="text"><string>OFF</string></property></widget></item>
-             <item row="3" column="0"><widget class="QLabel" name="ex4"><property name="text"><string>Buzzer Alarm Status:</string></property></widget></item>
-             <item row="3" column="1"><widget class="QLabel" name="lblExhaustBuzzerStatus"><property name="text"><string>OFF</string></property></widget></item>
-             <item row="4" column="0"><widget class="QLabel" name="lblExNodeIpTitle"><property name="text"><string>Connected Node IP:</string></property></widget></item>
-             <item row="4" column="1"><widget class="QLabel" name="lblExhaustNodeIp"><property name="text"><string>--</string></property></widget></item>
-             <item row="5" column="0"><widget class="QLabel" name="lblExLastSyncTitle"><property name="text"><string>Last Synced:</string></property></widget></item>
-             <item row="5" column="1"><widget class="QLabel" name="lblExhaustLastSync"><property name="text"><string>Never</string></property></widget></item>
+             <item row="0" column="0"><widget class="QLabel" name="ex1"><property name="text"><string>Exhaust Fan:</string></property></widget></item>
+             <item row="0" column="1">
+              <layout class="QHBoxLayout" name="layExFan">
+               <item><widget class="QCheckBox" name="chkExhaustFan"><property name="text"><string></string></property></widget></item>
+               <item><widget class="QLabel" name="lblExhaustFanStatus"><property name="text"><string>OFF</string></property><property name="styleSheet"><string>color: #8E24AA; font-weight: bold;</string></property></widget></item>
+              </layout>
+             </item>
+             <item row="1" column="0"><widget class="QLabel" name="ex2"><property name="text"><string>Buzzer:</string></property></widget></item>
+             <item row="1" column="1">
+              <layout class="QHBoxLayout" name="layExBuzzer">
+               <item><widget class="QCheckBox" name="chkExhaustBuzzer"><property name="text"><string></string></property></widget></item>
+               <item><widget class="QLabel" name="lblExhaustBuzzerStatus"><property name="text"><string>OFF</string></property><property name="styleSheet"><string>color: #8E24AA; font-weight: bold;</string></property></widget></item>
+              </layout>
+             </item>
+             <item row="2" column="0"><widget class="QLabel" name="ex3"><property name="text"><string>Gas Level (Analog):</string></property></widget></item>
+             <item row="2" column="1"><widget class="QLabel" name="lblExhaustSmokeAnalog"><property name="text"><string>0</string></property><property name="styleSheet"><string>color: #8E24AA; font-weight: bold;</string></property></widget></item>
+             <item row="3" column="0"><widget class="QLabel" name="ex4"><property name="text"><string>Smoke Detection:</string></property></widget></item>
+             <item row="3" column="1"><widget class="QLabel" name="lblExhaustSmokeDigital"><property name="text"><string>NORMAL</string></property><property name="styleSheet"><string>color: #8E24AA; font-weight: bold;</string></property></widget></item>
+             <item row="4" column="0"><widget class="QLabel" name="ex5"><property name="text"><string>LDR Light Sensor:</string></property></widget></item>
+             <item row="4" column="1"><widget class="QLabel" name="lblExhaustLdr"><property name="text"><string>LIGHT</string></property><property name="styleSheet"><string>color: #8E24AA; font-weight: bold;</string></property></widget></item>
+             <item row="5" column="0"><widget class="QLabel" name="ex6"><property name="text"><string>Manual Toggle Switch:</string></property></widget></item>
+             <item row="5" column="1"><widget class="QLabel" name="lblExhaustUserSw"><property name="text"><string>State 2</string></property><property name="styleSheet"><string>color: #8E24AA; font-weight: bold;</string></property></widget></item>
+             <item row="6" column="0"><widget class="QLabel" name="ex7"><property name="text"><string>Manual Override:</string></property></widget></item>
+             <item row="6" column="1">
+              <layout class="QHBoxLayout" name="layExOverride">
+               <item><widget class="QCheckBox" name="chkExhaustOverride"><property name="text"><string></string></property></widget></item>
+               <item><widget class="QLabel" name="lblExhaustOverrideVal"><property name="text"><string>OFF</string></property><property name="styleSheet"><string>color: #8E24AA; font-weight: bold;</string></property></widget></item>
+              </layout>
+             </item>
+             <item row="7" column="0"><widget class="QLabel" name="lblExNodeIpTitle"><property name="text"><string>Connected Node IP:</string></property></widget></item>
+             <item row="7" column="1"><widget class="QLabel" name="lblExhaustNodeIp"><property name="text"><string>--</string></property></widget></item>
+             <item row="8" column="0"><widget class="QLabel" name="lblExLastSyncTitle"><property name="text"><string>Last Synced:</string></property></widget></item>
+             <item row="8" column="1"><widget class="QLabel" name="lblExhaustLastSync"><property name="text"><string>Never</string></property></widget></item>
             </layout>
            </widget>
           </item>
@@ -438,7 +459,6 @@ QTextEdit { background-color: #12121c; color: #00ff66; font-family: monospace; b
             </layout>
            </widget>
           </item>
-          <item><widget class="QCheckBox" name="chkExhaustOverride"><property name="text"><string>Manual Override</string></property></widget></item>
           <item><widget class="QPushButton" name="btnExhaustSync"><property name="text"><string>SYNC Now</string></property></widget></item>
          </layout>
         </item>

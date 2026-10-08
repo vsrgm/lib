@@ -1,6 +1,8 @@
 #ifndef FMT_CONVERT_H
 #define FMT_CONVERT_H
 
+#include <stdint.h>
+
 int32_t convert_bgr888_rgb888(uint8_t *src_buffer, uint8_t *dest_buffer,
         uint32_t width, uint32_t height);
 int32_t convert_y8_rgb888(uint8_t* yuyv_buffer,uint8_t* rgb888, uint32_t width, uint32_t height);
@@ -17,6 +19,10 @@ int32_t convert_bayer_gen_rgb24(uint16_t *src_buffer, uint8_t *dest_buffer, int3
 int32_t convert_yuy422p_rgb888(uint8_t* yuyv_buffer,uint8_t* rgb888, uint32_t width, uint32_t height);
 int32_t convert_rgb555_888(uint8_t* rgb565,uint8_t* rgb888, uint32_t width, uint32_t height, int32_t start_with);
 int32_t convert_rgb565_888(uint8_t* rgb565,uint8_t* rgb888, uint32_t width, uint32_t height, int32_t start_with);
+int32_t convert_rgb444_888(uint8_t* rgb444, uint8_t* rgb888, uint32_t width, uint32_t height);
+int32_t convert_fisheye_undistort_rgb24(const uint8_t *source, uint8_t *destination,
+        uint32_t width, uint32_t height, double fx, double fy, double cx, double cy,
+        double k1, double k2, double k3, double k4);
 int32_t convert_yuy420p_rgb888(uint8_t* yuyv_buffer,uint8_t* rgb888, uint32_t width, uint32_t height);
 int32_t convert_nv12_rgb888(uint8_t* yuyv_buffer,uint8_t* rgb888, uint32_t width, uint32_t height);
 int32_t convert_argb32_rgb(uint8_t *src_buffer, uint8_t *des_buffer, int32_t width, int32_t height);

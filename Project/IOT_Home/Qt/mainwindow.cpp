@@ -29,7 +29,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     streamTimer = new QTimer(this);
     connect(streamTimer, &QTimer::timeout, this, &MainWindow::onStreamTimerTimeout);
-    streamTimer->start(1500);
+    streamTimer->start(500);
 
     connect(ui->rbMqtt, &QRadioButton::toggled, this, &MainWindow::on_syncModeChanged);
     connect(ui->rbLocalIp, &QRadioButton::toggled, this, &MainWindow::on_syncModeChanged);
@@ -321,6 +321,9 @@ void MainWindow::mapDiscoveredDevice(const QString &name, const QString &ip)
         ui->txtIpBed->setText(ip);
         ui->lblDashBedIp->setText("IP: " + ip);
         logMessage("MAPPED", "Mapped Bed Room -> " + ip);
+    } else if (idLower.contains("rccar") || idLower.contains("rc_car") || idLower.contains("car")) {
+        discoveredNodes["rccar"] = ip;
+        logMessage("MAPPED", "Mapped RC Car -> " + ip);
     }
     saveSettings();
 }
@@ -335,35 +338,79 @@ QString MainWindow::getIpForNode(const QString &nodeKey)
     if (nodeKey == "ro_pump") return ui->txtIpRo->text().trimmed();
     if (nodeKey == "door") return ui->txtIpDoor->text().trimmed();
     if (nodeKey == "pi_kitchen") return ui->txtIpPi->text().trimmed();
+    if (nodeKey == "rccar") return discoveredNodes.value("rccar", "");
     return "";
+}
+
+QString MainWindow::getFirebaseStatusPath(const QString &nodeKey)
+{
+    if (nodeKey == "kitchen") return "FrmEsp32/kitchen";
+    if (nodeKey == "exhaust") return "FrmNodeMcu/kitchen_fan";
+    if (nodeKey == "door") return "FrmEsp32/Securitymaindoor";
+    if (nodeKey == "toilet") return "FrmEsp32/toilet";
+    if (nodeKey == "study") return "FrmNodeMcu/study";
+    if (nodeKey == "bedroom") return "FrmNodeMcu/bedroom";
+    if (nodeKey == "ro_pump") return "FrmNodeMcu/ro_pump";
+    if (nodeKey == "pi_kitchen") return "FrmMobile/pi_kitchen";
+    if (nodeKey == "rccar") return "FrmEsp32/rccar";
+    return "FrmNodeMcu/" + nodeKey;
+}
+
+QString MainWindow::getFirebaseCommandPath(const QString &nodeKey)
+{
+    if (nodeKey == "kitchen") return "FrmMobile/kitchen";
+    if (nodeKey == "exhaust") return "FrmMobile/kitchen_fan";
+    if (nodeKey == "door") return "FrmMobile/main_door";
+    if (nodeKey == "toilet") return "FrmMobile/toilet";
+    if (nodeKey == "study") return "FrmMobile/study";
+    if (nodeKey == "bedroom") return "FrmMobile/bedroom";
+    if (nodeKey == "ro_pump") return "FrmMobile/ro_pump";
+    if (nodeKey == "pi_kitchen") return "FrmMobile/pi_kitchen";
+    if (nodeKey == "rccar") return "FrmEsp32/rccar";
+    return "FrmMobile/" + nodeKey;
 }
 
 void MainWindow::fetchNodeStatus(const QString &nodeKey)
 {
-    QString ip = getIpForNode(nodeKey);
-    if (ip.isEmpty()) return;
-
     QUrl url;
     if (syncMode == 1) { // Local IP
+        QString ip = getIpForNode(nodeKey);
+        if (ip.isEmpty()) return;
         url = QUrl(QString("http://%1/status").arg(ip));
     } else if (syncMode == 2) { // Firebase
         QString baseUrl = ui->txtFirebaseUrl->text().trimmed();
-        url = QUrl(QString("%1/FrmNodeMcu/%2/status.json").arg(baseUrl, nodeKey));
+        if (baseUrl.endsWith("/")) baseUrl.chop(1);
+        if (baseUrl.isEmpty()) return;
+        QString secret = settings->value("firebase_secret", FIREBASE_SECRET).toString().trimmed();
+        QString path = getFirebaseStatusPath(nodeKey);
+        url = QUrl(QString("%1/%2/status.json?auth=%3").arg(baseUrl, path, secret));
     } else {
         return;
     }
 
     QNetworkRequest request(url);
+    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
     request.setTransferTimeout(3000);
     QNetworkReply *reply = networkManager->get(request);
 
     connect(reply, &QNetworkReply::finished, [this, reply, nodeKey]() {
         if (reply->error() == QNetworkReply::NoError) {
-            QByteArray data = reply->readAll();
+            QByteArray data = reply->readAll().trimmed();
+            if (data.startsWith('"') && data.endsWith('"')) {
+                QString strData = QString::fromUtf8(data);
+                strData = strData.mid(1, strData.length() - 2);
+                strData.replace("\\\"", "\"");
+                strData.replace("\\\\", "\\");
+                data = strData.toUtf8();
+            }
             QJsonDocument doc = QJsonDocument::fromJson(data);
             if (!doc.isNull() && doc.isObject()) {
                 parseStatusJson(nodeKey, doc.object());
+            } else {
+                logMessage(nodeKey, "Invalid JSON received: " + QString::fromUtf8(data));
             }
+        } else {
+            logMessage(nodeKey, "Fetch status error: " + reply->errorString());
         }
         reply->deleteLater();
     });
@@ -371,25 +418,33 @@ void MainWindow::fetchNodeStatus(const QString &nodeKey)
 
 void MainWindow::sendNodeCommand(const QString &nodeKey, const QString &cmd)
 {
-    QString ip = getIpForNode(nodeKey);
-    if (syncMode == 1 && !ip.isEmpty()) { // Local IP
+    if (syncMode == 1) { // Local IP
+        QString ip = getIpForNode(nodeKey);
+        if (ip.isEmpty()) return;
         QUrl url;
         if (cmd.startsWith("CONFIG:")) {
             url = QUrl(QString("http://%1/config").arg(ip));
             QNetworkRequest request(url);
+            request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
             request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
             QByteArray body = cmd.mid(7).toUtf8();
             networkManager->post(request, body);
         } else {
             url = QUrl(QString("http://%1/control?cmd=%2").arg(ip, cmd));
             QNetworkRequest request(url);
+            request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
             networkManager->get(request);
         }
         logMessage(nodeKey, "Sent IP Cmd: " + cmd);
     } else if (syncMode == 2) { // Firebase
         QString baseUrl = ui->txtFirebaseUrl->text().trimmed();
-        QUrl url(QString("%1/FrmMobile/%2/command.json").arg(baseUrl, nodeKey));
+        if (baseUrl.endsWith("/")) baseUrl.chop(1);
+        if (baseUrl.isEmpty()) return;
+        QString secret = settings->value("firebase_secret", "1q2w3e4r%T").toString().trimmed();
+        QString path = getFirebaseCommandPath(nodeKey);
+        QUrl url(QString("%1/%2/command.json?auth=%3").arg(baseUrl, path, secret));
         QNetworkRequest request(url);
+        request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
         request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
         QByteArray body = QString("\"%1\"").arg(cmd).toUtf8();
         networkManager->put(request, body);
@@ -400,16 +455,21 @@ void MainWindow::sendNodeCommand(const QString &nodeKey, const QString &cmd)
 void MainWindow::updateCameraStream(const QString &nodeKey, QLabel *targetLabel)
 {
     QString ip = getIpForNode(nodeKey);
-    if (ip.isEmpty() || !targetLabel) return;
+    if (!targetLabel) return;
 
     QUrl url;
-    if (syncMode == 1) { // Local IP
-        url = QUrl(QString("http://%1/capture").arg(ip));
-    } else if (syncMode == 2) { // Firebase Cloud
+    if (syncMode == 2) { // Firebase Cloud
         QString baseUrl = ui->txtFirebaseUrl->text().trimmed();
-        url = QUrl(QString("%1/FrmEsp32/%2/status.json").arg(baseUrl, nodeKey == "door" ? "door" : nodeKey));
-    } else {
-        return;
+        if (baseUrl.endsWith("/")) baseUrl.chop(1);
+        QString secret = settings->value("firebase_secret", "1q2w3e4r%T").toString().trimmed();
+        if (nodeKey == "door") {
+            url = QUrl(QString("%1/FrmEsp32/Securitymaindoor/last_image.json?auth=%2").arg(baseUrl, secret));
+        } else {
+            url = QUrl(QString("%1/FrmEsp32/%2/status.json?auth=%3").arg(baseUrl, nodeKey, secret));
+        }
+    } else { // Local IP Mode (or fallback when IP is present)
+        if (ip.isEmpty()) return;
+        url = QUrl(QString("http://%1/capture").arg(ip));
     }
 
     QNetworkRequest request(url);
@@ -421,12 +481,22 @@ void MainWindow::updateCameraStream(const QString &nodeKey, QLabel *targetLabel)
             QByteArray data = reply->readAll();
             QPixmap pixmap;
             if (currentSyncMode == 2) { // Firebase
-                QJsonDocument doc = QJsonDocument::fromJson(data);
-                if (!doc.isNull() && doc.isObject()) {
-                    QJsonObject obj = doc.object();
-                    if (obj.contains("base64")) {
-                        QByteArray imgBytes = QByteArray::fromBase64(obj["base64"].toString().toUtf8());
-                        pixmap.loadFromData(imgBytes);
+                QString strData = QString::fromUtf8(data).trimmed();
+                if (strData.startsWith("\"")) strData = strData.mid(1);
+                if (strData.endsWith("\"")) strData = strData.left(strData.length() - 1);
+
+                QByteArray imgBytes = QByteArray::fromBase64(strData.toUtf8());
+                pixmap.loadFromData(imgBytes);
+
+                if (pixmap.isNull()) {
+                    QJsonDocument doc = QJsonDocument::fromJson(data);
+                    if (!doc.isNull() && doc.isObject()) {
+                        QJsonObject obj = doc.object();
+                        if (obj.contains("last_image")) {
+                            pixmap.loadFromData(QByteArray::fromBase64(obj["last_image"].toString().toUtf8()));
+                        } else if (obj.contains("base64")) {
+                            pixmap.loadFromData(QByteArray::fromBase64(obj["base64"].toString().toUtf8()));
+                        }
                     }
                 }
             } else {
@@ -444,6 +514,16 @@ void MainWindow::updateCameraStream(const QString &nodeKey, QLabel *targetLabel)
 void MainWindow::onPeriodicTimerTimeout()
 {
     if (syncMode == 1 || syncMode == 2) {
+        // Send periodic heartbeat to keep NodeMCU/ESP32 streaming and active
+        sendNodeCommand("exhaust", "HEARTBEAT");
+        sendNodeCommand("kitchen", "HEARTBEAT");
+        sendNodeCommand("study", "HEARTBEAT");
+        sendNodeCommand("bedroom", "HEARTBEAT");
+        sendNodeCommand("toilet", "HEARTBEAT");
+        sendNodeCommand("ro_pump", "HEARTBEAT");
+        sendNodeCommand("door", "HEARTBEAT");
+
+        // Fetch latest status
         fetchNodeStatus("study");
         fetchNodeStatus("bedroom");
         fetchNodeStatus("kitchen");
@@ -451,6 +531,7 @@ void MainWindow::onPeriodicTimerTimeout()
         fetchNodeStatus("toilet");
         fetchNodeStatus("ro_pump");
         fetchNodeStatus("door");
+        fetchNodeStatus("pi_kitchen");
     }
 }
 
@@ -501,6 +582,16 @@ void MainWindow::parseStatusJson(const QString &nodeKey, const QJsonObject &json
     QString nowStr = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss");
     ui->lblLastSync->setText("Last Synced: " + nowStr);
 
+    if (json.contains("ip")) {
+        QString discoveredIp = json.value("ip").toString().trimmed();
+        if (!discoveredIp.isEmpty() && discoveredIp != "0.0.0.0") {
+            QString searchKey = nodeKey;
+            if (nodeKey == "exhaust") searchKey = "kitchen_fan exhaust";
+            else if (nodeKey == "kitchen") searchKey = "kitchen";
+            mapDiscoveredDevice(searchKey + " " + json.value("id").toString() + " " + json.value("name").toString(), discoveredIp);
+        }
+    }
+
     if (nodeKey == "study") updateStudyRoomUi(json);
     else if (nodeKey == "bedroom") updateBedRoomUi(json);
     else if (nodeKey == "kitchen") updateKitchenUi(json);
@@ -518,16 +609,40 @@ void MainWindow::updateStudyRoomUi(const QJsonObject &json)
     double hum = json.value("hum").toDouble();
     int ldr = json.value("ldr").toInt();
     int heap = json.value("heap").toInt();
+    bool light = json.value("light").toBool();
+    bool buzzer = json.value("buzzer").toBool();
+    bool overrideState = json.value("override").toBool();
+    bool irRecv = json.value("ir_recv").toBool();
+
+    QString ip = json.value("ip").toString();
+    if (ip.isEmpty()) ip = getIpForNode("study");
+
     QString now = QDateTime::currentDateTime().toString("HH:mm:ss");
 
     ui->lblStudyTemp->setText(QString::number(temp, 'f', 1) + " °C");
     ui->lblStudyHum->setText(QString::number(hum, 'f', 1) + " %");
     ui->lblStudyLdr->setText(QString::number(ldr));
     ui->lblStudyHeap->setText(QString::number(heap) + " bytes");
-    ui->lblStudyNodeIp->setText(getIpForNode("study"));
+    ui->lblStudyNodeIp->setText(ip);
     ui->lblStudyLastSync->setText(now);
 
-    ui->lblDashStudyIp->setText("IP: " + getIpForNode("study"));
+    ui->chkStudyOverride->blockSignals(true);
+    ui->chkStudyOverride->setChecked(overrideState);
+    ui->chkStudyOverride->blockSignals(false);
+
+    ui->chkStudyLight->blockSignals(true);
+    ui->chkStudyLight->setChecked(light);
+    ui->chkStudyLight->blockSignals(false);
+
+    ui->chkStudyBuzzer->blockSignals(true);
+    ui->chkStudyBuzzer->setChecked(buzzer);
+    ui->chkStudyBuzzer->blockSignals(false);
+
+    ui->chkStudyIrRecv->blockSignals(true);
+    ui->chkStudyIrRecv->setChecked(irRecv);
+    ui->chkStudyIrRecv->blockSignals(false);
+
+    ui->lblDashStudyIp->setText("IP: " + ip);
     ui->lblDashStudyStatus->setText(QString("Temp: %1 °C | Hum: %2 % | Light: %3")
                                     .arg(QString::number(temp, 'f', 1), QString::number(hum, 'f', 1), QString::number(ldr)));
 
@@ -551,17 +666,37 @@ void MainWindow::updateBedRoomUi(const QJsonObject &json)
     double temp = json.value("temp").toDouble();
     double hum = json.value("hum").toDouble();
     int gasA = json.value("gas_a").toInt();
-    bool pir = json.value("pir").toBool();
+    if (!json.contains("gas_a") && json.contains("mq135")) gasA = json.value("mq135").toInt();
+
+    bool pir = false;
+    if (json.contains("pir")) {
+        if (json.value("pir").isBool()) pir = json.value("pir").toBool();
+        else pir = (json.value("pir").toInt() == 1) || (json.value("pir").toString() == "ACTIVE") || (json.value("pir").toString() == "Motion");
+    }
+
+    bool overrideState = false;
+    if (json.contains("override")) {
+        if (json.value("override").isBool()) overrideState = json.value("override").toBool();
+        else overrideState = (json.value("override").toString() == "ON") || (json.value("override").toInt() == 1);
+    }
+
+    QString ip = json.value("ip").toString();
+    if (ip.isEmpty()) ip = getIpForNode("bedroom");
+
     QString now = QDateTime::currentDateTime().toString("HH:mm:ss");
 
     ui->lblBedTemp->setText(QString::number(temp, 'f', 1) + " °C");
     ui->lblBedHum->setText(QString::number(hum, 'f', 1) + " %");
     ui->lblBedMq135Analog->setText(QString::number(gasA));
     ui->lblBedPir->setText(pir ? "ACTIVE" : "Clear");
-    ui->lblBedNodeIp->setText(getIpForNode("bedroom"));
+    ui->lblBedNodeIp->setText(ip);
     ui->lblBedLastSync->setText(now);
 
-    ui->lblDashBedIp->setText("IP: " + getIpForNode("bedroom"));
+    ui->chkBedOverride->blockSignals(true);
+    ui->chkBedOverride->setChecked(overrideState);
+    ui->chkBedOverride->blockSignals(false);
+
+    ui->lblDashBedIp->setText("IP: " + ip);
     ui->lblDashBedStatus->setText(QString("Temp: %1 °C | Gas: %2 | PIR: %3")
                                   .arg(QString::number(temp, 'f', 1)).arg(gasA).arg(pir ? "Motion" : "Clear"));
 
@@ -590,13 +725,50 @@ void MainWindow::on_btnSendCustomIr_clicked() {
 // ---------------- Kitchen ----------------
 void MainWindow::updateKitchenUi(const QJsonObject &json)
 {
-    bool pir = json.value("pir").toBool();
-    bool gasD = json.value("gas_d").toBool();
+    bool pir = false;
+    if (json.contains("pir")) {
+        if (json.value("pir").isBool()) pir = json.value("pir").toBool();
+        else pir = (json.value("pir").toInt() == 1) || (json.value("pir").toString() == "1") || (json.value("pir").toString() == "Motion");
+    }
+
+    bool gasD = false;
+    if (json.contains("gas_d")) {
+        if (json.value("gas_d").isBool()) gasD = json.value("gas_d").toBool();
+        else gasD = (json.value("gas_d").toInt() == 1) || (json.value("gas_d").toString() == "ALERT!");
+    }
+
     int gasA = json.value("gas_a").toInt();
+    if (!json.contains("gas_a") && json.contains("gas_analog")) gasA = json.value("gas_analog").toInt();
+
     double temp1 = json.value("temp_lm358").toDouble();
+    if (!json.contains("temp_lm358") && json.contains("temp")) temp1 = json.value("temp").toDouble();
+
     double temp2 = json.value("temp_bmp").toDouble();
     double pres = json.value("pres").toDouble();
-    bool relay = json.value("relay").toBool();
+
+    bool relay = false;
+    if (json.contains("relay")) {
+        if (json.value("relay").isBool()) relay = json.value("relay").toBool();
+        else relay = (json.value("relay").toInt() == 1) || (json.value("relay").toString() == "ON");
+    }
+
+    bool buzzer = false;
+    if (json.contains("buzzer")) {
+        if (json.value("buzzer").isBool()) buzzer = json.value("buzzer").toBool();
+        else buzzer = (json.value("buzzer").toInt() == 1) || (json.value("buzzer").toString() == "ON");
+    }
+
+    bool overrideState = false;
+    if (json.contains("manual_override")) {
+        if (json.value("manual_override").isBool()) overrideState = json.value("manual_override").toBool();
+        else overrideState = (json.value("manual_override").toString() == "ON") || (json.value("manual_override").toInt() == 1);
+    } else if (json.contains("override")) {
+        overrideState = json.value("override").toBool();
+    }
+
+    QString ip = json.value("ip").toString();
+    if (ip.isEmpty()) ip = getIpForNode("kitchen");
+
     QString now = QDateTime::currentDateTime().toString("HH:mm:ss");
 
     ui->lblKitchenPir->setText(pir ? "Motion" : "Clear");
@@ -605,10 +777,22 @@ void MainWindow::updateKitchenUi(const QJsonObject &json)
     ui->lblKitchenTempLm358->setText(QString::number(temp1, 'f', 1) + " °C");
     ui->lblKitchenTempBmp->setText(QString::number(temp2, 'f', 1) + " °C");
     ui->lblKitchenPres->setText(QString::number(pres, 'f', 1) + " hPa");
-    ui->lblKitchenNodeIp->setText(getIpForNode("kitchen"));
+    ui->lblKitchenNodeIp->setText(ip);
     ui->lblKitchenLastSync->setText(now);
 
-    ui->lblDashKitchenIp->setText("IP: " + getIpForNode("kitchen"));
+    ui->chkKitchenOverride->blockSignals(true);
+    ui->chkKitchenOverride->setChecked(overrideState);
+    ui->chkKitchenOverride->blockSignals(false);
+
+    ui->chkKitchenRelay->blockSignals(true);
+    ui->chkKitchenRelay->setChecked(relay);
+    ui->chkKitchenRelay->blockSignals(false);
+
+    ui->chkKitchenBuzzer->blockSignals(true);
+    ui->chkKitchenBuzzer->setChecked(buzzer);
+    ui->chkKitchenBuzzer->blockSignals(false);
+
+    ui->lblDashKitchenIp->setText("IP: " + ip);
     ui->lblDashKitchenStatus->setText(QString("Gas: %1 | Lamp: %2 | Temp: %3 °C")
                                       .arg(gasD ? "LEAK!" : "Normal").arg(relay ? "ON" : "OFF").arg(QString::number(temp1, 'f', 1)));
 }
@@ -622,26 +806,95 @@ void MainWindow::on_btnKitchenCapture_clicked() { sendNodeCommand("kitchen", "CA
 // ---------------- Exhaust Fan ----------------
 void MainWindow::updateExhaustFanUi(const QJsonObject &json)
 {
-    int smokeA = json.value("smoke_a").toInt();
-    bool smokeD = json.value("smoke_d").toBool();
-    bool fan = json.value("fan").toBool();
-    bool buzzer = json.value("buzzer").toBool();
+    int smokeA = 0;
+    if (json.contains("mq2_a")) smokeA = json.value("mq2_a").toInt();
+    else if (json.contains("smoke_a")) smokeA = json.value("smoke_a").toInt();
+
+    QString smokeD = "NORMAL";
+    if (json.contains("mq2_d")) {
+        smokeD = json.value("mq2_d").isString() ? json.value("mq2_d").toString() : (json.value("mq2_d").toBool() ? "SMOKE" : "CLEAR");
+    } else if (json.contains("smoke_d")) {
+        smokeD = json.value("smoke_d").toBool() ? "ALERT!" : "NORMAL";
+    }
+
+    QString fanStatus = "OFF";
+    bool fanOn = false;
+    if (json.contains("fan")) {
+        if (json.value("fan").isString()) {
+            fanStatus = json.value("fan").toString();
+            fanOn = (fanStatus == "ON");
+        } else {
+            fanOn = json.value("fan").toBool();
+            fanStatus = fanOn ? "ON" : "OFF";
+        }
+    }
+
+    QString buzzerStatus = "OFF";
+    bool buzzerOn = false;
+    if (json.contains("buzzer")) {
+        if (json.value("buzzer").isString()) {
+            buzzerStatus = json.value("buzzer").toString();
+            buzzerOn = (buzzerStatus == "ON");
+        } else {
+            buzzerOn = json.value("buzzer").toBool();
+            buzzerStatus = buzzerOn ? "ON" : "OFF";
+        }
+    }
+
+    bool overrideState = false;
+    if (json.contains("manual")) {
+        if (json.value("manual").isString()) {
+            overrideState = (json.value("manual").toString() == "ON");
+        } else {
+            overrideState = json.value("manual").toBool();
+        }
+    } else if (json.contains("override")) {
+        overrideState = json.value("override").toBool();
+    }
+
+    QString ldrVal = json.value("ldr").toString();
+    if (ldrVal.isEmpty() && json.contains("ldr")) ldrVal = QString::number(json.value("ldr").toInt());
+    if (ldrVal.isEmpty()) ldrVal = "LIGHT";
+
+    QString userSwVal = json.value("user_sw").toString();
+    if (userSwVal.isEmpty()) userSwVal = "State 2";
+
+    QString ip = json.value("ip").toString();
+    if (ip.isEmpty()) ip = getIpForNode("exhaust");
+
     QString now = QDateTime::currentDateTime().toString("HH:mm:ss");
 
     ui->lblExhaustSmokeAnalog->setText(QString::number(smokeA));
-    ui->lblExhaustSmokeDigital->setText(smokeD ? "ALERT!" : "NORMAL");
-    ui->lblExhaustFanStatus->setText(fan ? "ON" : "OFF");
-    ui->lblExhaustBuzzerStatus->setText(buzzer ? "ON" : "OFF");
-    ui->lblExhaustNodeIp->setText(getIpForNode("exhaust"));
+    ui->lblExhaustSmokeDigital->setText(smokeD);
+    ui->lblExhaustFanStatus->setText(fanStatus);
+    ui->lblExhaustBuzzerStatus->setText(buzzerStatus);
+    ui->lblExhaustLdr->setText(ldrVal);
+    ui->lblExhaustUserSw->setText(userSwVal);
+    ui->lblExhaustOverrideVal->setText(overrideState ? "ON" : "OFF");
+    ui->lblExhaustNodeIp->setText(ip);
     ui->lblExhaustLastSync->setText(now);
 
-    ui->lblDashExhaustIp->setText("IP: " + getIpForNode("exhaust"));
-    ui->lblDashExhaustStatus->setText(QString("Smoke: %1 | Fan: %2").arg(smokeA).arg(fan ? "ON" : "OFF"));
+    ui->chkExhaustFan->blockSignals(true);
+    ui->chkExhaustFan->setChecked(fanOn);
+    ui->chkExhaustFan->blockSignals(false);
+
+    ui->chkExhaustBuzzer->blockSignals(true);
+    ui->chkExhaustBuzzer->setChecked(buzzerOn);
+    ui->chkExhaustBuzzer->blockSignals(false);
+
+    ui->chkExhaustOverride->blockSignals(true);
+    ui->chkExhaustOverride->setChecked(overrideState);
+    ui->chkExhaustOverride->blockSignals(false);
+
+    ui->lblDashExhaustIp->setText("IP: " + ip);
+    ui->lblDashExhaustStatus->setText(QString("Smoke: %1 | Fan: %2").arg(smokeA).arg(fanStatus));
     addHistoryRow("tblExhaustHistory", now, "Smoke Read", QString("Smoke: %1").arg(smokeA));
 }
 
 void MainWindow::on_btnExhaustSync_clicked() { fetchNodeStatus("exhaust"); }
 void MainWindow::on_chkExhaustOverride_toggled(bool checked) { sendNodeCommand("exhaust", checked ? "OVERRIDE_ON" : "OVERRIDE_OFF"); }
+void MainWindow::on_chkExhaustFan_toggled(bool checked) { sendNodeCommand("exhaust", checked ? "RELAY_ON" : "RELAY_OFF"); }
+void MainWindow::on_chkExhaustBuzzer_toggled(bool checked) { sendNodeCommand("exhaust", checked ? "BUZZER_ON" : "BUZZER_OFF"); }
 void MainWindow::on_btnExhaustUpdateConfig_clicked() {
     QJsonObject obj;
     obj["smoke_th_on"] = ui->spinSmokeOnTh->value();
@@ -653,18 +906,35 @@ void MainWindow::on_btnExhaustUpdateConfig_clicked() {
 // ---------------- Toilet ----------------
 void MainWindow::updateToiletUi(const QJsonObject &json)
 {
-    bool pir = json.value("pir").toBool();
-    bool light = json.value("light").toBool();
-    bool buzzer = json.value("buzzer").toBool();
+    bool pir = json.value("pir").toBool() || (json.value("pir").toInt() == 1) || (json.value("pir").toString() == "Motion");
+    bool light = json.value("light").toBool() || (json.value("light").toInt() == 1) || (json.value("light").toString() == "ON");
+    bool buzzer = json.value("buzzer").toBool() || (json.value("buzzer").toInt() == 1) || (json.value("buzzer").toString() == "ON");
+    bool overrideState = json.value("override").toBool() || (json.value("override").toInt() == 1) || (json.value("override").toString() == "ON");
+
+    QString ip = json.value("ip").toString();
+    if (ip.isEmpty()) ip = getIpForNode("toilet");
+
     QString now = QDateTime::currentDateTime().toString("HH:mm:ss");
 
     ui->lblToiletPir->setText(pir ? "Motion" : "Clear");
     ui->lblToiletLight->setText(light ? "ON" : "OFF");
     ui->lblToiletBuzzer->setText(buzzer ? "ON" : "OFF");
-    ui->lblToiletNodeIp->setText(getIpForNode("toilet"));
+    ui->lblToiletNodeIp->setText(ip);
     ui->lblToiletLastSync->setText(now);
 
-    ui->lblDashToiletIp->setText("IP: " + getIpForNode("toilet"));
+    ui->chkToiletOverride->blockSignals(true);
+    ui->chkToiletOverride->setChecked(overrideState);
+    ui->chkToiletOverride->blockSignals(false);
+
+    ui->chkToiletLight->blockSignals(true);
+    ui->chkToiletLight->setChecked(light);
+    ui->chkToiletLight->blockSignals(false);
+
+    ui->chkToiletBuzzer->blockSignals(true);
+    ui->chkToiletBuzzer->setChecked(buzzer);
+    ui->chkToiletBuzzer->blockSignals(false);
+
+    ui->lblDashToiletIp->setText("IP: " + ip);
     ui->lblDashToiletStatus->setText(QString("PIR: %1 | Light: %2").arg(pir ? "Motion" : "Clear").arg(light ? "ON" : "OFF"));
     addHistoryRow("tblToiletHistory", now, "Toilet Status", QString("PIR: %1").arg(pir ? 1 : 0));
 }
@@ -678,16 +948,29 @@ void MainWindow::on_btnToiletPanic_clicked() { sendNodeCommand("toilet", "PANIC"
 // ---------------- RO Water Pump ----------------
 void MainWindow::updateRoWaterUi(const QJsonObject &json)
 {
-    bool level = json.value("level").toBool();
-    bool pump = json.value("pump").toBool();
+    bool level = json.value("level").toBool() || (json.value("level").toInt() == 1) || (json.value("level").toString() == "FULL") || (json.value("level").toString() == "HIGH");
+    bool pump = json.value("pump").toBool() || (json.value("pump").toInt() == 1) || (json.value("pump").toString() == "ON");
+    bool overrideState = json.value("override").toBool() || json.value("manual").toBool() || (json.value("manual").toString() == "ON");
+
+    QString ip = json.value("ip").toString();
+    if (ip.isEmpty()) ip = getIpForNode("ro_pump");
+
     QString now = QDateTime::currentDateTime().toString("HH:mm:ss");
 
     ui->lblRoLevel->setText(level ? "HIGH / FULL" : "NORMAL");
     ui->lblRoPumpStatus->setText(pump ? "ON" : "OFF");
-    ui->lblRoNodeIp->setText(getIpForNode("ro_pump"));
+    ui->lblRoNodeIp->setText(ip);
     ui->lblRoLastSync->setText(now);
 
-    ui->lblDashRoIp->setText("IP: " + getIpForNode("ro_pump"));
+    ui->chkRoOverride->blockSignals(true);
+    ui->chkRoOverride->setChecked(overrideState);
+    ui->chkRoOverride->blockSignals(false);
+
+    ui->chkRoPump->blockSignals(true);
+    ui->chkRoPump->setChecked(pump);
+    ui->chkRoPump->blockSignals(false);
+
+    ui->lblDashRoIp->setText("IP: " + ip);
     ui->lblDashRoStatus->setText(QString("Water: %1 | Pump: %2").arg(level ? "FULL" : "Normal").arg(pump ? "ON" : "OFF"));
     addHistoryRow("tblRoHistory", now, "RO Pump", QString("Pump: %1").arg(pump ? "ON" : "OFF"));
 }
@@ -699,27 +982,51 @@ void MainWindow::on_chkRoPump_toggled(bool checked) { sendNodeCommand("ro_pump",
 // ---------------- Main Door ----------------
 void MainWindow::updateMainDoorUi(const QJsonObject &json)
 {
-    bool pir = json.value("pir").toBool();
-    bool relay = json.value("relay").toBool();
-    bool buzzer = json.value("buzzer").toBool();
-    bool flash = json.value("flash").toBool();
+    bool pir = json.value("pir").toBool() || (json.value("pir").toInt() == 1) || (json.value("pir").toString() == "Motion");
+    doorRelayState = json.value("relay").toBool() || (json.value("relay").toInt() == 1) || (json.value("relay").toString() == "UNLOCKED") || (json.value("relay").toString() == "ON");
+    doorBuzzerState = json.value("buzzer").toBool() || (json.value("buzzer").toInt() == 1) || (json.value("buzzer").toString() == "ON");
+    doorFlashState = json.value("flash").toBool() || (json.value("flash").toInt() == 1) || (json.value("flash").toString() == "ON");
+
+    QString ip = json.value("ip").toString();
+    if (ip.isEmpty()) ip = getIpForNode("door");
+
     QString now = QDateTime::currentDateTime().toString("HH:mm:ss");
 
     ui->lblDoorPir->setText(pir ? "Motion" : "Clear");
-    ui->lblDoorRelay->setText(relay ? "UNLOCKED" : "Locked");
-    ui->lblDoorBuzzer->setText(buzzer ? "ON" : "OFF");
-    ui->lblDoorFlash->setText(flash ? "ON" : "OFF");
-    ui->lblDoorNodeIp->setText(getIpForNode("door"));
+    ui->lblDoorRelay->setText(doorRelayState ? "UNLOCKED" : "Locked");
+    ui->lblDoorBuzzer->setText(doorBuzzerState ? "ON" : "OFF");
+    ui->lblDoorFlash->setText(doorFlashState ? "ON" : "OFF");
+    ui->lblDoorNodeIp->setText(ip);
     ui->lblDoorLastSync->setText(now);
 
-    ui->lblDashDoorIp->setText("IP: " + getIpForNode("door"));
-    ui->lblDashDoorStatus->setText(QString("Door: %1 | Motion: %2").arg(relay ? "UNLOCKED" : "Locked").arg(pir ? "Motion" : "Clear"));
+    ui->btnDoorUnlock->setText(doorRelayState ? "Lock Door (Relay OFF)" : "Unlock Door (Relay ON)");
+    ui->btnDoorBuzzer->setText(doorBuzzerState ? "Turn Buzzer OFF" : "Turn Buzzer ON");
+    ui->btnDoorFlash->setText(doorFlashState ? "Turn Flash OFF" : "Turn Flash ON");
+
+    ui->lblDashDoorIp->setText("IP: " + ip);
+    ui->lblDashDoorStatus->setText(QString("Door: %1 | Motion: %2").arg(doorRelayState ? "UNLOCKED" : "Locked").arg(pir ? "Motion" : "Clear"));
 }
 
 void MainWindow::on_btnDoorSync_clicked() { fetchNodeStatus("door"); }
-void MainWindow::on_btnDoorUnlock_clicked() { sendNodeCommand("door", "RELAY_ON"); }
-void MainWindow::on_btnDoorBuzzer_clicked() { sendNodeCommand("door", "BUZZER_ON"); }
-void MainWindow::on_btnDoorFlash_clicked() { sendNodeCommand("door", "FLASH_ON"); }
+
+void MainWindow::on_btnDoorUnlock_clicked() {
+    doorRelayState = !doorRelayState;
+    sendNodeCommand("door", doorRelayState ? "RELAY_ON" : "RELAY_OFF");
+    ui->btnDoorUnlock->setText(doorRelayState ? "Lock Door (Relay OFF)" : "Unlock Door (Relay ON)");
+}
+
+void MainWindow::on_btnDoorBuzzer_clicked() {
+    doorBuzzerState = !doorBuzzerState;
+    sendNodeCommand("door", doorBuzzerState ? "BUZZER_ON" : "BUZZER_OFF");
+    ui->btnDoorBuzzer->setText(doorBuzzerState ? "Turn Buzzer OFF" : "Turn Buzzer ON");
+}
+
+void MainWindow::on_btnDoorFlash_clicked() {
+    doorFlashState = !doorFlashState;
+    sendNodeCommand("door", doorFlashState ? "FLASH_ON" : "FLASH_OFF");
+    ui->btnDoorFlash->setText(doorFlashState ? "Turn Flash OFF" : "Turn Flash ON");
+}
+
 void MainWindow::on_btnDoorCapture_clicked() { sendNodeCommand("door", "CAPTURE"); }
 void MainWindow::on_btnDoorReboot_clicked() { sendNodeCommand("door", "REBOOT"); }
 

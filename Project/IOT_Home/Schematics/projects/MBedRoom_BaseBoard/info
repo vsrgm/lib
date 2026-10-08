@@ -4,7 +4,7 @@
   "name": "MBedRoom_BaseBoard",
   "content": "",
   "created_at": "2026-09-19 11:25:04",
-  "updated_at": "2026-09-19 13:04:33",
+  "updated_at": "2026-10-15 10:31:57",
   "stick": "",
   "documents": [
     {
@@ -35,18 +35,6 @@
           "CustomPara"
         ],
         [
-          "ARDUINO NANO",
-          2,
-          "ARDUINONANOV30_ARDUINO_NANO",
-          "ARDUINO_NANO1,ARDUINO_NANO1",
-          {
-            "Manufacturer Part": "",
-            "Manufacturer": "",
-            "Supplier": "",
-            "Supplier Part": ""
-          }
-        ],
-        [
           "BUZZER",
           1,
           "BUZ-TH_BD12.0-P6.00-D0.9-RD",
@@ -72,14 +60,14 @@
         ],
         [
           "LDR",
-          3,
-          "LDR (LDRSC058S)",
-          "H2,U2,U2",
+          1,
+          "HDR-F-2.54_1X2",
+          "H2",
           {
-            "Manufacturer Part": "RD3480",
-            "Manufacturer": "Jaycar",
-            "Supplier": "Jaycar",
-            "Supplier Part": "RD3480"
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C49661"
           }
         ],
         [
@@ -92,30 +80,6 @@
             "Manufacturer": "",
             "Supplier": "LCSC",
             "Supplier Part": "C124408"
-          }
-        ],
-        [
-          "BC547",
-          12,
-          "HDR-M-2.54_1X3",
-          "J2,J3,J7,J8,J13,J16,J20,J23,J24,J25,J26,J27",
-          {
-            "Manufacturer Part": "",
-            "Manufacturer": "",
-            "Supplier": "LCSC",
-            "Supplier Part": "C180248"
-          }
-        ],
-        [
-          "BC560",
-          8,
-          "HDR-M-2.54_1X3",
-          "J3,J4,J5,J6,J9,J10,J11,J12",
-          {
-            "Manufacturer Part": "",
-            "Manufacturer": "",
-            "Supplier": "LCSC",
-            "Supplier Part": "C180248"
           }
         ],
         [
@@ -179,10 +143,22 @@
           }
         ],
         [
+          "BC547",
+          2,
+          "HDR-M-2.54_1X3",
+          "J20,J27",
+          {
+            "Manufacturer Part": "",
+            "Manufacturer": "",
+            "Supplier": "LCSC",
+            "Supplier Part": "C180248"
+          }
+        ],
+        [
           "Connector",
-          3,
+          1,
           "HDR-M-2.54_1X4",
-          "J21,J22,J22",
+          "J21",
           {
             "Manufacturer Part": "",
             "Manufacturer": "",
@@ -216,21 +192,9 @@
         ],
         [
           "5k",
-          20,
+          3,
           "R_AXIAL-0.4",
-          "R1,R2,R2,R6,R14,R14,R15,R15,R16,R16,R17,R17,R18,R18,R19,R19,R20,R20,R21,R22",
-          {
-            "Manufacturer Part": "",
-            "Manufacturer": "",
-            "Supplier": "",
-            "Supplier Part": ""
-          }
-        ],
-        [
-          "200",
-          14,
-          "R_AXIAL-0.4",
-          "R3,R3,R4,R4,R5,R5,R9,R9,R10,R10,R11,R11,R12,R12",
+          "R6,R21,R22",
           {
             "Manufacturer Part": "",
             "Manufacturer": "",
@@ -251,31 +215,7 @@
           }
         ],
         [
-          "10k",
-          3,
-          "R_AXIAL-0.4",
-          "R8,R8,R24",
-          {
-            "Manufacturer Part": "",
-            "Manufacturer": "",
-            "Supplier": "",
-            "Supplier Part": ""
-          }
-        ],
-        [
-          "100",
-          2,
-          "R_AXIAL-0.4",
-          "R13,R13",
-          {
-            "Manufacturer Part": "",
-            "Manufacturer": "",
-            "Supplier": "",
-            "Supplier Part": ""
-          }
-        ],
-        [
-          "150",
+          "40",
           1,
           "R_AXIAL-0.4",
           "R23",
@@ -287,39 +227,15 @@
           }
         ],
         [
-          "SEG-TH_0.56×1_Anode",
-          16,
-          "LED-SEG-TH_10P-L12.6-W19.0-P2.54-S15.24-BL",
-          "SEG1,SEG1,SEG2,SEG2,SEG3,SEG3,SEG4,SEG4,SEG5,SEG5,SEG6,SEG6,SEG7,SEG7,SEG8,SEG8",
+          "10k",
+          1,
+          "R_AXIAL-0.3",
+          "R24",
           {
             "Manufacturer Part": "",
-            "Manufacturer": "志浩",
-            "Supplier": "LCSC",
-            "Supplier Part": "C8092"
-          }
-        ],
-        [
-          "74HC138N",
-          2,
-          "DIP-16_L19.2-W6.6-P2.54-LS7.6-BL",
-          "U1,U1",
-          {
-            "Manufacturer Part": "74HC138N",
-            "Manufacturer": "HGSEMI(华冠)",
-            "Supplier": "LCSC",
-            "Supplier Part": "C507188"
-          }
-        ],
-        [
-          "SN74LS47N",
-          2,
-          "DIP-16_L19.3-W6.4-P2.54-LS7.6-BL",
-          "U3,U3",
-          {
-            "Manufacturer Part": "SN74LS47N",
-            "Manufacturer": "TI(德州仪器)",
-            "Supplier": "LCSC",
-            "Supplier Part": "C129379"
+            "Manufacturer": "",
+            "Supplier": "",
+            "Supplier Part": ""
           }
         ],
         [
@@ -335,11 +251,11 @@
           }
         ]
       ],
-      "updateTime": 1789797219,
+      "updateTime": 1792040517,
       "createTime": 1788680041,
       "histories": [],
       "created_at": "2026-09-06 13:04:01",
-      "updated_at": "2026-09-19 11:23:39"
+      "updated_at": "2026-10-15 10:31:57"
     },
     {
       "uuid": "8d454699cb8e5205a6e9792e58ca07a4",
@@ -602,5 +518,5 @@
   "title": "MBedRoom_BaseBoard",
   "foldername": "MBedRoom_BaseBoard",
   "schfilename": "MBedRoom_BaseBoard.json",
-  "schfilemtime": 1789797304633.27
+  "schfilemtime": 1792040517298
 }

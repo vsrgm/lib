@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <cstdint>
+#include <algorithm>
+#include <cmath>
+#include <utility>
 //#include <arpa/inet.h>
 #define CLIP(x) (((x) > 0xFF) ? 0xFF : (((x) < 0) ? 0 :(uint8_t)(x)))
 
@@ -190,6 +193,12 @@ int32_t convert_yuy420p_rgb888(uint8_t* yuyv_buffer,uint8_t* rgb888, uint32_t wi
         }
     }
     return 0;
+}
+
+int32_t convert_yuy420_rgb888(uint8_t *yuyv_buffer, uint8_t *rgb888,
+        uint32_t width, uint32_t height)
+{
+    return convert_yuy420p_rgb888(yuyv_buffer, rgb888, width, height);
 }
 
 int32_t convert_yuy422p_rgb888(uint8_t* yuyv_buffer,uint8_t* rgb888, uint32_t width, uint32_t height)
@@ -394,6 +403,9 @@ int32_t convert_yuyv_rgb888(uint8_t* yuyv_buffer,uint8_t* rgb888, uint32_t width
 
 int32_t perform_equalize_y8 (uint8_t *ptr, uint32_t width, uint32_t height)
 {
+    if (ptr == NULL || width == 0 || height == 0)
+        return -1;
+
     uint8_t Y;
     uint32_t Y_count[256];
     memset(Y_count, 0x00, sizeof(Y_count));
@@ -420,12 +432,13 @@ int32_t perform_equalize_y8 (uint8_t *ptr, uint32_t width, uint32_t height)
 
         cdf_Y_count[cdf_idx] = Y_sum;
         /* round((cdf(v)-cdf(min)/(MxN)-cdf(min)x(L-1) */
-        hv_Y[cdf_idx] = CLIP(((cdf_Y_count[cdf_idx] - cdf_Y_min) * 255) / (Y_total_count - cdf_Y_min));
+        hv_Y[cdf_idx] = (Y_total_count == cdf_Y_min) ? static_cast<uint8_t>(cdf_idx) :
+            CLIP(((cdf_Y_count[cdf_idx] - cdf_Y_min) * 255) / (Y_total_count - cdf_Y_min));
     }
 
     /* Equalize */
     for(uint32_t hidx=0;hidx<(width*height);hidx++) {
-        ptr[hidx] = (ptr[hidx] > 240) ? ptr[hidx] : hv_Y[ptr[hidx]];
+        ptr[hidx] = hv_Y[ptr[hidx]];
     }
     return 0;
 }
@@ -451,14 +464,15 @@ int32_t perform_crop(uint8_t *dptr, uint8_t *sptr, uint32_t x, uint32_t y,
         uint32_t width, uint32_t height, uint32_t bpp,
         uint32_t srcwidth, uint32_t srcheight)
 {
-    int32_t x_start = x-(width/2);
-    int32_t y_start = y-(height/2);
-
-    if ((x_start < 0) || (y_start < 0) ||
-            ((width+x) > srcwidth) || ((height+y) > srcheight))
+    if (dptr == NULL || sptr == NULL || width == 0 || height == 0 || bpp == 0 ||
+            width > srcwidth || height > srcheight || x < width / 2 || y < height / 2)
     {
         return -1;
     }
+    const uint32_t x_start = x - (width / 2);
+    const uint32_t y_start = y - (height / 2);
+    if (x_start > srcwidth - width || y_start > srcheight - height)
+        return -1;
 
     for (uint32_t hidx = 0; hidx < height; hidx++)
     {
@@ -469,6 +483,9 @@ int32_t perform_crop(uint8_t *dptr, uint8_t *sptr, uint32_t x, uint32_t y,
 
 int32_t perform_equalize_rgb24 (uint8_t *ptr, uint32_t width, uint32_t height)
 {
+    if (ptr == NULL || width == 0 || height == 0)
+        return -1;
+
     uint8_t R,G,B;
     uint32_t R_count[256];
     uint32_t G_count[256];
@@ -522,9 +539,12 @@ int32_t perform_equalize_rgb24 (uint8_t *ptr, uint32_t width, uint32_t height)
         cdf_G_count[cdf_idx] = G_sum;
         cdf_B_count[cdf_idx] = B_sum;
         /* round((cdf(v)-cdf(min)/(MxN)-cdf(min)x(L-1) */
-        hv_R[cdf_idx] = CLIP((((cdf_R_count[cdf_idx] - cdf_R_min) * 255) / (R_total_count - cdf_R_min)));
-        hv_G[cdf_idx] = CLIP((((cdf_G_count[cdf_idx] - cdf_G_min) * 255) / (G_total_count - cdf_G_min)));
-        hv_B[cdf_idx] = CLIP((((cdf_B_count[cdf_idx] - cdf_B_min) * 255) / (B_total_count - cdf_B_min)));
+        hv_R[cdf_idx] = (R_total_count == cdf_R_min) ? static_cast<uint8_t>(cdf_idx) :
+            CLIP((((cdf_R_count[cdf_idx] - cdf_R_min) * 255) / (R_total_count - cdf_R_min)));
+        hv_G[cdf_idx] = (G_total_count == cdf_G_min) ? static_cast<uint8_t>(cdf_idx) :
+            CLIP((((cdf_G_count[cdf_idx] - cdf_G_min) * 255) / (G_total_count - cdf_G_min)));
+        hv_B[cdf_idx] = (B_total_count == cdf_B_min) ? static_cast<uint8_t>(cdf_idx) :
+            CLIP((((cdf_B_count[cdf_idx] - cdf_B_min) * 255) / (B_total_count - cdf_B_min)));
     }
 
     /* Equalize */
@@ -534,6 +554,89 @@ int32_t perform_equalize_rgb24 (uint8_t *ptr, uint32_t width, uint32_t height)
         ptr[idx*3+1] = hv_G[ptr[idx*3+1]];
         ptr[idx*3+0] = hv_B[ptr[idx*3+0]];
     }
+    return 0;
+}
+
+int32_t convert_rgb444_888(uint8_t *rgb444, uint8_t *rgb888, uint32_t width, uint32_t height)
+{
+    if (rgb444 == NULL || rgb888 == NULL)
+        return -1;
+
+    const uint32_t pixelCount = width * height;
+    for (uint32_t index = 0; index < pixelCount; ++index)
+    {
+        const uint16_t packed = static_cast<uint16_t>(rgb444[index * 2]) |
+                (static_cast<uint16_t>(rgb444[index * 2 + 1]) << 8);
+        const uint8_t blue = static_cast<uint8_t>((packed & 0x0f) * 17);
+        const uint8_t green = static_cast<uint8_t>(((packed >> 4) & 0x0f) * 17);
+        const uint8_t red = static_cast<uint8_t>(((packed >> 8) & 0x0f) * 17);
+        rgb888[index * 3] = red;
+        rgb888[index * 3 + 1] = green;
+        rgb888[index * 3 + 2] = blue;
+    }
+    return 0;
+}
+
+int32_t convert_fisheye_undistort_rgb24(const uint8_t *source, uint8_t *destination,
+        uint32_t width, uint32_t height, double fx, double fy, double cx, double cy,
+        double k1, double k2, double k3, double k4)
+{
+    if (source == NULL || destination == NULL || width == 0 || height == 0 ||
+            !std::isfinite(fx) || !std::isfinite(fy) || fx <= 0 || fy <= 0 ||
+            !std::isfinite(cx) || !std::isfinite(cy) ||
+            !std::isfinite(k1) || !std::isfinite(k2) ||
+            !std::isfinite(k3) || !std::isfinite(k4))
+        return -1;
+
+    for (uint32_t y = 0; y < height; ++y)
+        for (uint32_t x = 0; x < width; ++x)
+        {
+            const double normalizedX = (static_cast<double>(x) - cx) / fx;
+            const double normalizedY = (static_cast<double>(y) - cy) / fy;
+            const double radius = std::sqrt(normalizedX * normalizedX + normalizedY * normalizedY);
+            const double theta = std::atan(radius);
+            const double theta2 = theta * theta;
+            const double theta4 = theta2 * theta2;
+            const double theta6 = theta4 * theta2;
+            const double theta8 = theta4 * theta4;
+            const double distortedTheta = theta *
+                    (1.0 + k1 * theta2 + k2 * theta4 + k3 * theta6 + k4 * theta8);
+            const double scale = radius > 1e-12 ? distortedTheta / radius : 1.0;
+            const double sourceX = fx * normalizedX * scale + cx;
+            const double sourceY = fy * normalizedY * scale + cy;
+            const size_t outputOffset = (static_cast<size_t>(y) * width + x) * 3;
+
+            if (!std::isfinite(sourceX) || !std::isfinite(sourceY) ||
+                    sourceX < 0 || sourceY < 0 || sourceX > width - 1.0 || sourceY > height - 1.0)
+            {
+                destination[outputOffset] = 0;
+                destination[outputOffset + 1] = 0;
+                destination[outputOffset + 2] = 0;
+                continue;
+            }
+
+            const uint32_t x0 = static_cast<uint32_t>(std::floor(sourceX));
+            const uint32_t y0 = static_cast<uint32_t>(std::floor(sourceY));
+            const uint32_t x1 = std::min(x0 + 1, width - 1);
+            const uint32_t y1 = std::min(y0 + 1, height - 1);
+            const double xWeight = sourceX - x0;
+            const double yWeight = sourceY - y0;
+            const size_t topLeft = (static_cast<size_t>(y0) * width + x0) * 3;
+            const size_t topRight = (static_cast<size_t>(y0) * width + x1) * 3;
+            const size_t bottomLeft = (static_cast<size_t>(y1) * width + x0) * 3;
+            const size_t bottomRight = (static_cast<size_t>(y1) * width + x1) * 3;
+
+            for (int channel = 0; channel < 3; ++channel)
+            {
+                const double top = source[topLeft + channel] * (1.0 - xWeight) +
+                        source[topRight + channel] * xWeight;
+                const double bottom = source[bottomLeft + channel] * (1.0 - xWeight) +
+                        source[bottomRight + channel] * xWeight;
+                const long value = std::lround(top * (1.0 - yWeight) + bottom * yWeight);
+                destination[outputOffset + channel] = static_cast<uint8_t>(
+                    std::clamp(value, 0L, 255L));
+            }
+        }
     return 0;
 }
 
@@ -638,55 +741,28 @@ int32_t convert_rgb565_888(uint8_t* rgb565,uint8_t* rgb888, uint32_t width, uint
      * BGGR = 2
      * GRBG = 3
      */
-    int32_t r,g,b,rg,gb,bg,gr,hidx,widx;
+    if (rgb565 == NULL || rgb888 == NULL || start_with < 0 || start_with > 3)
+        return -1;
 
-    for (hidx=0; hidx<height; hidx++)
+    for (uint32_t hidx = 0; hidx < height; ++hidx)
     {
-        for(widx=0; widx<width; widx++)
+        for (uint32_t widx = 0; widx < width; ++widx)
         {
-            switch (start_with)
-            {
-                case 0:
-                    {
-                        rg = rgb565[(hidx * width*2)+widx*2+0];
-                        gb = rgb565[(hidx * width*2)+widx*2+1];
-                        r = (0xF7 & rg);
-                        g = (((rg&0x7)<<3) | ((gb&0xE0)>>5)) << 2;
-                        b = ((gb&0x1F) << 3);
-                    }break;
+            const uint32_t inputOffset = (hidx * width + widx) * 2;
+            const bool reverseBytes = (start_with & 1) != 0;
+            const uint8_t high = rgb565[inputOffset + (reverseBytes ? 1 : 0)];
+            const uint8_t low = rgb565[inputOffset + (reverseBytes ? 0 : 1)];
+            uint8_t red = static_cast<uint8_t>((high & 0xf8) | (high >> 5));
+            const uint8_t green5 = static_cast<uint8_t>(((high & 0x07) << 3) | (low >> 5));
+            uint8_t green = static_cast<uint8_t>((green5 << 2) | (green5 >> 4));
+            uint8_t blue = static_cast<uint8_t>(((low & 0x1f) << 3) | ((low & 0x1f) >> 2));
+            if (start_with >= 2)
+                std::swap(red, blue);
 
-                case 1:
-                    {
-                        gb = rgb565[(hidx * width*2)+widx*2+0];
-                        rg = rgb565[(hidx * width*2)+widx*2+1];
-                        r = (0xF7 & rg);
-                        g = (((rg&0x7)<<3) | ((gb&0xE0)>>5)) << 2;
-                        b = ((gb&0x1F) << 3);
-                    }break;
-
-                case 2:
-                    {
-                        bg = rgb565[(hidx * width*2)+widx*2+0];
-                        gr = rgb565[(hidx * width*2)+widx*2+1];
-                        r = (gr & 0x1F) << 3;
-                        g = ((bg & 0x7) << 3 | (gr & 0xE0)>>5) << 2;
-                        b = (0xF7 & gb);
-                    }break;
-
-                case 3:
-                    {
-                        gr = rgb565[(hidx * width*2)+widx*2+0];
-                        bg = rgb565[(hidx * width*2)+widx*2+1];
-                        b = (0xF7 & bg);
-                        g = (((bg&0x7)<<3) | ((gr&0xE0)>>5)) << 2;
-                        r = ((gr&0x1F) << 3);
-
-                    }break;
-            }
-
-            rgb888[(((height-1)-hidx) * width * 3)+ widx*3 +0] = 0xFF & b;
-            rgb888[(((height-1)-hidx) * width * 3)+ widx*3 +1] = 0xFF & g;
-            rgb888[(((height-1)-hidx) * width * 3)+ widx*3 +2] = 0xFF & r;
+            const uint32_t outputOffset = (hidx * width + widx) * 3;
+            rgb888[outputOffset] = red;
+            rgb888[outputOffset + 1] = green;
+            rgb888[outputOffset + 2] = blue;
         }
     }
     return 0;
@@ -993,66 +1069,78 @@ int32_t convert_bayer_rgb24(
 
 int32_t save_ir_asyuv(uint8_t *des_buffer, uint32_t width, uint32_t height)
 {
-    /* Convert into YUV file and SAVE it */
+    if (des_buffer == NULL || width == 0 || height == 0)
+        return -1;
     FILE *yuvptr = fopen("sample_ir.yuv", "wb");
-    fwrite(des_buffer, width * height, 1, yuvptr);
+    if (yuvptr == NULL)
+        return -1;
+    const size_t dataSize = static_cast<size_t>(width) * height;
+    const size_t written = fwrite(des_buffer, 1, dataSize, yuvptr);
     fclose(yuvptr);
-    return 0;
+    return written == dataSize ? 0 : -1;
 }
 
 int32_t save_buffer(uint8_t *des_buffer, uint32_t size)
 {
-    /* Convert into YUV file and SAVE it */
+    if (des_buffer == NULL || size == 0)
+        return -1;
     FILE *raw = fopen("sample.raw", "wb");
-    fwrite(des_buffer, size, 1,raw);
+    if (raw == NULL)
+        return -1;
+    const size_t written = fwrite(des_buffer, 1, size, raw);
     fclose(raw);
-    return 0;
+    return written == size ? 0 : -1;
 }
 
 
 int32_t save_asyuv(uint8_t *des_buffer, uint32_t width, uint32_t height)
 {
-    /* Convert into YUV file and SAVE it */
-    FILE *yuvptr = fopen("sample.yuv", "wb");
-    uint8_t *yuvbuf = (uint8_t *)calloc(width * height*2, 1);
+    if (des_buffer == NULL || width == 0 || height == 0 || (width & 1U))
+        return -1;
+    const size_t pixelCount = static_cast<size_t>(width) * height;
+    if (pixelCount > SIZE_MAX / 2)
+        return -1;
+    uint8_t *yuvbuf = static_cast<uint8_t *>(malloc(pixelCount * 2));
+    if (yuvbuf == NULL)
+        return -1;
 
-    uint32_t widthinc, heightinc;
-    uint32_t value;
-    for (heightinc = 0; heightinc < height; heightinc++)
+    for (uint32_t row = 0; row < height; ++row)
     {
-        for(widthinc = 0; widthinc < width; widthinc+=2)
+        for (uint32_t column = 0; column < width; column += 2)
         {
-            uint8_t y1,u1,v1;
-            uint8_t y2,u2,v2;
-            uint8_t R1,G1,B1;
-            uint8_t R2,G2,B2;
-            R1 = des_buffer[(heightinc*width*3)+ widthinc*3 + 0];
-            G1 = des_buffer[(heightinc*width*3)+ widthinc*3 + 1];
-            B1 = des_buffer[(heightinc*width*3)+ widthinc*3 + 2];
-
-            R2 = des_buffer[(heightinc*width*3)+ widthinc*3 + 3];
-            G2 = des_buffer[(heightinc*width*3)+ widthinc*3 + 4];
-            B2 = des_buffer[(heightinc*width*3)+ widthinc*3 + 5];
-
-            y1 = CLIP((299*R1 +587*G1 +114*B1)/1000);
-            u1 = CLIP(((-169*R1 -331*G1 +499*B1)/1000)+128);
-            v1 = CLIP(((499*R1 -418*G1 -81*B1)/1000)+128);
-
-            y2 = CLIP((299*R2 +587*G2 +114*B2)/1000);
-            u1 = CLIP(((-169*R2 -331*G2 +499*B2)/1000)+128);
-            v1 = CLIP(((499*R2 -418*G2 -81*B2)/1000)+128);
-
-            yuvbuf[(heightinc*width*2) + widthinc*2 +0] = y1;
-            yuvbuf[(heightinc*width*2) + widthinc*2 +1] = u1;
-            yuvbuf[(heightinc*width*2) + widthinc*2 +2] = y2;
-            yuvbuf[(heightinc*width*2) + widthinc*2 +3] = v1;
-            value = (heightinc*width*2) + widthinc*2 +3;
+            const size_t first = (static_cast<size_t>(row) * width + column) * 3;
+            const size_t second = first + 3;
+            const int red1 = des_buffer[first];
+            const int green1 = des_buffer[first + 1];
+            const int blue1 = des_buffer[first + 2];
+            const int red2 = des_buffer[second];
+            const int green2 = des_buffer[second + 1];
+            const int blue2 = des_buffer[second + 2];
+            const int y1 = (299 * red1 + 587 * green1 + 114 * blue1) / 1000;
+            const int y2 = (299 * red2 + 587 * green2 + 114 * blue2) / 1000;
+            const int u1 = (-169 * red1 - 331 * green1 + 499 * blue1) / 1000 + 128;
+            const int u2 = (-169 * red2 - 331 * green2 + 499 * blue2) / 1000 + 128;
+            const int v1 = (499 * red1 - 418 * green1 - 81 * blue1) / 1000 + 128;
+            const int v2 = (499 * red2 - 418 * green2 - 81 * blue2) / 1000 + 128;
+            const size_t output = (static_cast<size_t>(row) * width + column) * 2;
+            yuvbuf[output] = CLIP(y1);
+            yuvbuf[output + 1] = CLIP((u1 + u2) / 2);
+            yuvbuf[output + 2] = CLIP(y2);
+            yuvbuf[output + 3] = CLIP((v1 + v2) / 2);
         }
     }
-    fwrite(yuvbuf,1, width * height*2, yuvptr);
+
+    FILE *yuvptr = fopen("sample.yuv", "wb");
+    if (yuvptr == NULL)
+    {
+        free(yuvbuf);
+        return -1;
+    }
+    const size_t dataSize = pixelCount * 2;
+    const size_t written = fwrite(yuvbuf, 1, dataSize, yuvptr);
     fclose(yuvptr);
     free(yuvbuf);
-    return 0;    
+    return written == dataSize ? 0 : -1;
 }
 
 int32_t extract_bayer10_packed_ir(uint8_t *src_buffer, uint8_t *dest_buffer, int32_t width, int32_t height)

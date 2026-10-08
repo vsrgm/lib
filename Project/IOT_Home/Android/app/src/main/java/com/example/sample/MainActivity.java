@@ -134,6 +134,20 @@ public class MainActivity extends AppCompatActivity {
 
             initFirebase();
 
+            android.content.SharedPreferences smartPrefs = getSharedPreferences("SmartHomePrefs", MODE_PRIVATE);
+            String savedIp = LocalDiscoveryManager.getDeviceIp(smartPrefs, "rccar");
+            if (savedIp != null && !savedIp.isEmpty()) {
+                binding.ipAddressInput.setText(savedIp);
+            }
+
+            binding.ipAddressInput.addTextChangedListener(new android.text.TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    smartPrefs.edit().putString("ip_rccar", s.toString().trim()).apply();
+                }
+                @Override public void afterTextChanged(android.text.Editable s) {}
+            });
+
             binding.btnConnect.setOnClickListener(v -> {
                 if (savedSurface != null) {
                     boolean isMjpeg = binding.radioMjpeg.isChecked();
@@ -157,6 +171,25 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         android.content.SharedPreferences prefs = getSharedPreferences("RcCarPrefs", MODE_PRIVATE);
         carSyncMode = prefs.getInt("car_sync_mode", 0);
+
+        android.content.SharedPreferences smartPrefs = getSharedPreferences("SmartHomePrefs", MODE_PRIVATE);
+        String savedIp = LocalDiscoveryManager.getDeviceIp(smartPrefs, "rccar");
+        if (savedIp != null && !savedIp.isEmpty()) {
+            binding.ipAddressInput.setText(savedIp);
+        }
+
+        if (carSyncMode == 0) {
+            LocalDiscoveryManager.discoverDevices(this, (key, deviceName, ipAddress) -> {
+                if ("ip_rccar".equals(key)) {
+                    runOnUiThread(() -> {
+                        binding.ipAddressInput.setText(ipAddress);
+                        smartPrefs.edit().putString("ip_rccar", ipAddress).apply();
+                        checkCarConnection();
+                    });
+                }
+            });
+        }
+        checkCarConnection();
     }
 
     private void initFirebase() {

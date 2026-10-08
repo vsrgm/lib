@@ -402,7 +402,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Fan Remote"
+                        android:text="Sarru Fan Remote"
                         android:textColor="#FFFFFF"
                         android:textStyle="bold"
                         android:layout_marginBottom="8dp"/>
@@ -411,9 +411,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:columnCount="3">
-                        <Button android:id="@+id/btn_fan_power" android:text="OFF" android:backgroundTint="#FF0000" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
-                        <Button android:id="@+id/btn_fan_speed_up" android:text="SPD+" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
-                        <Button android:id="@+id/btn_fan_speed_down" android:text="SPD-" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_fan_power" android:text="POWER" android:backgroundTint="#FF8800" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
 
                         <Button android:id="@+id/btn_fan_speed_1" android:text="SPD 1" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
                         <Button android:id="@+id/btn_fan_speed_2" android:text="SPD 2" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
@@ -421,7 +419,10 @@
 
                         <Button android:id="@+id/btn_fan_speed_4" android:text="SPD 4" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
                         <Button android:id="@+id/btn_fan_speed_5" android:text="SPD 5" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
-                        <Button android:id="@+id/btn_fan_on" android:text="FAN ON" android:backgroundTint="#00E676" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_fan_speed_6" android:text="SPD 6" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_fan_speed_7" android:text="SPD 7" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_fan_speed_8" android:text="SPD 8" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
+                        <Button android:id="@+id/btn_fan_speed_9" android:text="SPD 9" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:textColor="#FFFFFF"/>
                     </GridLayout>
 
                 </LinearLayout>

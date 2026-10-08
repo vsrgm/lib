@@ -5,6 +5,7 @@ public class AppDefaults {
     
     public static final String DEFAULT_PI_IP = "192.168.0.113";
     public static final String DEFAULT_NODE_IP = "192.168.0.107";
+    public static final String DEFAULT_RCCAR_IP = "192.168.0.102";
     
     public static final boolean ENABLE_MQTT = false; // Set to true to enable MQTT globally
     public static final String MQTT_BROKER = "broker.hivemq.com";
@@ -24,4 +25,5 @@ public class AppDefaults {
     public static final String NODE_KITCHEN_FAN = "kitchen_fan";
     public static final String NODE_PI_KITCHEN = "pi_kitchen";
     public static final String NODE_BEDROOM = "bedroom";
+    public static final String NODE_RCCAR = "rccar";
 }

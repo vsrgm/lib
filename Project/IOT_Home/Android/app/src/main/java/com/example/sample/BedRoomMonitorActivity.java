@@ -243,15 +243,16 @@ public class BedRoomMonitorActivity extends AppCompatActivity {
         setupIrButton(binding.btnAc26c, "PRESET:AC_26C");
 
         // Fan Remote
-        setupIrButton(binding.btnFanPower, "PRESET:FAN_OFF");
-        setupIrButton(binding.btnFanSpeedUp, "PRESET:FAN_SPEED3");
-        setupIrButton(binding.btnFanSpeedDown, "PRESET:FAN_SPEED1");
+        setupIrButton(binding.btnFanPower, "PRESET:FAN_POWER");
         setupIrButton(binding.btnFanSpeed1, "PRESET:FAN_SPEED1");
         setupIrButton(binding.btnFanSpeed2, "PRESET:FAN_SPEED2");
         setupIrButton(binding.btnFanSpeed3, "PRESET:FAN_SPEED3");
         setupIrButton(binding.btnFanSpeed4, "PRESET:FAN_SPEED4");
         setupIrButton(binding.btnFanSpeed5, "PRESET:FAN_SPEED5");
-        setupIrButton(binding.btnFanOn, "PRESET:FAN_ON");
+        setupIrButton(binding.btnFanSpeed6, "PRESET:FAN_SPEED6");
+        setupIrButton(binding.btnFanSpeed7, "PRESET:FAN_SPEED7");
+        setupIrButton(binding.btnFanSpeed8, "PRESET:FAN_SPEED8");
+        setupIrButton(binding.btnFanSpeed9, "PRESET:FAN_SPEED9");
     }
 
     private void setupIrButton(android.view.View btn, String irData) {
@@ -474,11 +475,16 @@ public class BedRoomMonitorActivity extends AppCompatActivity {
 
     private void updateDiscoveryStatus() {
         runOnUiThread(() -> {
-            int count = discoveredNodes.size();
-            if (count == 0) {
-                binding.availableNodesInfo.setText(" (Searching...)");
+            String savedIp = LocalDiscoveryManager.getDeviceIp(prefs, "bedroom");
+            if (syncMode == 1 && !savedIp.isEmpty()) {
+                binding.availableNodesInfo.setText(" (" + savedIp + ")");
             } else {
-                binding.availableNodesInfo.setText(" (" + count + " Available)");
+                int count = discoveredNodes.size();
+                if (count == 0) {
+                    binding.availableNodesInfo.setText(" (Searching...)");
+                } else {
+                    binding.availableNodesInfo.setText(" (" + count + " Available)");
+                }
             }
         });
     }

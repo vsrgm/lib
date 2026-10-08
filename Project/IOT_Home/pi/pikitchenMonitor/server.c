@@ -20,7 +20,7 @@
 #include <wait.h>
 #include "credentials.h"
 
-#define SW_VERSION "1.0.416"
+#define SW_VERSION "1.0.436"
 #define PORT 5001
 #define VIDEO_CHUNK_SIZE 1400
 #define LOG_FILE "/tmp/server.log"

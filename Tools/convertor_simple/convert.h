@@ -2,7 +2,11 @@
 #define CONVERT_H
 
 #include <QMainWindow>
+#include <QSplitter>
+#include <QStackedWidget>
 #include <stdint.h>
+
+class QRubberBand;
 namespace Ui {
     class convert;
 }
@@ -79,15 +83,24 @@ class convert : public QMainWindow {
 public:
     convert(QWidget *parent = 0);
     ~convert();
-    QImage *imageObject;
 
 protected:
     void changeEvent(QEvent *e);
+    bool eventFilter(QObject *watched, QEvent *event) override;
 
 private:
     Ui::convert *ui;
     void paintimage();
-    void resize_base(int width,int height);
+    void restoreSettings();
+    void saveSettings() const;
+    void showImagePane();
+    void showAnalysisPane(QWidget *content, const QString &title);
+    QStackedWidget *rightPane;
+    QWidget *analysisPage;
+    QRubberBand *chartSelectionBand;
+    bool chartSelectionArmed;
+    bool chartSelectionDragging;
+    QPoint chartSelectionStart;
     unsigned char *src_buffer, *des_buffer;
     unsigned int width, height, bpp, bpp_container, bpp_shift;
     int frame_stride, size;  
@@ -96,8 +109,17 @@ private:
 private slots:
     void on_pixel_fmt_currentIndexChanged(int index);
     void on_src_img_count_valueChanged(int );
-    void on_height_lostFocus();
+    void on_width_editingFinished();
+    void on_height_editingFinished();
+    void on_frame_stride_editingFinished();
+    void on_file_path_editingFinished();
     void on_equalize_clicked();
+    void on_lens_shading_clicked();
+    void on_ae_tuning_clicked();
+    void on_lens_distortion_clicked();
+    void on_dynamic_range_clicked();
+    void on_awb_ccm_clicked();
+    void on_select_chart_clicked();
     void on_bpp_editingFinished();
     void on_Crop_clicked();
     void on_bpp_container_editingFinished();

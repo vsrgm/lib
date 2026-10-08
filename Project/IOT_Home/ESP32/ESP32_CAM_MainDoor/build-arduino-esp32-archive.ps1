@@ -1,14 +1,40 @@
 param(
-  [string]$ArduinoEsp32Version = "3.3.11"
+  [string]$ArduinoEsp32Version
 )
 
 $ErrorActionPreference = "Stop"
 
 $SourceRoot = $PSScriptRoot
 $ArduinoPackage = Join-Path $env:LOCALAPPDATA "Arduino15\packages\esp32"
+
+if (-not $ArduinoEsp32Version) {
+  $LibsDir = Join-Path $ArduinoPackage "tools\esp32-libs"
+  if (Test-Path $LibsDir) {
+    $Latest = Get-ChildItem -Path $LibsDir -Directory | Sort-Object {
+      try { [version]($_.Name -replace '^(\d+\.\d+\.\d+).*','$1') } catch { [version]"0.0.0" }
+    } -Descending | Select-Object -First 1
+    if ($Latest) {
+      $ArduinoEsp32Version = $Latest.Name
+    }
+  }
+  if (-not $ArduinoEsp32Version) {
+    $ArduinoEsp32Version = "3.3.12"
+  }
+}
+
 $Sdk = Join-Path $ArduinoPackage "tools\esp32-libs\$ArduinoEsp32Version"
 $Core = Join-Path $ArduinoPackage "hardware\esp32\$ArduinoEsp32Version\cores\esp32"
+
 $Toolchain = Join-Path $ArduinoPackage "tools\esp-x32\2601\bin"
+if (-not (Test-Path $Toolchain)) {
+  $ToolchainParent = Join-Path $ArduinoPackage "tools\esp-x32"
+  if (Test-Path $ToolchainParent) {
+    $ToolchainFolder = Get-ChildItem -Path $ToolchainParent -Directory | Select-Object -First 1
+    if ($ToolchainFolder) {
+      $Toolchain = Join-Path $ToolchainFolder.FullName "bin"
+    }
+  }
+}
 $Gcc = Join-Path $Toolchain "xtensa-esp32-elf-gcc.exe"
 $Gxx = Join-Path $Toolchain "xtensa-esp32-elf-g++.exe"
 $Ar = Join-Path $Toolchain "xtensa-esp32-elf-gcc-ar.exe"
